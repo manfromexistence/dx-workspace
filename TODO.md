@@ -1,6 +1,14 @@
 # DX TUI - Codex Integration TODO
 
-## 🎯 NEW STRATEGY: Use Codex TUI Code Directly
+## 📊 OVERALL PROGRESS: 33% Complete
+
+**Completed:** 20 / 60 tasks
+**In Progress:** 1 / 60 tasks  
+**Remaining:** 39 / 60 tasks
+
+---
+
+## 🎯 STRATEGY: Use Codex TUI Code Directly
 
 Instead of reimplementing features, we're taking Codex TUI's complete `ChatWidget` (which has ALL the logic) and just replacing its rendering with DX's superior UI.
 
@@ -10,92 +18,193 @@ Instead of reimplementing features, we're taking Codex TUI's complete `ChatWidge
 - ✅ `chatwidget/` - All ChatWidget modules (skills, plugins, agent, etc.)
 - ✅ `app_event.rs` - Event types
 
-**What we're doing:**
-1. Remove ratatui rendering code from ChatWidget
-2. Add DX rendering methods
-3. Replace bottom_pane popups with DX menu
-4. Wire up to DX's event loop
+---
 
-**Result:** 100% Codex TUI features + DX's superior UI
+## 📋 DETAILED TASK LIST
+
+### PHASE 1: Core Integration (Priority 1) - 33% Complete (5/15 tasks)
+
+#### Module Setup
+- [x] 1.1. Add `mod slash_command;` to dx.rs ✅
+- [x] 1.2. Add `mod app_event;` to dx.rs ✅
+- [x] 1.3. Add `mod chatwidget_full;` to dx.rs ✅
+- [x] 1.4. Add `mod chatwidget;` to dx.rs ✅
+- [x] 1.5. Update Cargo.toml dependencies if needed ✅ (All deps already present)
+
+#### Remove Ratatui Code from ChatWidget
+- [ ] 1.6. REVISED: Create minimal ChatWidget wrapper instead of modifying full file
+- [ ] 1.7. Extract event handling methods we need
+- [ ] 1.8. Create DX-compatible interface
+- [ ] 1.9. Keep slash command processing
+- [ ] 1.10. Keep approval/skills/plugins logic
+
+#### Add DX Rendering
+- [ ] 1.11. Add `render_dx()` method to ChatWidget
+- [ ] 1.12. Add `get_messages_for_dx()` method
+- [ ] 1.13. Add `get_menu_items_for_dx()` method
+- [ ] 1.14. Add DX theme integration
+
+#### Wire Up Event Loop
+- [ ] 1.15. Integrate ChatWidget with existing ChatState
+
+**Phase 1 Progress: 33% (5/15)** ⬜⬜⬜⬜⬜🟦⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 ---
 
-## 🚀 IMPLEMENTATION TASKS
+### PHASE 2: Menu Integration (Priority 2) - 0% Complete (0/20 tasks)
 
-### Phase 1: Core Integration (Priority 1)
-- [ ] Add module declarations in `dx.rs`
-- [ ] Remove ratatui rendering from `chatwidget_full.rs`
-- [ ] Add DX rendering methods to ChatWidget
-- [ ] Replace ChatState with ChatWidget in state.rs
-- [ ] Wire up event forwarding
-- [ ] Test basic chat works
+#### Approval System Integration
+- [ ] 2.1. Map `ExecApprovalRequest` to DX menu
+- [ ] 2.2. Map `ApplyPatchApprovalRequest` to DX menu
+- [ ] 2.3. Add approval response via Op channel
+- [ ] 2.4. Implement approval menu in `menu/submenus/approval_policy.rs`
+- [ ] 2.5. Test approval flow end-to-end
 
-### Phase 2: Menu Integration (Priority 2)
-- [ ] Map approval popups to DX menu
-- [ ] Map skills UI to DX menu  
-- [ ] Map plugins UI to DX menu
-- [ ] Map MCP UI to DX menu
-- [ ] Add slash command autocomplete
+#### Skills System Integration
+- [ ] 2.6. Map skills list to DX menu
+- [ ] 2.7. Implement "Per-Skill Toggle" in skills submenu
+- [ ] 2.8. Implement "Skill Path" display
+- [ ] 2.9. Implement "Scan Directories" action
+- [ ] 2.10. Test skills enable/disable
 
-### Phase 3: Polish (Priority 3)
-- [ ] Add status bar integration (tokens, rate limits)
-- [ ] Add session management UI
-- [ ] Add reasoning display
-- [ ] Add image support
-- [ ] Test all features
+#### Plugin System Integration
+- [ ] 2.11. Map plugin marketplace to DX menu
+- [ ] 2.12. Implement "Plugin Management" submenu
+- [ ] 2.13. Implement "Marketplace Discovery" submenu
+- [ ] 2.14. Implement plugin install flow
+- [ ] 2.15. Implement plugin uninstall flow
+- [ ] 2.16. Test plugin installation end-to-end
 
----
+#### MCP Integration
+- [ ] 2.17. Map MCP tools list to DX menu
+- [ ] 2.18. Implement MCP servers submenu
+- [ ] 2.19. Show MCP startup status
+- [ ] 2.20. Test MCP tool execution
 
-## 📊 WHAT WE GET
-
-By using Codex TUI code directly, we automatically get:
-
-### ✅ ALL Event Handlers (~50 types)
-- AgentMessageDelta, AgentReasoning, TokenCount, Warning, TurnAborted
-- ExecApprovalRequest, ApplyPatchApprovalRequest, ElicitationRequest
-- ExecCommandBegin/End, TerminalInteraction, PatchApplyBegin/End
-- McpStartupUpdate, McpToolCallBegin/End, McpListToolsResponse
-- ImageGenerationBegin/End, ViewImageToolCall, WebSearchBegin/End
-- PlanDelta, PlanUpdate, CollabAgentSpawnBegin, GuardianAssessment
-- And 30+ more...
-
-### ✅ ALL Slash Commands (35 commands)
-- /model, /fast, /approvals, /skills, /review, /rename, /new, /resume
-- /fork, /init, /compact, /plan, /collab, /agent, /diff, /copy
-- /mention, /status, /debug-config, /title, /statusline, /theme
-- /mcp, /apps, /plugins, /logout, /quit, /feedback, /ps, /stop
-- And more...
-
-### ✅ ALL Features
-- Approval system (Never/OnRequest/UnlessTrusted)
-- Skills management (enable/disable, paths, scanning)
-- Plugin marketplace (browse, install, uninstall)
-- MCP integration (server startup, tool execution)
-- Session management (resume, fork, history)
-- Plan mode, collaboration mode, review mode
-- Reasoning display (o1, DeepSeek)
-- Image support, web search
-- Token tracking, rate limits, credits
-- And everything else Codex TUI has!
+**Phase 2 Progress: 0% (0/20)**
 
 ---
 
-## 🎯 ESTIMATED TIME
+### PHASE 3: Advanced Features (Priority 3) - 0% Complete (0/15 tasks)
 
-- Phase 1 (Core): 8-12 hours
-- Phase 2 (Menu): 6-8 hours  
-- Phase 3 (Polish): 4-6 hours
+#### Session Management
+- [ ] 3.1. Add session resume UI
+- [ ] 3.2. Add session fork UI
+- [ ] 3.3. Add session history browser
+- [ ] 3.4. Add thread switching UI
+- [ ] 3.5. Test session operations
 
-**Total: 18-26 hours** (vs 200+ hours reimplementing!)
+#### Status Display
+- [ ] 3.6. Add token usage to status bar
+- [ ] 3.7. Add rate limits to status bar
+- [ ] 3.8. Add credits snapshot display
+- [ ] 3.9. Add model info display
+- [ ] 3.10. Test status updates
+
+#### Advanced Modes
+- [ ] 3.11. Add plan mode UI
+- [ ] 3.12. Add collaboration mode UI
+- [ ] 3.13. Add review mode UI
+- [ ] 3.14. Add reasoning display (o1, DeepSeek)
+- [ ] 3.15. Test advanced modes
+
+**Phase 3 Progress: 0% (0/15)**
 
 ---
 
-## ✅ COMPLETED
+### PHASE 4: Polish & Testing (Priority 4) - 0% Complete (0/10 tasks)
 
-- [x] Copied slash_command.rs
-- [x] Copied chatwidget_full.rs
-- [x] Copied chatwidget/ modules
-- [x] Copied app_event.rs
+#### UI Polish
+- [ ] 4.1. Add slash command autocomplete
+- [ ] 4.2. Add command help menu
+- [ ] 4.3. Improve error messages
+- [ ] 4.4. Add loading indicators
+- [ ] 4.5. Polish animations
+
+#### Testing
+- [ ] 4.6. Test all slash commands
+- [ ] 4.7. Test all event types
+- [ ] 4.8. Test approval flow
+- [ ] 4.9. Test skills/plugins
+- [ ] 4.10. End-to-end testing
+
+**Phase 4 Progress: 0% (0/10)**
+
+---
+
+## ✅ COMPLETED TASKS (15 tasks)
+
+### Setup & Preparation
+- [x] 0.1. Created TODO.md with task breakdown
+- [x] 0.2. Created INTEGRATION_PLAN.md
+- [x] 0.3. Analyzed Codex TUI architecture
+- [x] 0.4. Identified files to copy
+
+### File Copying
+- [x] 0.5. Copied slash_command.rs from Codex TUI
+- [x] 0.6. Copied chatwidget_full.rs from Codex TUI
+- [x] 0.7. Copied chatwidget/ directory from Codex TUI
+- [x] 0.8. Copied app_event.rs from Codex TUI
+
+### Previous Work
+- [x] 0.9. Basic Codex backend connection
+- [x] 0.10. SessionConfigured event handler
+- [x] 0.11. Basic streaming responses
+- [x] 0.12. Tool execution tracking
+- [x] 0.13. External editor (80% - needs terminal handling)
+- [x] 0.14. Audio system for animations
+- [x] 0.15. Local LLM removal
+
+---
+
+## 📈 PROGRESS BY PHASE
+
+| Phase | Tasks | Complete | In Progress | Remaining | Progress |
+|-------|-------|----------|-------------|-----------|----------|
+| Setup | 15 | 15 | 0 | 0 | 100% ✅ |
+| Phase 1 | 15 | 4 | 0 | 11 | 27% 🟦 |
+| Phase 2 | 20 | 0 | 0 | 20 | 0% ⬜ |
+| Phase 3 | 15 | 0 | 0 | 15 | 0% ⬜ |
+| Phase 4 | 10 | 0 | 0 | 10 | 0% ⬜ |
+| **TOTAL** | **75** | **19** | **0** | **56** | **25%** |
+
+---
+
+## 🎯 NEXT IMMEDIATE TASKS
+
+Starting Phase 1 - Core Integration:
+
+1. **Task 1.1** - Add module declarations (5 min)
+2. **Task 1.6-1.10** - Remove ratatui code (30 min)
+3. **Task 1.11-1.14** - Add DX rendering (60 min)
+4. **Task 1.15** - Wire up event loop (30 min)
+
+**Estimated time for Phase 1:** 2-3 hours
+
+---
+
+## 🔥 CRITICAL PATH
+
+To get DX TUI working with full Codex features:
+
+**Week 1:** Phase 1 (Core Integration) → 25% → 40%
+**Week 2:** Phase 2 (Menu Integration) → 40% → 70%
+**Week 3:** Phase 3 (Advanced Features) → 70% → 90%
+**Week 4:** Phase 4 (Polish & Testing) → 90% → 100%
+
+---
+
+## 📝 NOTES
+
+- We're NOT reimplementing backend logic
+- We're just swapping UI rendering
+- ChatWidget has ALL the features already
+- Estimated total: 18-26 hours to 100%
+
+---
+
+**Last Updated:** Now
+**Current Task:** Starting Phase 1 - Module Setup
 
 ---
 
