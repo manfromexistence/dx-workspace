@@ -25,3 +25,7 @@ no we can use them what are you doing why can't we use them as we already code a
 And I told you to use Todo.md To drag things. and implement dx-tui slowly instead of merging everything in one go. 
 
 ohh. is that so - then always test it running "cargo run" and fix every errors you find
+
+and why use another screen don't the dx has a splash screen use that code - please  don't create any slop use dx-tui code directly why possible!!!
+
+update the exiting dx-tui files fit them inside codex-tuiAnd update the chainslog.md and tutu.md files to track what we are doing. And what still needs to be done? 

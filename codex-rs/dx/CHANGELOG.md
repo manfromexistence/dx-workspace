@@ -4,7 +4,26 @@ All notable changes to the dx-tui integration will be documented in this file.
 
 ## [2026-03-29] - DX-TUI Integration Phase 1
 
-### Added - Animation Support (Latest)
+### Added - Font Cycling with Ctrl+. (Latest)
+- **Ctrl+. Font Cycling** (`src/chatwidget.rs` handle_key_event)
+  - Added Ctrl+. key handler at the beginning of handle_key_event()
+  - Only triggers when showing welcome screen (transcript_cells.is_empty())
+  - Cycles through 113 valid DX splash fonts
+  - Uses dx_chat_state.splash_font_index directly (no duplicate code)
+  - Updates dx_chat_state.last_font_change timestamp
+  - Schedules frame for immediate re-render
+  - Follows same pattern as onboarding welcome screen
+
+### Changed - Use DX ChatState Directly
+- **Replaced Custom Fields with DX ChatState** (`src/chatwidget.rs`)
+  - Removed custom fields: `dx_rainbow_effect`, `dx_splash_font_index`, `dx_last_animation_update`
+  - Added `dx_chat_state: RefCell<ChatState>` to ChatWidget struct
+  - Updated all 3 constructors (lines ~3545, ~3747, ~3944) to initialize `dx_chat_state`
+  - Now using the real DX ChatState implementation instead of duplicate code
+  - ChatState contains: rainbow_effect, splash_font_index, last_animation_update, and more
+  - This follows the user's directive: "use dx-tui code directly, don't create any slop"
+
+### Added - Animation Support
 - **Rainbow Animation State** (`src/chatwidget.rs`)
   - Added `dx_rainbow_effect: RefCell<RainbowEffect>` to ChatWidget struct
   - Added `dx_splash_font_index: Cell<usize>` for font cycling

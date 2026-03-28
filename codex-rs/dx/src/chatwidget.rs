@@ -863,10 +863,8 @@ pub struct ChatWidget {
 	auto_scroll_enabled: std::cell::Cell<bool>,
 	// Welcome screen animation
 	welcome_animation: crate::ascii_animation::AsciiAnimation,
-	// DX-TUI state for animated splash screen
-	dx_rainbow_effect: std::cell::RefCell<crate::effects::RainbowEffect>,
-	dx_splash_font_index: std::cell::Cell<usize>,
-	dx_last_animation_update: std::cell::Cell<std::time::Instant>,
+	// DX-TUI ChatState for splash screen (reuse existing DX code!)
+	dx_chat_state: std::cell::RefCell<crate::state::ChatState>,
 }
 
 /// Snapshot of active-cell state that affects transcript overlay rendering.
@@ -3544,9 +3542,7 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-dx_rainbow_effect: std::cell::RefCell::new(crate::effects::RainbowEffect::new()),
-dx_splash_font_index: std::cell::Cell::new(0),
-dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
+dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3746,9 +3742,7 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-dx_rainbow_effect: std::cell::RefCell::new(crate::effects::RainbowEffect::new()),
-dx_splash_font_index: std::cell::Cell::new(0),
-dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
+dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3943,9 +3937,7 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-dx_rainbow_effect: std::cell::RefCell::new(crate::effects::RainbowEffect::new()),
-dx_splash_font_index: std::cell::Cell::new(0),
-dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
+dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3979,6 +3971,20 @@ dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+		// DX font cycling - Ctrl+. cycles splash fonts when showing welcome screen
+		if key_event.kind == KeyEventKind::Press
+			&& key_event.code == KeyCode::Char('.')
+			&& key_event.modifiers.contains(KeyModifiers::CONTROL)
+			&& self.transcript_cells.is_empty()
+		{
+			// Cycle through DX splash fonts using dx_chat_state
+			let mut dx_state = self.dx_chat_state.borrow_mut();
+			dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113; // 113 valid fonts
+			dx_state.last_font_change = std::time::Instant::now();
+			self.frame_requester.schedule_frame(); // Trigger re-render
+			return;
+		}
+		
 		match key_event {
 			// Scrollbar controls - PageUp/PageDown
 			KeyEvent {
@@ -8923,28 +8929,17 @@ impl Renderable for ChatWidget {
 		let show_welcome = self.transcript_cells.is_empty();
 		
 		if show_welcome {
-			// Render DX splash screen directly into the buffer instead of building lines
-			// This gives us full control over the rendering
-			use crate::effects::RainbowEffect;
-			use crate::splash;
-			use crate::theme::{ChatTheme, ThemeVariant};
+			// Use DX ChatState to render the splash screen (reuse existing DX code!)
+			let mut dx_state = self.dx_chat_state.borrow_mut();
 			
-			// Always schedule next frame for continuous rainbow animation
+			// Update the DX state
+			dx_state.update();
+			
+			// Render using DX's own render method
+			dx_state.render(transcript_area, buf);
+			
+			// Schedule next frame for animations
 			self.frame_requester.schedule_frame();
-			
-			// Update timing for debug purposes
-			let now = std::time::Instant::now();
-			self.dx_last_animation_update.set(now);
-			
-			// Create DX theme
-			let dx_theme = ChatTheme::new(ThemeVariant::Dark);
-			
-			// Get current rainbow effect state (it auto-updates based on elapsed time)
-			let rainbow = self.dx_rainbow_effect.borrow();
-			let font_index = self.dx_splash_font_index.get();
-			
-			// Render DX splash directly to the transcript area
-			splash::render(transcript_area, buf, &dx_theme, font_index, &*rainbow);
 			
 			// Skip the rest of the rendering since we've already rendered the splash
 			// Don't add any lines to all_lines
