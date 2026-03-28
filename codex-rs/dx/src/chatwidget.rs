@@ -8910,29 +8910,21 @@ impl Renderable for ChatWidget {
 		let show_welcome = self.transcript_cells.is_empty();
 		
 		if show_welcome {
-			// Show animated welcome screen with ASCII art
-			self.welcome_animation.schedule_next_frame();
+			// Render DX splash screen directly into the buffer instead of building lines
+			// This gives us full control over the rendering
+			use crate::effects::RainbowEffect;
+			use crate::splash;
+			use crate::theme::{ChatTheme, ThemeVariant};
 			
-			// Get current animation frame
-			let frame = self.welcome_animation.current_frame();
+			// Create DX theme and rainbow effect
+			let dx_theme = ChatTheme::new(ThemeVariant::Dark);
+			let rainbow = RainbowEffect::new();
 			
-			// Add animation frames
-			for line in frame.lines() {
-				all_lines.push(Line::from(line.to_string()));
-			}
+			// Render DX splash directly to the transcript area
+			splash::render(transcript_area, buf, &dx_theme, 0, &rainbow);
 			
-			// Add spacing
-			all_lines.push(Line::from(""));
-			
-			// Welcome message
-			use ratatui::style::{Modifier, Style};
-			use ratatui::text::Span;
-			all_lines.push(Line::from(vec![
-				Span::raw("  "),
-				Span::raw("Welcome to "),
-				Span::styled("Codex", Style::default().add_modifier(Modifier::BOLD)),
-				Span::raw(", OpenAI's command-line coding agent"),
-			]));
+			// Skip the rest of the rendering since we've already rendered the splash
+			// Don't add any lines to all_lines
 		} else {
 			// Add lines from all history cells
 			for cell in &self.transcript_cells {
@@ -8951,57 +8943,65 @@ impl Renderable for ChatWidget {
 			}
 		}
 		
-		// Create a paragraph from all lines
-		use ratatui::widgets::{Paragraph, Wrap};
-		use ratatui::text::Text;
-		let transcript_paragraph = Paragraph::new(Text::from(all_lines))
-			.wrap(Wrap { trim: false });
-		
-		let transcript_content_height = transcript_paragraph.line_count(content_area.width) as u16;
-
-		// Store dimensions for scrolling
-		self.viewport_height.set(transcript_viewport_height as usize);
-		self.content_height.set(transcript_content_height as usize);
-
-		// Reset scroll position to 0 if content fits in viewport
-		if transcript_content_height <= transcript_viewport_height {
-			self.scroll_position.set(0);
-		}
-
-		if transcript_content_height > transcript_viewport_height {
-			// Content doesn't fit, need to scroll
-			let scroll_offset = self.scroll_position.get().min(
-				transcript_content_height.saturating_sub(transcript_viewport_height) as usize,
-			);
+		// Only render transcript paragraph when NOT showing welcome screen
+		let transcript_content_height = if !show_welcome {
+			// Create a paragraph from all lines
+			use ratatui::widgets::{Paragraph, Wrap};
+			use ratatui::text::Text;
+			let transcript_paragraph = Paragraph::new(Text::from(all_lines))
+				.wrap(Wrap { trim: false });
 			
-			// Render paragraph with scrolling
-			use ratatui::widgets::Widget;
-			let scrolled_paragraph = transcript_paragraph.scroll((scroll_offset as u16, 0));
-			scrolled_paragraph.render(transcript_area, buf);
+			let content_height = transcript_paragraph.line_count(content_area.width) as u16;
 
-			// Add scroll indicator in the bottom-right corner of transcript area
-			let scroll_percent = if transcript_content_height > transcript_viewport_height {
-				(scroll_offset * 100)
-					/ (transcript_content_height.saturating_sub(transcript_viewport_height) as usize)
+			// Store dimensions for scrolling
+			self.viewport_height.set(transcript_viewport_height as usize);
+			self.content_height.set(content_height as usize);
+
+			// Reset scroll position to 0 if content fits in viewport
+			if content_height <= transcript_viewport_height {
+				self.scroll_position.set(0);
+			}
+
+			if content_height > transcript_viewport_height {
+				// Content doesn't fit, need to scroll
+				let scroll_offset = self.scroll_position.get().min(
+					content_height.saturating_sub(transcript_viewport_height) as usize,
+				);
+				
+				// Render paragraph with scrolling
+				use ratatui::widgets::Widget;
+				let scrolled_paragraph = transcript_paragraph.scroll((scroll_offset as u16, 0));
+				scrolled_paragraph.render(transcript_area, buf);
+
+				// Add scroll indicator in the bottom-right corner of transcript area
+				let scroll_percent = if content_height > transcript_viewport_height {
+					(scroll_offset * 100)
+						/ (content_height.saturating_sub(transcript_viewport_height) as usize)
+				} else {
+					0
+				};
+				let indicator = format!(" {}% ", scroll_percent);
+				let indicator_x = transcript_area.x + transcript_area.width.saturating_sub(indicator.len() as u16 + 1);
+				let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
+
+				use ratatui::style::{Color, Style};
+				buf.set_string(
+					indicator_x,
+					indicator_y,
+					&indicator,
+					Style::default().fg(Color::Black).bg(Color::Cyan),
+				);
 			} else {
-				0
-			};
-			let indicator = format!(" {}% ", scroll_percent);
-			let indicator_x = transcript_area.x + transcript_area.width.saturating_sub(indicator.len() as u16 + 1);
-			let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
-
-			use ratatui::style::{Color, Style};
-			buf.set_string(
-				indicator_x,
-				indicator_y,
-				&indicator,
-				Style::default().fg(Color::Black).bg(Color::Cyan),
-			);
+				// Content fits in viewport, render directly
+				use ratatui::widgets::Widget;
+				transcript_paragraph.render(transcript_area, buf);
+			}
+			
+			content_height
 		} else {
-			// Content fits in viewport, render directly
-			use ratatui::widgets::Widget;
-			transcript_paragraph.render(transcript_area, buf);
-		}
+			// When showing welcome screen, set content height to 0
+			0
+		};
 
 		bottom_pane_renderable.render(bp_area, buf);
 
@@ -9041,6 +9041,11 @@ impl Renderable for ChatWidget {
 	}
 
 	fn cursor_pos(&self, area: Rect) -> Option<(u16, u16)> {
+		// Hide cursor when showing welcome screen (no transcript cells)
+		if self.transcript_cells.is_empty() {
+			return None;
+		}
+		
 		let content_area =
 			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
 

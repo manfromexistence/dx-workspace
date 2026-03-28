@@ -4,12 +4,12 @@
 
 ## In Progress
 
-- [ ] Step 3: Add animation carousel (Ctrl+. to cycle)
+- [ ] Step 5: Add animation carousel (Ctrl+. to cycle through DX animations)
 
 ## Pending
 
-- [ ] Step 4: Wire up theme system
-- [ ] Step 5: Test each screen individually
+- [ ] Step 6: Wire up theme system
+- [ ] Step 7: Test each screen individually
 
 ## Completed
 
@@ -26,5 +26,16 @@
 - [x] ~~Remove duplicate AnimationType import~~ ✅ (completed: 2026-03-29)
 - [x] ~~Replace all crate:: references with direct imports~~ ✅ (completed: 2026-03-29)
 - [x] ~~Step 2: Replace welcome screen with dx-tui splash screen~~ ✅ (completed: 2026-03-29)
+- [x] ~~Step 3: Hide cursor initially in codex input box~~ ✅ (completed: 2026-03-29)
+- [x] ~~Step 4: Replace ChatWidget welcome with DX splash screen~~ ✅ (completed: 2026-03-29)
+- [x] ~~Fix transcript_content_height scope error~~ ✅ (completed: 2026-03-29)
+
+## Notes
+
+- Both onboarding welcome screen AND ChatWidget now show DX splash with rainbow figlet art
+- DX splash renders directly to the buffer when there are no transcript cells
+- Cursor is hidden when showing the welcome screen
+- The DX splash shows "DX" in rainbow colors with "Enhanced Development Experience" text below
+- Successfully compiled and running! The app now shows DX splash instead of "Welcome to Codex"
 
 ## Blocked / Failed
