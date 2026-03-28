@@ -2828,22 +2828,23 @@ impl App {
 					tui.frame_requester().schedule_frame();
 				}
 				self.transcript_cells.push(cell.clone());
-				let mut display = cell.display_lines(tui.terminal.last_known_screen_size.width);
-				if !display.is_empty() {
-					// Only insert a separating blank line for new cells that are not
-					// part of an ongoing stream. Streaming continuations should not
-					// accrue extra blank lines between chunks.
-					if !cell.is_stream_continuation() {
-						if self.has_emitted_history_lines {
-							display.insert(0, Line::from(""));
-						} else {
-							self.has_emitted_history_lines = true;
+				
+				// NOTE: We no longer call tui.insert_history_lines() because history is now
+				// rendered INSIDE the ChatWidget's transcript area, not above the viewport.
+				// The ChatWidget receives transcript_cells via set_transcript_cells() before rendering.
+				
+				// Still handle overlay case
+				if self.overlay.is_some() {
+					let mut display = cell.display_lines(tui.terminal.last_known_screen_size.width);
+					if !display.is_empty() {
+						if !cell.is_stream_continuation() {
+							if self.has_emitted_history_lines {
+								display.insert(0, Line::from(""));
+							} else {
+								self.has_emitted_history_lines = true;
+							}
 						}
-					}
-					if self.overlay.is_some() {
 						self.deferred_history_lines.extend(display);
-					} else {
-						tui.insert_history_lines(display);
 					}
 				}
 			}
