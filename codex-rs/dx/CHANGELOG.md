@@ -200,3 +200,23 @@ If issues arise, revert these changes in order:
   - Option 3: Refactor to give ChatWidget access to dispatcher
 - **Current Status**: Menu works but uses duplicate code (temporary solution)
 - **Next**: Refactor to use REAL DX dispatcher code without duplication
+
+
+### Added - Animation Carousel Integration (2026-03-29 Latest)
+- **Integrated All 11 Animations** (`src/chatwidget.rs`):
+  - Left/Right arrow keys navigate through animations
+  - All animations render: Matrix, Confetti, GameOfLife, Starfield, Rain, NyanCat, DVDLogo, Fire, Plasma, Waves, Fireworks
+  - Each animation plays its own looping sound
+  - Click sound plays when navigating
+  - Animation state tracked in ChatState
+- **Animation Rendering**:
+  - Calls real DX animation functions: `render_matrix_animation_in_area()`, `render_confetti_animation_in_area()`, etc.
+  - All animations use ChatState methods directly
+  - No duplication - uses actual DX code
+- **Features Working**:
+  - Press Left arrow: Previous animation
+  - Press Right arrow: Next animation
+  - Wraps around (last → first, first → last)
+  - Sounds change with each animation
+  - Smooth transitions
+- **Next**: File browser (Yazi) integration

@@ -13,7 +13,7 @@
 - [x] 113 figlet fonts with auto-cycling (every 5 seconds)
 - [x] Rainbow animation effect
 - [x] Theme system (DX theme loaded)
-- [ ] Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)
+- [x] ~~Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)~~ ✅ (completed: 2026-03-29)
 - [ ] File browser (Yazi integration)
 - [ ] Menu system (25 submenus)
 - [ ] Model picker UI
@@ -21,8 +21,8 @@
 
 #### 2. Audio Features
 - [x] ~~Splash screen sound (`assets/birds.mp3`)~~ ✅ (completed: 2026-03-29)
-- [ ] Animation sounds (looping for each animation)
-- [ ] UI sounds (click, typing, scroll, menu open/close)
+- [x] ~~Animation sounds (looping for each animation)~~ ✅ (completed: 2026-03-29)
+- [x] ~~UI sounds (click, typing, scroll, menu open/close)~~ ✅ (completed: 2026-03-29)
 - [ ] Exit animation sounds (train)
 
 #### 3. Input Features
@@ -36,8 +36,8 @@
 #### 4. Interaction Features
 - [ ] Keyboard shortcuts (customizable)
 - [ ] Mouse support (clicks, scrollbar, hover)
-- [ ] Screen navigation (Left/Right arrows)
-- [ ] Menu navigation (j/k, arrows, PageUp/Down)
+- [x] ~~Screen navigation (Left/Right arrows)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Menu navigation (j/k, arrows, PageUp/Down)~~ ✅ (completed: 2026-03-29)
 
 #### 5. Animation Features
 - [ ] Intro/outro animation selection
@@ -61,11 +61,10 @@
 
 ## 🚀 IN PROGRESS
 
-### Current Task: Integrate Animation Carousel
-- [ ] Handle Left/Right navigation in ChatWidget
-- [ ] Render animations in transcript area
-- [ ] Play animation sounds
-- [ ] Implement all 11 animations
+### Current Task: File Browser Integration
+- [ ] Integrate Yazi file browser
+- [ ] Handle file selection
+- [ ] Attach files to chat
 
 ---
 
@@ -124,10 +123,12 @@
 - [x] Add rainbow animation
 - [x] Use real `crate::splash::render()` directly
 - [x] Integrate DX ChatState
-- [x] Create DX dispatcher bridge module
+- [x] Remove dx_dispatcher_bridge (useless wrapper)
+- [x] Add ChatState::handle_menu_key() method (single source of truth)
 - [x] Integrate timer logic (font cycling, menu updates)
 - [x] ~~Integrate audio system (splash sound plays)~~ ✅ (completed: 2026-03-29)
-- [x] ~~Integrate menu system (press '0' to toggle, all navigation working)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Integrate menu system (press '0' to toggle, navigation working)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Integrate animation carousel (Left/Right navigation, all 11 animations)~~ ✅ (completed: 2026-03-29)
 
 ---
 
@@ -165,7 +166,7 @@
 
 ## 📊 Progress Summary
 
-- **Completed**: 12 steps (Splash, rainbow, font cycling, dispatcher bridge, audio, menu)
-- **In Progress**: Animation carousel
-- **Remaining**: Animations, file browser, event routing, voice mode, chat features
-- **Estimated Completion**: ~10-15 more integration tasks
+- **Completed**: 14 steps (Splash, rainbow, fonts, audio, menu, animations)
+- **In Progress**: File browser
+- **Remaining**: File browser, voice mode, chat features
+- **Estimated Completion**: ~5-8 more integration tasks

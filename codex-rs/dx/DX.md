@@ -62,3 +62,6 @@ Edit DX files directly if needed, don't create new wrapper files
 The whole point of the dx-tui was to be configured and merge with codex-tui. So like break the dx-tui any way possible and implement it with codex-tui
 
 and please update all the steering files and also give a small rules markdown so that you don't act stupidly the next time!!!
+
+now implment these:
+even through you implment the left or right arrow but its conflickiting input box left and rigth arrow so when there is no text in the inputbox please use the left and rigth arrow like dx-tui correctly
