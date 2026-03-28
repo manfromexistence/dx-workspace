@@ -96,4 +96,4 @@ Now, we are in the in-game. In the src folder of codex-rs/dx folder, you can fin
 
 If it's possible, please remove the mouse wheel interaction from the info box as it's conflicting with the message list.
 
-So DX binary has an onboarding_screen right? So please render that onboarding_screen in the codex ty2 as the default. Instead of the codec's top or tip details, and when there is a message, please show the message. 
+So DX binary has an splash screen right? So please render that onboarding_screen in the codex tui as the default. Instead of the codex top card or tip details, and when there is a message, please show the message

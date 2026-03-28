@@ -61,6 +61,9 @@ pub type Terminal = CustomTerminal<CrosstermBackend<Stdout>>;
 
 pub fn set_modes() -> Result<()> {
 	execute!(stdout(), EnableBracketedPaste)?;
+	
+	// Enable mouse capture for scrollbar interaction
+	execute!(stdout(), crossterm::event::EnableMouseCapture)?;
 
 	enable_raw_mode()?;
 	// Enable keyboard enhancement flags so modifiers for keys like Enter are disambiguated.
@@ -129,6 +132,8 @@ fn restore_common(should_disable_raw_mode: bool) -> Result<()> {
 	let _ = execute!(stdout(), PopKeyboardEnhancementFlags);
 	execute!(stdout(), DisableBracketedPaste)?;
 	let _ = execute!(stdout(), DisableFocusChange);
+	// Disable mouse capture
+	let _ = execute!(stdout(), crossterm::event::DisableMouseCapture);
 	if should_disable_raw_mode {
 		disable_raw_mode()?;
 	}
