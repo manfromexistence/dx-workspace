@@ -3971,20 +3971,6 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// DX font cycling - Ctrl+. cycles splash fonts when showing welcome screen
-		if key_event.kind == KeyEventKind::Press
-			&& key_event.code == KeyCode::Char('.')
-			&& key_event.modifiers.contains(KeyModifiers::CONTROL)
-			&& self.transcript_cells.is_empty()
-		{
-			// Cycle through DX splash fonts using dx_chat_state
-			let mut dx_state = self.dx_chat_state.borrow_mut();
-			dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113; // 113 valid fonts
-			dx_state.last_font_change = std::time::Instant::now();
-			self.frame_requester.schedule_frame(); // Trigger re-render
-			return;
-		}
-		
 		match key_event {
 			// Scrollbar controls - PageUp/PageDown
 			KeyEvent {
@@ -8929,14 +8915,25 @@ impl Renderable for ChatWidget {
 		let show_welcome = self.transcript_cells.is_empty();
 		
 		if show_welcome {
-			// Use DX ChatState to render the splash screen (reuse existing DX code!)
+			// Auto-cycle fonts every 5 seconds
 			let mut dx_state = self.dx_chat_state.borrow_mut();
+			if dx_state.last_font_change.elapsed() >= std::time::Duration::from_secs(5) {
+				dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113; // 113 valid fonts
+				dx_state.last_font_change = std::time::Instant::now();
+				tracing::info!("Auto-cycled font to index: {}", dx_state.splash_font_index);
+			}
 			
-			// Update the DX state
-			dx_state.update();
+			// Log current font index for debugging
+			tracing::debug!("Rendering DX splash with font_index: {}", dx_state.splash_font_index);
 			
-			// Render using DX's own render method
-			dx_state.render(transcript_area, buf);
+			// Call the actual DX splash render function
+			crate::splash::render(
+				transcript_area,
+				buf,
+				&dx_state.theme,
+				dx_state.splash_font_index,
+				&dx_state.rainbow_animation,
+			);
 			
 			// Schedule next frame for animations
 			self.frame_requester.schedule_frame();

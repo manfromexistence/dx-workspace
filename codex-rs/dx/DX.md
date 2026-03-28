@@ -29,3 +29,5 @@ ohh. is that so - then always test it running "cargo run" and fix every errors y
 and why use another screen don't the dx has a splash screen use that code - please  don't create any slop use dx-tui code directly why possible!!!
 
 update the exiting dx-tui files fit them inside codex-tuiAnd update the chainslog.md and tutu.md files to track what we are doing. And what still needs to be done? 
+
+no I said to always use dx-tui code directly and then edit to fit in the codex-tui and chatwidget.rs is a big file so try to create smaller files as much possible so that you can just call it and edit it easily and use real dx-tui code and edit instead of createing ai slop
