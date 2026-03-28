@@ -24,9 +24,14 @@ use codex_protocol::protocol::RateLimitSnapshot;
 use codex_utils_absolute_path::AbsolutePathBuf;
 use codex_utils_approval_presets::ApprovalPreset;
 
+// CODEX INTEGRATION - These imports only exist in the library (codex-tui-dx), not dx binary
+#[cfg(not(feature = "dx-only"))]
 use crate::bottom_pane::ApprovalRequest;
+#[cfg(not(feature = "dx-only"))]
 use crate::bottom_pane::StatusLineItem;
+#[cfg(not(feature = "dx-only"))]
 use crate::bottom_pane::TerminalTitleItem;
+#[cfg(not(feature = "dx-only"))]
 use crate::history_cell::HistoryCell;
 
 use codex_core::config::types::ApprovalsReviewer;
@@ -246,6 +251,8 @@ pub enum AppEvent {
     /// Abandon the post-install plugin app-auth flow.
     PluginInstallAuthAbandon,
 
+    // CODEX INTEGRATION - Only in library (codex-tui-dx), not dx binary
+    #[cfg(not(feature = "dx-only"))]
     InsertHistoryCell(Box<dyn HistoryCell>),
 
     /// Apply rollback semantics to local transcript cells.
@@ -509,6 +516,8 @@ pub enum AppEvent {
     },
 
     /// Open the approval popup.
+    // CODEX INTEGRATION - Only in library (codex-tui-dx), not dx binary
+    #[cfg(not(feature = "dx-only"))]
     FullScreenApprovalRequest(ApprovalRequest),
 
     /// Open the feedback note entry overlay after the user selects a category.
@@ -531,16 +540,22 @@ pub enum AppEvent {
         branch: Option<String>,
     },
     /// Apply a user-confirmed status-line item ordering/selection.
+    // CODEX INTEGRATION - Only in library (codex-tui-dx), not dx binary
+    #[cfg(not(feature = "dx-only"))]
     StatusLineSetup {
         items: Vec<StatusLineItem>,
     },
     /// Dismiss the status-line setup UI without changing config.
     StatusLineSetupCancelled,
     /// Apply a user-confirmed terminal-title item ordering/selection.
+    // CODEX INTEGRATION - Only in library (codex-tui-dx), not dx binary
+    #[cfg(not(feature = "dx-only"))]
     TerminalTitleSetup {
         items: Vec<TerminalTitleItem>,
     },
     /// Apply a temporary terminal-title preview while the setup UI is open.
+    // CODEX INTEGRATION - Only in library (codex-tui-dx), not dx binary
+    #[cfg(not(feature = "dx-only"))]
     TerminalTitleSetupPreview {
         items: Vec<TerminalTitleItem>,
     },

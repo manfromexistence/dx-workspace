@@ -31,8 +31,9 @@ impl App {
 			bridge: YaziChatBridge::new(),  // NEW: Initialize bridge
 		};
 		
+		// CODEX INTEGRATION COMMENTED OUT
 		// Initialize Codex backend
-		app.bridge.chat_state.initialize_codex().await;
+		// app.bridge.chat_state.initialize_codex().await;
 		
 		app.bootstrap()?;
 

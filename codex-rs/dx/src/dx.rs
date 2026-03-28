@@ -12,18 +12,19 @@ mod file_browser;
 mod menu;
 
 mod animations;
-mod app_event;
+// CODEX INTEGRATION COMMENTED OUT - app_event uses codex-only types
+// mod app_event;
 mod audio;
 mod autocomplete;
 mod bridge;
 mod chat;
 mod chat_components;
 mod chat_input;
-mod chatwidget;
-mod chatwidget_full;
-mod codex_agent;
-mod codex_backend;
-mod codex_integration;
+// mod chatwidget;
+// mod chatwidget_full;
+// mod codex_agent;
+// mod codex_backend;
+// mod codex_integration;
 mod components;
 mod dispatcher;
 mod dx_render;

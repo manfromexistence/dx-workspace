@@ -288,6 +288,11 @@ impl<'a> MessageList<'a> {
 						// Assistant message: content + header + tool calls + gap (no borders)
 						content_lines + 1 + tool_lines + 1
 					}
+					// CODEX INTEGRATION - System messages not used in dx binary
+					MessageRole::System => {
+						// System message: treat like assistant
+						content_lines + 1 + tool_lines + 1
+					}
 				}
 			})
 			.sum()
@@ -496,6 +501,50 @@ impl Widget for MessageList<'_> {
 					}
 
 					y += msg_height as u16 + 1; // Add 1 line gap
+				}
+				// CODEX INTEGRATION - System messages not used in dx binary, treat like assistant
+				MessageRole::System => {
+					// System message: treat like assistant message
+					let time = msg.timestamp.format("%I:%M %p").to_string();
+					let header = Line::from(vec![
+						Span::styled("System", Style::default().fg(self.theme.border).add_modifier(Modifier::ITALIC)),
+						Span::raw(" "),
+						Span::styled(time, Style::default().fg(self.theme.border)),
+					]);
+
+					let content_lines: Vec<Line> =
+						msg.content.lines().map(|line| Line::from(Span::raw(line))).collect();
+
+					let msg_height = (content_lines.len() + 2).min((area.bottom() - y) as usize);
+
+					if skipped_lines < self.scroll_offset {
+						let skip_amount = (msg_height + 1).min(self.scroll_offset - skipped_lines);
+						skipped_lines += skip_amount;
+						continue;
+					}
+
+					let msg_area = Rect { x: area.x, y, width: area.width, height: msg_height as u16 };
+					self.message_areas.push(msg_area);
+
+					Paragraph::new(header)
+						.style(Style::default().bg(self.theme.bg))
+						.render(Rect { x: msg_area.x, y: msg_area.y, width: msg_area.width, height: 1 }, buf);
+
+					if msg_height > 1 {
+						let content_area = Rect {
+							x: msg_area.x,
+							y: msg_area.y + 1,
+							width: msg_area.width,
+							height: (msg_height - 1) as u16,
+						};
+
+						Paragraph::new(content_lines)
+							.style(Style::default().bg(self.theme.bg).fg(self.theme.fg))
+							.wrap(Wrap { trim: false })
+							.render(content_area, buf);
+					}
+
+					y += msg_height as u16 + 1;
 				}
 			}
 		}

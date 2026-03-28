@@ -1,6 +1,6 @@
 - [ ] Metasearch
 - [ ] Forge Cli
-- [ ] TUI -> Ui
+- [ ] LSP - DX tools
 - [ ] Providers -> Diversity
 - [ ] Message fixed(Whatsapp), Linking/Device -> Pairing
 - [ ] Connect -> Connectivity

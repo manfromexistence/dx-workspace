@@ -1677,38 +1677,39 @@ impl<'a> Dispatcher<'a> {
 	fn submit_to_codex(&mut self, message: String) {
 		use codex_protocol::protocol::Op;
 		
+		// CODEX INTEGRATION COMMENTED OUT
 		// Check if Codex is initialized
-		if let Some(op_tx) = &self.app.bridge.chat_state.codex_op_tx {
-			// Add user message to UI
-			self.app.bridge.chat_state.messages.push(crate::chat::Message::user(message.clone()));
-			
-			// Add empty assistant message for streaming
-			self.app.bridge.chat_state.messages.push(crate::chat::Message::assistant(String::new()));
-			
-			// Set loading state
-			self.app.bridge.chat_state.is_loading = true;
-			
-			// Clear input
-			self.app.bridge.chat_state.input.clear();
-			
-			// Save messages
-			let _ = self.app.bridge.chat_state.save_messages();
-			
-			// Submit to Codex
-			let op = Op::UserMessage {
-				text: message,
-				attachments: vec![],
-			};
-			
-			if let Err(e) = op_tx.send(op) {
-				tracing::error!("Failed to send op to Codex: {}", e);
-				self.app.bridge.chat_state.show_toast("Failed to send message to Codex".to_string());
-				self.app.bridge.chat_state.is_loading = false;
-			}
-		} else {
-			// Codex not initialized yet
-			self.app.bridge.chat_state.show_toast("Codex is still initializing...".to_string());
-		}
+		// if let Some(op_tx) = &self.app.bridge.chat_state.codex_op_tx {
+		// 	// Add user message to UI
+		// 	self.app.bridge.chat_state.messages.push(crate::chat_components::Message::user(message.clone()));
+		// 	
+		// 	// Add empty assistant message for streaming
+		// 	self.app.bridge.chat_state.messages.push(crate::chat_components::Message::assistant(String::new()));
+		// 	
+		// 	// Set loading state
+		// 	self.app.bridge.chat_state.is_loading = true;
+		// 	
+		// 	// Clear input
+		// 	self.app.bridge.chat_state.input.clear();
+		// 	
+		// 	// Save messages
+		// 	let _ = self.app.bridge.chat_state.save_messages();
+		// 	
+		// 	// Submit to Codex
+		// 	let op = Op::UserMessage {
+		// 		text: message,
+		// 		attachments: vec![],
+		// 	};
+		// 	
+		// 	if let Err(e) = op_tx.send(op) {
+		// 		tracing::error!("Failed to send op to Codex: {}", e);
+		// 		self.app.bridge.chat_state.show_toast("Failed to send message to Codex".to_string());
+		// 		self.app.bridge.chat_state.is_loading = false;
+		// 	}
+		// } else {
+		// 	// Codex not initialized yet
+		// 	self.app.bridge.chat_state.show_toast("Codex is still initializing...".to_string());
+		// }
 	}
 
 	/// Open external editor (Ctrl+E)
