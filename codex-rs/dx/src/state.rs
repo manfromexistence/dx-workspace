@@ -936,6 +936,16 @@ impl ChatState {
 		}
 	}
 	
+	/// Play a UI interaction sound at lower volume
+	pub fn play_ui_sound(&self, sound_file: &str) {
+		if let Some(player) = &self.audio_player {
+			// Set volume to 3% for UI sounds (more subtle)
+			player.set_volume(0.03);
+			// Silently try to play - don't show errors
+			let _ = player.play_once(sound_file);
+		}
+	}
+	
 	/// Update animation-specific sound triggers (called before rendering)
 	pub fn update_animation_sounds_with_area(&mut self, area_width: u16, area_height: u16) {
 		let all_animations = AnimationType::all();
@@ -989,17 +999,17 @@ impl ChatState {
 					let local_time = (elapsed_ms.wrapping_add(explosion_offset)) % explosion_cycle_ms;
 					
 					// The sparkle flash appears when local_time < 300ms
-					// Play sound at the very beginning (0-100ms window)
-					if local_time < 100 {
-						// Calculate unique ID for this specific explosion cycle
-						let cycle_number = elapsed_ms / explosion_cycle_ms;
-						let explosion_id_in_cycle = (elapsed_ms.wrapping_add(explosion_offset)) / explosion_cycle_ms;
-						let unique_explosion_id = cycle_number * num_explosions + explosion_id_in_cycle;
+					// Play sound at the very beginning (0-80ms window) to sync with visual
+					if local_time <= 80 {
+						// Calculate a unique timestamp for this specific explosion instance
+						// This represents which "cycle" of this particular explosion we're in
+						let explosion_cycle_number = (elapsed_ms.wrapping_add(explosion_offset)) / explosion_cycle_ms;
+						let unique_id = explosion_cycle_number * 10 + explosion_id;
 						
-						// Only play if this is a new explosion we haven't played yet
-						if unique_explosion_id > self.last_confetti_explosion_time {
+						// Only play if this is a new explosion instance
+						if unique_id > self.last_confetti_explosion_time {
 							self.play_sound_once("assets/confetti.mp3");
-							self.last_confetti_explosion_time = unique_explosion_id;
+							self.last_confetti_explosion_time = unique_id;
 							break; // Only play one sound per update
 						}
 					}

@@ -2,3 +2,7 @@ Now in our tui, as you can see, we are showing a message list with the local ggf
 Please do a website about codextras cli in its inline chat message rendering as of 25 March 2026. While we keep our local message list rendering correctly the same, in our message list rendering screen we also add codextras tui rendering. We are going to just remove the branding and inline menus and just show the codextras message list inline, like it was before. We just want to add the codextras tui with our tui as fast as possible.
 Now kindly do a search about Codex-rust CLI inline tui and in our current tui message list how we can integrate it. We just have to remove the Codex-rust tui related UI menu and branding and just render the message list as fast as possible because I want to finish this project as fast as possible. 
 
+Now in our assets folder I have added many more new sounds so please implement those sounds in our TUI correctly in different scenarios. There are already many new sounds but there are many sound effects that we can implement. For those scenarios please download more sounds in our assets folder and use them, like:
+- clicking mechanical keyboard
+- satisfying clicking
+- many more things like that

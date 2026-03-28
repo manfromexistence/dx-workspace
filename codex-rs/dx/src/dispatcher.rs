@@ -212,6 +212,7 @@ impl<'a> Dispatcher<'a> {
 
 			match key.code {
 				KeyCode::Up | KeyCode::Char('k') => {
+					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
 					self.app.bridge.chat_state.menu.select_prev_menu_item();
 					// Apply theme preview if in theme submenu
 					if let Some(theme_name) = self.app.bridge.chat_state.menu.get_highlighted_theme_name() {
@@ -225,6 +226,7 @@ impl<'a> Dispatcher<'a> {
 					succ!()
 				}
 				KeyCode::Down | KeyCode::Char('j') => {
+					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
 					self.app.bridge.chat_state.menu.select_next_menu_item();
 					// Apply theme preview if in theme submenu
 					if let Some(theme_name) = self.app.bridge.chat_state.menu.get_highlighted_theme_name() {
@@ -328,6 +330,9 @@ impl<'a> Dispatcher<'a> {
 					// Get the current theme name before selecting
 					let theme_name = self.app.bridge.chat_state.menu.get_selected_theme_name();
 
+					// Play click sound for selection
+					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
+
 					// Select current menu item (enter submenu or execute action)
 					let _should_close = !self.app.bridge.chat_state.menu.select_current_item();
 
@@ -381,6 +386,9 @@ impl<'a> Dispatcher<'a> {
 			// Handle navigation keys based on current screen
 			match key.code {
 				KeyCode::Left => {
+					// Play navigation click sound
+					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
+					
 					if current_anim == crate::AnimationType::Splash {
 						// From Splash → Go to first carousel animation (Matrix)
 						let carousel = crate::AnimationType::carousel_animations();
@@ -413,6 +421,9 @@ impl<'a> Dispatcher<'a> {
 					succ!()
 				}
 				KeyCode::Right => {
+					// Play navigation click sound
+					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
+					
 					if current_anim == crate::AnimationType::Splash {
 						// From Splash → Go to Yazi (file browser)
 						if let Some(yazi_idx) =
@@ -469,11 +480,13 @@ impl<'a> Dispatcher<'a> {
 				// Closing menu - pick random closing animation
 				self.app.bridge.chat_state.menu_is_closing = true;
 				self.app.bridge.chat_state.menu.pick_closing_effect();
+				self.app.bridge.chat_state.play_ui_sound("assets/menu-close.mp3");
 			} else {
 				// Opening menu - pick random opening animation
 				self.app.bridge.chat_state.menu_is_closing = false;
 				self.app.bridge.chat_state.show_tachyon_menu = true;
 				self.app.bridge.chat_state.menu.pick_opening_effect();
+				self.app.bridge.chat_state.play_ui_sound("assets/menu-open.mp3");
 			}
 
 			NEED_RENDER.store(1, Ordering::Relaxed);
@@ -714,6 +727,10 @@ impl<'a> Dispatcher<'a> {
 					let action = self.app.bridge.chat_state.input.handle_key(key);
 					match action {
 						InputAction::Changed => {
+							// Play typing sound for regular character input
+							if matches!(key.code, KeyCode::Char(_)) && key.modifiers.is_empty() {
+								self.app.bridge.chat_state.play_ui_sound("assets/fill.mp3");
+							}
 							NEED_RENDER.store(1, Ordering::Relaxed);
 							succ!()
 						}
@@ -813,6 +830,15 @@ impl<'a> Dispatcher<'a> {
 					}
 				}
 				InputAction::Changed => {
+					// Play typing sound for regular character input
+					if matches!(key.code, KeyCode::Char(_)) && key.modifiers.is_empty() {
+						self.app.bridge.chat_state.play_ui_sound("assets/fill.mp3");
+					}
+					// Play special key sound for modifier combinations
+					else if !key.modifiers.is_empty() && matches!(key.code, KeyCode::Char(_)) {
+						self.app.bridge.chat_state.play_ui_sound("assets/special-key-trigger.mp3");
+					}
+					
 					// Auto-scroll input box if cursor goes beyond visible area
 					self.update_input_scroll();
 					NEED_RENDER.store(1, Ordering::Relaxed);
@@ -831,27 +857,6 @@ impl<'a> Dispatcher<'a> {
 				InputAction::None => {
 					NEED_RENDER.store(1, Ordering::Relaxed);
 					succ!()
-				}
-			}
-		}
-		// Play interaction sound for Yazi navigation
-		if self.app.bridge.chat_state.animation_mode {
-			let all_animations = crate::AnimationType::all();
-			if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
-				let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
-				if current_anim == crate::AnimationType::Yazi {
-					// Play subtle sound for navigation keys
-					match key.code {
-						KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right 
-						| KeyCode::Enter | KeyCode::Char('j') | KeyCode::Char('k') 
-						| KeyCode::Char('h') | KeyCode::Char('l') => {
-							if let Some(player) = &self.app.bridge.chat_state.audio_player {
-								player.set_volume(0.05); // 5% volume for interactions
-								let _ = player.play_once("assets/eagle.mp3");
-							}
-						}
-						_ => {}
-					}
 				}
 			}
 		}
@@ -994,20 +999,6 @@ impl<'a> Dispatcher<'a> {
 
 					// Handle left-click for buttons and scrollbar
 					if matches!(button, crossterm::event::MouseButton::Left) {
-						// Play interaction sound for Yazi clicks
-						if self.app.bridge.chat_state.animation_mode {
-							let all_animations = crate::AnimationType::all();
-							if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
-								let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
-								if current_anim == crate::AnimationType::Yazi {
-									if let Some(player) = &self.app.bridge.chat_state.audio_player {
-										player.set_volume(0.05); // 5% volume for clicks
-										let _ = player.play_once("assets/eagle.mp3");
-									}
-								}
-							}
-						}
-						
 						let col = mouse.column;
 						let row = mouse.row;
 
@@ -1059,6 +1050,9 @@ impl<'a> Dispatcher<'a> {
 							&& row >= paste_area.y
 							&& row < paste_area.y + paste_area.height
 						{
+							// Play click sound
+							self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
+							
 							// Actually paste the text into the input
 							if let Some(ref text) = self.app.bridge.chat_state.clipboard_buffer.clone() {
 								// Sanitize: replace newlines with spaces to prevent auto-submit
@@ -1154,6 +1148,9 @@ impl<'a> Dispatcher<'a> {
 							&& row >= model_area.y
 							&& row < model_area.y + model_area.height
 						{
+							// Play click sound
+							self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
+							
 							// Toggle model picker
 							self.app.bridge.chat_state.toggle_model_picker();
 							NEED_RENDER.store(1, Ordering::Relaxed);
@@ -1231,19 +1228,8 @@ impl<'a> Dispatcher<'a> {
 					}
 				}
 				MouseEventKind::ScrollUp => {
-					// Play interaction sound for Yazi scrolling
-					if self.app.bridge.chat_state.animation_mode {
-						let all_animations = crate::AnimationType::all();
-						if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
-							let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
-							if current_anim == crate::AnimationType::Yazi {
-								if let Some(player) = &self.app.bridge.chat_state.audio_player {
-									player.set_volume(0.05); // 5% volume for scroll
-									let _ = player.play_once("assets/eagle.mp3");
-								}
-							}
-						}
-					}
+					// Play scroll sound
+					self.app.bridge.chat_state.play_ui_sound("assets/scroll.mp3");
 					
 					// Check if scrolling over input area
 					let input_area = self.app.bridge.chat_state.input_area;
@@ -1266,19 +1252,8 @@ impl<'a> Dispatcher<'a> {
 					}
 				}
 				MouseEventKind::ScrollDown => {
-					// Play interaction sound for Yazi scrolling
-					if self.app.bridge.chat_state.animation_mode {
-						let all_animations = crate::AnimationType::all();
-						if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
-							let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
-							if current_anim == crate::AnimationType::Yazi {
-								if let Some(player) = &self.app.bridge.chat_state.audio_player {
-									player.set_volume(0.05); // 5% volume for scroll
-									let _ = player.play_once("assets/eagle.mp3");
-								}
-							}
-						}
-					}
+					// Play scroll sound
+					self.app.bridge.chat_state.play_ui_sound("assets/scroll.mp3");
 					
 					// Check if scrolling over input area
 					let input_area = self.app.bridge.chat_state.input_area;

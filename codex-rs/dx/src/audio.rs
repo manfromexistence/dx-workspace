@@ -20,6 +20,12 @@ const SOIL_SOUND: &[u8] = include_bytes!("../assets/soil.mp3");
 const FIRE_SOUND: &[u8] = include_bytes!("../assets/fire.mp3");
 const EAGLE_SOUND: &[u8] = include_bytes!("../assets/eagle.mp3");
 const BIRDS_SOUND: &[u8] = include_bytes!("../assets/birds.mp3");
+const CLICK_SOUND: &[u8] = include_bytes!("../assets/click.mp3");
+const FILL_SOUND: &[u8] = include_bytes!("../assets/fill.mp3");
+const MENU_OPEN_SOUND: &[u8] = include_bytes!("../assets/menu-open.mp3");
+const MENU_CLOSE_SOUND: &[u8] = include_bytes!("../assets/menu-close.mp3");
+const SCROLL_SOUND: &[u8] = include_bytes!("../assets/scroll.mp3");
+const SPECIAL_KEY_SOUND: &[u8] = include_bytes!("../assets/special-key-trigger.mp3");
 
 pub struct AudioPlayer {
 	_stream: OutputStream,
@@ -53,6 +59,12 @@ impl AudioPlayer {
 			"assets/fire.mp3" => Some(FIRE_SOUND),
 			"assets/eagle.mp3" => Some(EAGLE_SOUND),
 			"assets/birds.mp3" => Some(BIRDS_SOUND),
+			"assets/click.mp3" => Some(CLICK_SOUND),
+			"assets/fill.mp3" => Some(FILL_SOUND),
+			"assets/menu-open.mp3" => Some(MENU_OPEN_SOUND),
+			"assets/menu-close.mp3" => Some(MENU_CLOSE_SOUND),
+			"assets/scroll.mp3" => Some(SCROLL_SOUND),
+			"assets/special-key-trigger.mp3" => Some(SPECIAL_KEY_SOUND),
 			_ => None,
 		}
 	}
