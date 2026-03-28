@@ -3998,6 +3998,7 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 							dx_state.current_animation_index -= 1;
 						}
 						
+						dx_state.animation_mode = true; // Ensure animation mode is on
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
 						dx_state.play_ui_sound("assets/click.mp3");
@@ -4011,6 +4012,7 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 						// Navigate to next animation
 						dx_state.current_animation_index = (dx_state.current_animation_index + 1) % all_animations.len();
 						
+						dx_state.animation_mode = true; // Ensure animation mode is on
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
 						dx_state.play_ui_sound("assets/click.mp3");
@@ -4020,6 +4022,7 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 					// HARDCODED: Press '1' to show animation carousel (Matrix)
 					KeyCode::Char('1') => {
 						let mut dx_state = self.dx_chat_state.borrow_mut();
+						dx_state.animation_mode = true; // Ensure animation mode is on
 						dx_state.current_animation_index = 1; // Matrix (first carousel animation)
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
@@ -4031,6 +4034,7 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 					KeyCode::Char('3') => {
 						let mut dx_state = self.dx_chat_state.borrow_mut();
 						let all_animations = crate::state::AnimationType::all();
+						dx_state.animation_mode = true; // Ensure animation mode is on
 						dx_state.current_animation_index = all_animations.len() - 1; // Yazi (last animation)
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
@@ -9062,14 +9066,21 @@ impl Renderable for ChatWidget {
 					dx_state.render_fireworks_animation_in_area(transcript_area, buf);
 				}
 				crate::state::AnimationType::Yazi => {
-					// TODO: Yazi file browser integration
-					crate::splash::render(
-						transcript_area,
-						buf,
-						&dx_state.theme,
-						dx_state.splash_font_index,
-						&dx_state.rainbow_animation,
-					);
+					// Yazi is rendered by Root widget in app.rs, not here
+					// This case should not be reached when Root is rendering
+					use ratatui::text::{Line, Span};
+					use ratatui::widgets::Paragraph;
+					use ratatui::style::{Style, Color};
+					
+					let text = vec![
+						Line::from(""),
+						Line::from(Span::styled(
+							"Yazi rendering handled by Root widget",
+							Style::default().fg(Color::Yellow),
+						)),
+					];
+					
+					Paragraph::new(text).centered().render(transcript_area, buf);
 				}
 			}
 			
