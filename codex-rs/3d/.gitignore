@@ -1,0 +1,17 @@
+/target
+_workbench/
+
+# Scene files (large) — only allow explicitly committed ones in scenes/
+*.ply
+*.splat
+!scenes/*.ply
+!scenes/*.splat
+
+# Media / scratch
+random/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
