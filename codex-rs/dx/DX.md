@@ -37,3 +37,5 @@ i am telling you fully integrate all the stuffs bot only one funcation you stupi
 Now please list what other files that we have to integrate in the codex-tui, and make sure to only integrate one file at a time, not one function one file at a time.
 
 Now please list what other files that we have to integrate in the codex-tui, and make sure to only integrate one file at a time, not one function one file at a time. Now, currently we are planning, so don't do any stupid thing. Just give me a small brief detail about what we are going to do next. So that I can give you clarifications. 
+
+You are god of stupidity. So we will not just blindly implement useless code so that you can mess everything up. We will implement all the DX/TUI inside our codex_tui. Now we already implemented the splash screen of the DX/TUI. Now the DX/TUI has the sounds that we recently added. Now make sure to implement those sounds in the codex_tui too. 

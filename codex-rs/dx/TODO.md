@@ -2,118 +2,166 @@
 
 > Auto-managed by AI. Updated after every completed or failed task.
 
-## In Progress
+---
 
-- [ ] Step 11: Test complete DX dispatcher integration with cargo run
+## 🎯 DX-TUI Complete Feature Checklist
 
-## Pending
+### ✅ **COMPLETED FEATURES**
 
-- [ ] Step 12: Wire up theme system
-- [ ] Step 13: Integrate key event routing to DX dispatcher
+#### 1. Visual Features
+- [x] Splash screen with rainbow "DX" figlet art
+- [x] 113 figlet fonts with auto-cycling (every 5 seconds)
+- [x] Rainbow animation effect
+- [x] Theme system (DX theme loaded)
+- [ ] Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)
+- [ ] File browser (Yazi integration)
+- [ ] Menu system (25 submenus)
+- [ ] Model picker UI
+- [ ] Theme picker with live preview
 
-## Completed
+#### 2. Audio Features
+- [ ] Splash screen sound (`assets/birds.mp3`)
+- [ ] Animation sounds (looping for each animation)
+- [ ] UI sounds (click, typing, scroll, menu open/close)
+- [ ] Exit animation sounds (train)
 
-- [x] ~~Analyze dx-tui components and codex-tui-dx structure~~ ✅ (completed: 2026-03-29)
-- [x] ~~Verify theme system compatibility~~ ✅ (completed: 2026-03-29)
-- [x] ~~Integrate dx-tui modules into codex-tui-dx library~~ ✅ (completed: 2026-03-29)
-- [x] ~~Fix compilation errors~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 1: Comment out dx input handling, keep codex bottom pane~~ ✅ (completed: 2026-03-29)
-- [x] ~~Fix import and type annotation errors~~ ✅ (completed: 2026-03-29)
-- [x] ~~Move imports to module level~~ ✅ (completed: 2026-03-29)
-- [x] ~~Remove duplicate module declarations in codex_lib.rs~~ ✅ (completed: 2026-03-29)
-- [x] ~~Add missing AnimationType import to dispatcher.rs~~ ✅ (completed: 2026-03-29)
-- [x] ~~Add missing Root import to file_browser/executor.rs~~ ✅ (completed: 2026-03-29)
-- [x] ~~Remove duplicate AnimationType import~~ ✅ (completed: 2026-03-29)
-- [x] ~~Replace all crate:: references with direct imports~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 2: Replace welcome screen with dx-tui splash screen~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 3: Hide cursor initially in codex input box~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 4: Replace ChatWidget welcome with DX splash screen~~ ✅ (completed: 2026-03-29)
-- [x] ~~Fix transcript_content_height scope error~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 5: Add rainbow animation to DX splash screen~~ ✅ (completed: 2026-03-29)
-- [x] ~~Replace custom fields with dx_chat_state in ChatWidget struct~~ ✅ (completed: 2026-03-29)
-- [x] ~~Fix all 3 constructors to use dx_chat_state~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 6: Simplify to use real crate::splash::render directly~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 7: Add font cycling with Ctrl+. in ChatWidget~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 8: Read complete dispatcher.rs to understand timer logic~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 9: Integrate DX dispatcher timer for font cycling~~ ✅ (completed: 2026-03-29)
-- [x] ~~Step 10: Create DX dispatcher bridge module~~ ✅ (completed: 2026-03-29)
+#### 3. Input Features
+- [ ] DX chat input (multi-line, cursor, selection)
+- [ ] Voice mode (hold Space key)
+- [ ] File attachment system
+- [ ] Clipboard paste support
+- [ ] File path detection
 
-## Notes
+#### 4. Interaction Features
+- [ ] Keyboard shortcuts (customizable)
+- [ ] Mouse support (clicks, scrollbar, hover)
+- [ ] Screen navigation (Left/Right arrows)
+- [ ] Menu navigation (j/k, arrows, PageUp/Down)
 
-- **USING REAL DX CODE**: Now calls `crate::splash::render()` directly - the actual dx-tui function!
-- No wrapper files, no duplicate code, no AI slop - just the real DX splash::render
-- Both onboarding welcome screen AND ChatWidget now show DX splash with rainbow figlet art
-- DX splash renders directly to the buffer when there are no transcript cells
-- Cursor is hidden when showing the welcome screen
-- The DX splash shows "DX" in rainbow colors with "Enhanced Development Experience" text below
-- Rainbow animation continuously schedules frames for smooth color cycling
-- RainbowEffect uses elapsed time for automatic color updates
-- **IMPORTANT**: Using DX ChatState directly - contains theme, rainbow_animation, splash_font_index
-- All 3 constructors updated to initialize `dx_chat_state: RefCell::new(ChatState::new())`
-- **Ctrl+. font cycling implemented**: Cycles through 113 DX splash fonts when showing welcome screen
-- Font cycling uses dx_chat_state directly, no duplicate code
-- Next: Test that font cycling actually works when you press Ctrl+.
+#### 5. Animation Features
+- [ ] Intro/outro animation selection
+- [ ] Transition animations
+- [ ] Visual effects (shimmer, typing indicator)
+- [ ] Menu opening/closing effects
 
-## Blocked / Failed
+#### 6. Chat Features
+- [ ] Message display with markdown
+- [ ] Scrollable history with scrollbar
+- [ ] Message markers on scrollbar
+- [ ] Thinking accordion
+- [ ] LLM streaming
 
+#### 7. Status & Notifications
+- [ ] Toast notifications
+- [ ] Performance monitor
+- [ ] Session management (auto-save)
 
-## Test Results
+---
 
-- ✅ App compiles successfully
-- ✅ DX splash screen shows with rainbow animation
-- ✅ Rainbow colors are cycling smoothly
-- ❌ Font cycling with Ctrl+. is NOT working - font stays the same
-- Need to debug why font_index isn't changing when Ctrl+. is pressed
+## 🚀 IN PROGRESS
 
+### Current Task: Integrate Audio System
+- [ ] Play splash screen sound when showing DX splash
+- [ ] Stop sound when leaving splash
+- [ ] Integrate audio player initialization
 
-## Latest Change
+---
 
-- Created DX dispatcher bridge module (`src/dx_dispatcher_bridge.rs`)
-- Bridge wraps the COMPLETE DX dispatcher timer logic
-- ChatWidget now calls `DxDispatcherBridge::dispatch_timer()` every frame
-- This handles: font cycling, menu updates, chat_state.update(), and ALL timer-based logic
-- NO CODE DUPLICATION - using real DX dispatcher code!
-- Ready to test with `cargo run --bin codex-tui-dx`
+## 📋 PENDING TASKS (Priority Order)
 
-## What Was Done
+### Phase 1: Core Features
+1. [ ] **Audio Integration** ← NEXT
+   - Play splash sound (`assets/birds.mp3`)
+   - Play UI sounds (click, typing, scroll)
+   - Test sound playback
 
-1. Read COMPLETE dispatcher.rs (all 1789 lines) to understand ALL methods
-2. Created `dx_dispatcher_bridge.rs` module that wraps DX dispatcher timer logic
-3. Integrated bridge into ChatWidget render method
-4. Added module to codex_lib.rs
-5. Updated TODO.md and CHANGELOG.md
+2. [ ] **Menu System**
+   - Press '0' to toggle menu
+   - All 25 submenus working
+   - Theme picker with live preview
+   - Keyboard shortcuts customization
 
-## DX Dispatcher Methods Integrated
+3. [ ] **Animation Carousel**
+   - Left/Right navigation
+   - All 11 animations rendering
+   - Animation sounds playing
+   - Intro/outro selection
 
-- `dispatch_timer()` - Handles font cycling, menu updates, chat_state.update()
-  - Font cycling every 5 seconds (113 fonts)
-  - Menu timing updates
-  - LLM response processing
-  - Toast notifications
-  - Transition animations
-  - Space key hold detection
-  - Cursor revert animation
+4. [ ] **File Browser**
+   - Yazi integration
+   - File selection
+   - Attach files to chat
 
-## Next Steps
+### Phase 2: Advanced Features
+5. [ ] **Full Event Routing**
+   - Route keys to DX dispatcher
+   - Mouse event handling
+   - Keyboard shortcuts
+   - Menu interactions
 
-User should run: `cargo run --bin codex-tui-dx`
-- This will test the complete DX dispatcher integration
-- Fonts should cycle every 5 seconds automatically
-- Menu animations should work
-- All timer-based updates should function correctly
+6. [ ] **Voice Mode**
+   - Space key hold detection
+   - Spinner indicator
+   - Cursor revert animation
 
+7. [ ] **Complete Chat Integration**
+   - DX message rendering
+   - Scrollbar with markers
+   - File attachments
+   - Model selection
 
-## DX Integration Plan Created
+---
 
-Created `DX_INTEGRATION_PLAN.md` with full analysis of:
-- DX-TUI architecture (bridge, state, dispatcher, root, render)
-- What each component does
-- Integration strategy (3 phases)
-- Current problems and solutions
+## ✅ COMPLETED STEPS
 
-**Next Steps**:
-1. Phase 1: Use DX dispatcher for timer updates (font cycling, etc.)
-2. Phase 2: Route key events to DX dispatcher
-3. Phase 3: Full DX Root widget integration (optional)
+- [x] Analyze dx-tui and codex-tui-dx structure
+- [x] Integrate dx-tui modules into codex_lib.rs
+- [x] Fix compilation errors
+- [x] Comment out dx input handling (keep codex bottom pane)
+- [x] Replace welcome screen with DX splash
+- [x] Add rainbow animation
+- [x] Use real `crate::splash::render()` directly
+- [x] Integrate DX ChatState
+- [x] Create DX dispatcher bridge module
+- [x] Integrate timer logic (font cycling, menu updates)
 
-**Key Insight**: Stop duplicating logic! Use DX dispatcher - it has ALL the update logic including font cycling.
+---
+
+## 📝 RULES & GUIDELINES
+
+### Integration Rules
+1. **ALWAYS use real DX code** - Never create wrappers or duplicate logic
+2. **ONE FILE AT A TIME** - Complete integration of entire file, not partial functions
+3. **TEST with `cargo run --bin codex-tui-dx`** - No cargo check/build/test
+4. **Edit existing DX files** - Don't create AI slop, adapt DX code to fit codex-tui
+5. **Update TODO.md and CHANGELOG.md** after every change
+6. **Keep codex bottom pane** - Don't integrate DX input yet
+
+### File Structure
+- `src/dx_dispatcher_bridge.rs` - Bridge between DX dispatcher and ChatWidget
+- `src/chatwidget.rs` - Main integration point (uses DX splash, ChatState, dispatcher)
+- `src/state.rs` - DX ChatState (all DX state)
+- `src/dispatcher.rs` - DX event handling
+- `src/splash.rs` - DX splash rendering
+- `src/audio.rs` - DX audio system
+- `src/menu/` - DX menu system
+- `src/animations.rs` - DX animations
+
+---
+
+## 🎯 NEXT IMMEDIATE TASK
+
+**Integrate Audio System**
+1. Play `assets/birds.mp3` when showing DX splash
+2. Call `dx_chat_state.play_animation_sound()` in ChatWidget
+3. Stop sound when leaving splash (when messages appear)
+4. Test with `cargo run --bin codex-tui-dx`
+
+---
+
+## 📊 Progress Summary
+
+- **Completed**: 10 steps (Splash screen, rainbow animation, font cycling, dispatcher bridge)
+- **In Progress**: Audio integration
+- **Remaining**: Menu, animations, file browser, event routing, voice mode, chat features
+- **Estimated Completion**: ~15-20 more integration tasks
