@@ -775,10 +775,20 @@ impl<'a> Dispatcher<'a> {
 
 			match action {
 				InputAction::Submit(msg) => {
-					// Add to DX's own chat (Ollama mode)
-					// Note: When Codex TUI is active, we never reach this code
-					// because keys are forwarded to ChatWidget at the top of dispatch_key
-					self.app.bridge.chat_state.add_user_message(msg);
+					// Route to appropriate backend based on model provider
+					let provider = self.app.bridge.chat_state.current_model.provider;
+					
+					match provider {
+						crate::models::ModelProvider::Codex => {
+							// Use Codex backend
+							self.submit_to_codex(msg);
+						}
+						crate::models::ModelProvider::Local => {
+							// Use local LLM (existing behavior)
+							self.app.bridge.chat_state.add_user_message(msg);
+						}
+					}
+					
 					NEED_RENDER.store(1, Ordering::Relaxed);
 					succ!()
 				}
@@ -1587,6 +1597,44 @@ impl<'a> Dispatcher<'a> {
 	/// Check if input contains file paths and extract them
 	fn check_and_extract_file_paths(&mut self) {
 		let input_content = self.app.bridge.chat_state.input.content.clone();
+
+	/// Submit message to Codex backend
+	fn submit_to_codex(&mut self, message: String) {
+		use codex_protocol::protocol::Op;
+		
+		// Check if Codex is initialized
+		if let Some(op_tx) = &self.app.bridge.chat_state.codex_op_tx {
+			// Add user message to UI
+			self.app.bridge.chat_state.messages.push(crate::chat::Message::user(message.clone()));
+			
+			// Add empty assistant message for streaming
+			self.app.bridge.chat_state.messages.push(crate::chat::Message::assistant(String::new()));
+			
+			// Set loading state
+			self.app.bridge.chat_state.is_loading = true;
+			
+			// Clear input
+			self.app.bridge.chat_state.input.clear();
+			
+			// Save messages
+			let _ = self.app.bridge.chat_state.save_messages();
+			
+			// Submit to Codex
+			let op = Op::UserMessage {
+				text: message,
+				attachments: vec![],
+			};
+			
+			if let Err(e) = op_tx.send(op) {
+				tracing::error!("Failed to send op to Codex: {}", e);
+				self.app.bridge.chat_state.show_toast("Failed to send message to Codex".to_string());
+				self.app.bridge.chat_state.is_loading = false;
+			}
+		} else {
+			// Codex not initialized yet
+			self.app.bridge.chat_state.show_toast("Codex is still initializing...".to_string());
+		}
+	}
 
 		// Skip if input is empty
 		if input_content.trim().is_empty() {

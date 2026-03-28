@@ -29,7 +29,7 @@ async fn initialize_app_server_client_name(thread: &CodexThread) {
 pub fn spawn_codex_agent(
 	config: Config,
 	thread_manager: Arc<ThreadManager>,
-) -> (UnboundedSender<Op>, UnboundedReceiver<Event>, Arc<CodexThread>) {
+) -> (UnboundedSender<Op>, UnboundedReceiver<Event>) {
 	let (codex_op_tx, mut codex_op_rx) = unbounded_channel::<Op>();
 	let (event_tx, event_rx) = unbounded_channel::<Event>();
 
@@ -77,6 +77,7 @@ pub fn spawn_codex_agent(
 		});
 
 		// Event listening loop
+		let thread_for_return = thread.clone();
 		while let Ok(event) = thread.next_event().await {
 			let is_shutdown_complete = matches!(event.msg, EventMsg::ShutdownComplete);
 
@@ -88,7 +89,9 @@ pub fn spawn_codex_agent(
 				break;
 			}
 		}
+		
+		thread_for_return
 	});
 
-	(codex_op_tx, event_rx, Arc::new(CodexThread::default()))
+	(codex_op_tx, event_rx)
 }

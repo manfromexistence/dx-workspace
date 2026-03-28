@@ -14,6 +14,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 pub struct CodexBackend {
 	pub thread_manager: Arc<ThreadManager>,
 	pub auth_manager: Arc<AuthManager>,
+	pub config: Config,
 	pub op_tx: UnboundedSender<Op>,
 	pub op_rx: UnboundedReceiver<Op>,
 }
@@ -100,5 +101,5 @@ pub async fn initialize_codex_backend() -> Result<CodexBackend> {
 	// 10. Create Op channels
 	let (op_tx, op_rx) = mpsc::unbounded_channel();
 
-	Ok(CodexBackend { thread_manager, auth_manager, op_tx, op_rx })
+	Ok(CodexBackend { thread_manager, auth_manager, config, op_tx, op_rx })
 }

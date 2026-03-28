@@ -30,6 +30,10 @@ impl App {
 			signals,
 			bridge: YaziChatBridge::new(),  // NEW: Initialize bridge
 		};
+		
+		// Initialize Codex backend
+		app.bridge.chat_state.initialize_codex().await;
+		
 		app.bootstrap()?;
 
 		// Animation timer: 50ms = ~20 FPS for smooth animations

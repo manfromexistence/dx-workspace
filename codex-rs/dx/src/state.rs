@@ -249,6 +249,25 @@ pub struct ChatState {
 	// NEW: Audio player for animation sounds
 	pub audio_player: Option<crate::audio::AudioPlayer>,
 	pub current_animation_sound: Option<String>, // Track currently playing sound
+
+	// NEW: Codex integration fields
+	pub codex_op_tx: Option<tokio_mpsc::UnboundedSender<codex_protocol::protocol::Op>>,
+	pub codex_event_rx: Option<tokio_mpsc::UnboundedReceiver<codex_protocol::protocol::Event>>,
+	pub codex_session_configured: bool,
+	pub codex_current_turn_id: Option<String>,
+}
+
+impl Drop for ChatState {
+	fn drop(&mut self) {
+		// Send shutdown op to Codex
+		if let Some(op_tx) = &self.codex_op_tx {
+			use codex_protocol::protocol::Op;
+			let _ = op_tx.send(Op::Shutdown);
+		}
+		
+		// Stop any playing sounds
+		self.stop_animation_sound();
+	}
 }
 
 impl ChatState {
@@ -382,12 +401,94 @@ impl ChatState {
 			session_filename: Self::generate_session_filename(), // Generate timestamp-based filename
 			audio_player: crate::audio::AudioPlayer::new().ok(), // Initialize audio player
 			current_animation_sound: None, // No sound playing initially
+			codex_op_tx: None,
+			codex_event_rx: None,
+			codex_session_configured: false,
+			codex_current_turn_id: None,
 		};
 
 		// DON'T load messages on startup - always start fresh with splash screen
 		// let _ = state.load_messages();
 
 		state
+	}
+
+	/// Initialize Codex backend (call this after ChatState is created)
+	pub async fn initialize_codex(&mut self) {
+		match crate::codex_backend::initialize_codex_backend().await {
+			Ok(backend) => {
+				let (op_tx, event_rx) = crate::codex_agent::spawn_codex_agent(
+					backend.config,
+					backend.thread_manager,
+				);
+				
+				self.codex_op_tx = Some(op_tx);
+				self.codex_event_rx = Some(event_rx);
+				
+				tracing::info!("Codex backend initialized successfully");
+			}
+			Err(e) => {
+				tracing::error!("Failed to initialize Codex backend: {}", e);
+				self.show_toast(format!("Failed to initialize Codex: {}", e));
+			}
+		}
+	}
+
+	/// Handle Codex events from the event channel
+	pub fn handle_codex_event(&mut self, event: codex_protocol::protocol::Event) {
+		use codex_protocol::protocol::EventMsg;
+		
+		match event.msg {
+			EventMsg::SessionConfigured(config) => {
+				self.codex_session_configured = true;
+				tracing::info!("Codex session configured with model: {}", config.model);
+				self.show_toast(format!("Codex ready: {}", config.model));
+			}
+			
+			EventMsg::AssistantMessage(msg) => {
+				// Update the last assistant message or add new one
+				if let Some(last_msg) = self.messages.last_mut() {
+					if last_msg.role == crate::chat::MessageRole::Assistant {
+						// Append to existing assistant message (streaming)
+						last_msg.content.push_str(&msg.text);
+					} else {
+						// Add new assistant message
+						self.messages.push(crate::chat::Message::assistant(msg.text));
+					}
+				} else {
+					// No messages yet, add first assistant message
+					self.messages.push(crate::chat::Message::assistant(msg.text));
+				}
+				
+				// Save messages
+				let _ = self.save_messages();
+			}
+			
+			EventMsg::ToolUse(tool) => {
+				tracing::info!("Tool use: {} - {}", tool.name, tool.input);
+				// Could add a system message showing tool use
+			}
+			
+			EventMsg::Error(err) => {
+				self.show_toast(format!("Error: {}", err.message));
+				self.is_loading = false;
+			}
+			
+			EventMsg::TurnComplete => {
+				self.is_loading = false;
+				self.codex_current_turn_id = None;
+				tracing::info!("Turn complete");
+			}
+			
+			EventMsg::ShutdownComplete => {
+				tracing::info!("Codex shutdown complete");
+			}
+			
+			_ => {
+				// Log other events for debugging
+				tracing::debug!("Codex event: {:?}", event.msg);
+			}
+		}
 	}
 
 	#[allow(dead_code)]
@@ -484,6 +585,13 @@ impl ChatState {
 	}
 
 	pub fn update(&mut self) {
+		// Process Codex events
+		if let Some(rx) = &mut self.codex_event_rx {
+			while let Ok(event) = rx.try_recv() {
+				self.handle_codex_event(event);
+			}
+		}
+
 		// COMMENTED OUT: Codex TUI initialization check
 		// Check for initialized Codex widget
 		// if let Ok(widget) = self.codex_widget_rx.try_recv() {
