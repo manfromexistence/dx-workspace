@@ -7731,10 +7731,12 @@ impl ChatWidget {
 			false
 		};
 
-		self.flush_active_cell();
+		// DON'T flush the active cell - keep the session header in active_cell so it persists
+		// self.flush_active_cell();
 
 		if !merged_header && let Some(cell) = session_info_cell {
-			self.add_boxed_history(cell);
+			// Keep the session header in active_cell instead of adding to history
+			self.active_cell = Some(cell);
 		}
 	}
 
@@ -8667,25 +8669,7 @@ impl ChatWidget {
 		self.scroll_position.get() < content.saturating_sub(viewport)
 	}
 
-	fn as_renderable(&self) -> RenderableItem<'_> {
-		let active_cell_renderable = match &self.active_cell {
-			Some(cell) => RenderableItem::Borrowed(cell)
-				.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0)),
-			None => {
-				// Use an empty ColumnRenderable when there's no active cell
-				let mut col = ColumnRenderable::new();
-				RenderableItem::Owned(Box::new(col))
-			}
-		};
-		let mut flex = FlexRenderable::new();
-		flex.push(/*flex*/ 1, active_cell_renderable);
-		flex.push(
-			/*flex*/ 0,
-			RenderableItem::Borrowed(&self.bottom_pane)
-				.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0)),
-		);
-		RenderableItem::Owned(Box::new(flex))
-	}
+
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -8733,35 +8717,70 @@ impl Renderable for ChatWidget {
 		let content_area =
 			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
 
-		// Calculate content height
-		let renderable = self.as_renderable();
-		let content_height = renderable.desired_height(content_area.width);
+		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane)
+			.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0));
+		let bp_height = bottom_pane_renderable.desired_height(content_area.width);
+		let display_bp_height = bp_height.min(area.height);
+		let transcript_viewport_height = area.height.saturating_sub(display_bp_height);
+
+		let transcript_area = Rect {
+			x: content_area.x,
+			y: content_area.y,
+			width: content_area.width,
+			height: transcript_viewport_height,
+		};
+		let bp_area = Rect {
+			x: content_area.x,
+			y: content_area.y + transcript_viewport_height,
+			width: content_area.width,
+			height: display_bp_height,
+		};
+
+		let transcript_renderable = match &self.active_cell {
+			Some(cell) => RenderableItem::Borrowed(cell)
+				.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0)),
+			None => {
+				let mut col = ColumnRenderable::new();
+				RenderableItem::Owned(Box::new(col))
+			}
+		};
+
+		let transcript_content_height = transcript_renderable.desired_height(content_area.width);
 
 		// Store dimensions for scrolling
-		self.viewport_height.set(area.height as usize);
-		self.content_height.set(content_height as usize);
+		self.viewport_height.set(transcript_viewport_height as usize);
+		self.content_height.set(transcript_content_height as usize);
 
-		// If content is larger than viewport, render to a temporary buffer and copy visible portion
-		if content_height > area.height {
-			// Create a buffer large enough for all content
-			let full_content_area =
-				Rect { x: 0, y: 0, width: content_area.width, height: content_height };
+		// Reset scroll position to 0 if content fits in viewport
+		// This ensures the session header is always visible when there's little content
+		if transcript_content_height <= transcript_viewport_height {
+			self.scroll_position.set(0);
+		}
+
+		if transcript_content_height > transcript_viewport_height {
+			let full_content_area = Rect {
+				x: 0,
+				y: 0,
+				width: transcript_area.width,
+				height: transcript_content_height,
+			};
 			let mut temp_buf = Buffer::empty(full_content_area);
+			transcript_renderable.render(full_content_area, &mut temp_buf);
 
-			// Render all content to temp buffer
-			renderable.render(full_content_area, &mut temp_buf);
-
-			// Copy visible portion based on scroll position
-			let scroll_offset =
-				self.scroll_position.get().min(content_height.saturating_sub(area.height) as usize);
-			for y in 0..area.height {
+			let scroll_offset = self.scroll_position.get().min(
+				transcript_content_height.saturating_sub(transcript_viewport_height) as usize,
+			);
+			for y in 0..transcript_viewport_height {
 				let source_y = y + scroll_offset as u16;
-				if source_y < content_height {
-					for x in 0..content_area.width {
-						if let Some(source_cell) = temp_buf.cell(ratatui::layout::Position::new(x, source_y)) {
-							if let Some(dest_cell) =
-								buf.cell_mut(ratatui::layout::Position::new(content_area.x + x, content_area.y + y))
-							{
+				if source_y < transcript_content_height {
+					for x in 0..transcript_area.width {
+						if let Some(source_cell) =
+							temp_buf.cell(ratatui::layout::Position::new(x, source_y))
+						{
+							if let Some(dest_cell) = buf.cell_mut(ratatui::layout::Position::new(
+								transcript_area.x + x,
+								transcript_area.y + y,
+							)) {
 								*dest_cell = source_cell.clone();
 							}
 						}
@@ -8769,18 +8788,21 @@ impl Renderable for ChatWidget {
 				}
 			}
 
-			// Add scroll indicator in the bottom-right corner
-			let scroll_percent = if content_height > area.height {
-				(scroll_offset * 100) / (content_height.saturating_sub(area.height) as usize)
+			// Add scroll indicator in the bottom-right corner of transcript area
+			let scroll_percent = if transcript_content_height > transcript_viewport_height {
+				(scroll_offset * 100)
+					/ (transcript_content_height.saturating_sub(transcript_viewport_height) as usize)
 			} else {
 				0
 			};
 			let indicator = format!(" {}% ", scroll_percent);
-			let indicator_x = area.x + area.width.saturating_sub(indicator.len() as u16 + 1);
-			let indicator_y = area.y + area.height.saturating_sub(1);
+			let indicator_x = transcript_area.x + transcript_area.width.saturating_sub(indicator.len() as u16 + 1);
+			let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
 
 			use ratatui::style::{Color, Style};
-			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(indicator_x, indicator_y)) {
+			if let Some(cell) =
+				buf.cell_mut(ratatui::layout::Position::new(indicator_x, indicator_y))
+			{
 				buf.set_string(
 					indicator_x,
 					indicator_y,
@@ -8790,21 +8812,29 @@ impl Renderable for ChatWidget {
 			}
 		} else {
 			// Content fits in viewport, render directly
-			renderable.render(content_area, buf);
+			transcript_renderable.render(transcript_area, buf);
 		}
 
+		bottom_pane_renderable.render(bp_area, buf);
+
 		// Always render scrollbar on the right edge
-		if area.width > 0 && area.height > 0 {
+		if area.width > 0 && transcript_viewport_height > 0 {
 			use crate::scrollbar::{CustomScrollbar, ScrollbarState};
 
-			let scrollbar_state = ScrollbarState::new(content_height as usize, area.height as usize)
-				.position(self.scroll_position.get());
+			let scrollbar_state = ScrollbarState::new(
+				transcript_content_height as usize,
+				transcript_viewport_height as usize,
+			)
+			.position(self.scroll_position.get());
 
 			let scrollbar = CustomScrollbar::new();
 
-			// Render scrollbar in the rightmost column
-			let scrollbar_area =
-				Rect { x: area.x + area.width.saturating_sub(1), y: area.y, width: 1, height: area.height };
+			let scrollbar_area = Rect {
+				x: area.x + area.width.saturating_sub(1),
+				y: area.y,
+				width: 1,
+				height: transcript_viewport_height,
+			};
 
 			scrollbar.render(scrollbar_area, buf, &scrollbar_state);
 		}
@@ -8812,12 +8842,50 @@ impl Renderable for ChatWidget {
 		self.last_rendered_width.set(Some(area.width as usize));
 	}
 
-	fn desired_height(&self, width: u16) -> u16 {
-		self.as_renderable().desired_height(width)
+	fn desired_height(&self, _width: u16) -> u16 {
+		// Return u16::MAX to force the viewport to fill the entire terminal screen.
+		// This ensures the bottom pane stays pinned at the absolute bottom.
+		u16::MAX
 	}
 
 	fn cursor_pos(&self, area: Rect) -> Option<(u16, u16)> {
-		self.as_renderable().cursor_pos(area)
+		let content_area =
+			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
+
+		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane)
+			.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0));
+		let bp_height = bottom_pane_renderable.desired_height(content_area.width);
+		let display_bp_height = bp_height.min(area.height);
+		let transcript_viewport_height = area.height.saturating_sub(display_bp_height);
+
+		let bp_area = Rect {
+			x: content_area.x,
+			y: content_area.y + transcript_viewport_height,
+			width: content_area.width,
+			height: display_bp_height,
+		};
+
+		if let Some(pos) = bottom_pane_renderable.cursor_pos(bp_area) {
+			return Some(pos);
+		}
+
+		let transcript_renderable = match &self.active_cell {
+			Some(cell) => RenderableItem::Borrowed(cell)
+				.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0)),
+			None => {
+				let mut col = ColumnRenderable::new();
+				RenderableItem::Owned(Box::new(col))
+			}
+		};
+
+		let transcript_area = Rect {
+			x: content_area.x,
+			y: content_area.y,
+			width: content_area.width,
+			height: transcript_viewport_height,
+		};
+
+		transcript_renderable.cursor_pos(transcript_area)
 	}
 }
 
