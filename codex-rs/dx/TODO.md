@@ -4,12 +4,12 @@
 
 ## In Progress
 
-- [ ] Step 8: Test font cycling works correctly
+- [ ] Step 9: Integrate DX dispatcher timer for font cycling
 
 ## Pending
 
-- [ ] Step 9: Wire up theme system
-- [ ] Step 10: Test compilation with cargo run --bin codex-tui-dx
+- [ ] Step 10: Test font cycling works with cargo run --bin codex-tui-dx
+- [ ] Step 11: Wire up theme system
 
 ## Completed
 
@@ -34,6 +34,7 @@
 - [x] ~~Fix all 3 constructors to use dx_chat_state~~ ✅ (completed: 2026-03-29)
 - [x] ~~Step 6: Simplify to use real crate::splash::render directly~~ ✅ (completed: 2026-03-29)
 - [x] ~~Step 7: Add font cycling with Ctrl+. in ChatWidget~~ ✅ (completed: 2026-03-29)
+- [x] ~~Step 8: Read complete dispatcher.rs to understand timer logic~~ ✅ (completed: 2026-03-29)
 
 ## Notes
 
@@ -65,6 +66,23 @@
 
 ## Latest Change
 
-- Removed Ctrl+. font cycling handler
-- Added auto-cycle logic: fonts change every 5 seconds automatically
-- Next: Test that fonts actually cycle every 5 seconds
+- Read complete dispatcher.rs - found dispatch_timer() method with font cycling logic
+- DX dispatcher handles font cycling every 5 seconds in dispatch_timer()
+- Next: Integrate DX dispatcher timer into codex-tui-dx ChatWidget
+- Strategy: Call dx_chat_state.update() periodically from ChatWidget render or event loop
+
+
+## DX Integration Plan Created
+
+Created `DX_INTEGRATION_PLAN.md` with full analysis of:
+- DX-TUI architecture (bridge, state, dispatcher, root, render)
+- What each component does
+- Integration strategy (3 phases)
+- Current problems and solutions
+
+**Next Steps**:
+1. Phase 1: Use DX dispatcher for timer updates (font cycling, etc.)
+2. Phase 2: Route key events to DX dispatcher
+3. Phase 3: Full DX Root widget integration (optional)
+
+**Key Insight**: Stop duplicating logic! Use DX dispatcher - it has ALL the update logic including font cycling.
