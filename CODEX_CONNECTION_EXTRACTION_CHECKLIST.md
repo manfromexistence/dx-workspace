@@ -266,18 +266,50 @@ To get Codex working in DX TUI with minimal code:
 5. ✅ **Route messages in dispatcher**: Submit to Codex when using Codex models
 6. ✅ **Render responses**: Add Codex messages to message list
 
-## 🎯 NEXT ENHANCEMENTS
+## 🎯 REMAINING FEATURES TO IMPLEMENT
 
-Now that basic integration is complete, we can add:
+DX TUI already has file attachments and file browser. Only these 4 features from Codex TUI need integration:
 
-1. **Tool Execution UI** - Show visual indicators when tools are running
-2. **File Attachments** - Support sending files with messages
-3. **Advanced Features**:
-   - Reasoning effort selection
-   - Collaboration mode
-   - Model-specific settings
-4. **Better Error Handling** - More detailed error messages
-5. **Conversation Management** - Save/load Codex conversations
+### 1. External Editor Integration ❌ TODO
+**What it does:** Opens external editor (vim, nano, etc.) for composing messages
+**Codex TUI files to read:**
+- Search for external editor handling in `codex-rs/tui/src/app.rs`
+- Look for editor spawn logic and terminal handling
+**DX TUI integration:**
+- Add to menu system (already has menu structure)
+- Use DX's menu rendering instead of Codex TUI's popup
+
+### 2. Approval Popup UI ❌ TODO
+**What it does:** Shows approval dialog for tool execution (security feature)
+**Codex TUI files to read:**
+- `codex-rs/tui/src/app.rs` - Search for `AskForApproval` event handling
+- Look for approval dialog rendering and user input
+**DX TUI integration:**
+- Menu item "20. Approval Policy" already exists
+- Extract approval logic, render with DX menu system
+- Show approval dialog when tool needs permission
+
+### 3. Skills List UI ❌ TODO
+**What it does:** Lists and manages available skills (reusable agent capabilities)
+**Codex TUI files to read:**
+- `codex-rs/tui/src/chatwidget/skills.rs` - Skills data fetching
+- `codex-rs/tui/src/bottom_pane/skills_toggle_view.rs` - Skills UI rendering
+**DX TUI integration:**
+- Menu item "5. Skills" already exists
+- Extract skills list fetching logic
+- Render skills list using DX menu system
+- Add skill selection/toggle functionality
+
+### 4. Plugin Marketplace UI ❌ TODO
+**What it does:** Browse and install MCP plugins/apps
+**Codex TUI files to read:**
+- `codex-rs/tui/src/chatwidget/plugins.rs` - Plugin data and installation
+- Look for plugin list fetching and installation logic
+**DX TUI integration:**
+- Menu item "4. Plugins & Apps" already exists
+- Extract plugin marketplace backend
+- Render plugin list with DX menu system
+- Add plugin installation flow
 
 ---
 

@@ -1,5 +1,57 @@
 # Changelog - DX Fork
 
+## [Unreleased] - 2026-03-28
+
+### 🚀 DX TUI: Codex Backend Integration
+
+DX TUI now uses the professional Codex backend for AI interactions! This brings enterprise-grade features while keeping DX's custom UI.
+
+**What's New:**
+- **Codex Backend Integration** - Full connection to Codex's ThreadManager and event system
+- **Streaming Responses** - Real-time message streaming from Mistral and other providers
+- **Tool Execution Tracking** - Visual indicators (⚙️ Running, ✓ Complete, ✗ Failed) for tool calls
+- **Multi-Provider Support** - Seamless switching between Codex (Mistral) and local GGUF models
+- **Professional Architecture** - Event-driven design with proper async handling and graceful shutdown
+
+**Technical Implementation:**
+- Created `codex_agent.rs` - Extracted spawn logic from Codex TUI's `agent.rs`
+- Updated `ChatState` - Added Codex channels (`codex_op_tx`, `codex_event_rx`) and session tracking
+- Enhanced `dispatcher.rs` - Routes messages to Codex or local LLM based on `ModelProvider`
+- Implemented event handling - Processes `SessionConfigured`, `AssistantMessage`, `ToolUse`, `ToolResult`, `Error`, `TurnComplete`, `ShutdownComplete`
+- Added tool tracking UI - Shows tool execution status with icons in chat messages
+- Graceful shutdown - Drop implementation stops Codex thread cleanly
+
+**Default Configuration:**
+- Provider: Mistral AI
+- Model: `mistral-large-latest`
+- Requires: `MISTRAL_API_KEY` in environment
+
+### Audio System for Animations
+
+Added immersive audio experience to DX TUI's animation mode:
+
+- **Embedded Audio Files** - Using `rodio` library with `include_bytes!` macro
+- **Animation-Specific Sounds**:
+  - Matrix → matrix.mp3
+  - Rain → rain.mp3
+  - Waves → wave.mp3
+  - Fireworks → fireworks.mp3
+  - Starfield → space.mp3
+  - Plasma → plasma.mp3
+- **Exit Animation Sounds** - Train running and whistle sounds
+- **Smart Audio Management** - Stops on mode exit, app close, or file browser navigation
+- **Volume Control** - Set to 10% for comfortable listening
+
+### Removed Broken Local LLM
+
+Cleaned up non-functional local LLM stub from Codex core:
+
+- Removed `stream_local_llm()` function that always failed with C++ runtime error
+- Removed `codex-local-llm` dependency from core and CLI
+- Removed `test-local-llm` CLI command
+- Removed `LOCAL_LLM_PROVIDER_ID` and `create_local_llm_provider()`
+- DX TUI's working GGUF implementation in `dx/src/llm.rs` remains untouched
+
 ## [Unreleased] - 2026-03-24
 
 ### 🎉 Multi-Provider Support Fully Restored!
