@@ -864,7 +864,10 @@ pub struct ChatWidget {
 	// Welcome screen animation
 	welcome_animation: crate::ascii_animation::AsciiAnimation,
 	// DX-TUI ChatState for splash screen (reuse existing DX code!)
-	dx_chat_state: std::cell::RefCell<crate::state::ChatState>,
+	pub(crate) dx_chat_state: std::cell::RefCell<crate::state::ChatState>,
+	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
+	pub(crate) dx_core: std::cell::RefCell<fb_core::Core>,
+	pub(crate) dx_bridge: std::cell::RefCell<crate::bridge::YaziChatBridge>,
 }
 
 /// Snapshot of active-cell state that affects transcript overlay rendering.
@@ -3543,6 +3546,8 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
+dx_core: std::cell::RefCell::new(fb_core::Core::make()),
+dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3743,6 +3748,8 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
+dx_core: std::cell::RefCell::new(fb_core::Core::make()),
+dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3938,6 +3945,8 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
+dx_core: std::cell::RefCell::new(fb_core::Core::make()),
+dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
 		widget.prefetch_rate_limits();

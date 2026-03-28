@@ -13,7 +13,7 @@
 - [x] 113 figlet fonts with auto-cycling (every 5 seconds)
 - [x] Rainbow animation effect
 - [x] Theme system (DX theme loaded)
-- [x] ~~Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)~~ ✅ (completed: 2026-03-29)
+- [ ] Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)
 - [ ] File browser (Yazi integration)
 - [ ] Menu system (25 submenus)
 - [ ] Model picker UI

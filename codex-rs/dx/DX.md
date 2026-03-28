@@ -65,3 +65,9 @@ and please update all the steering files and also give a small rules markdown so
 
 now implment these:
 even through you implment the left or right arrow but its conflickiting input box left and rigth arrow so when there is no text in the inputbox please use the left and rigth arrow like dx-tui correctly
+
+First of all create a short description so that you can continue working on the to-do.
+
+then use that in our codex-tui-dx too as the code is there and the dx binary was created to be integrated with the codex-tui its whole purpose is to get merged with codex-tui
+
+you can just directly use them - bro use direct dx codex and edit them to fit in the codx-tui

@@ -2646,12 +2646,29 @@ impl App {
 					// Pass transcript cells to ChatWidget before rendering
 					self.chat_widget.set_transcript_cells(self.transcript_cells.clone());
 
-					tui.draw(viewport_height, |frame| {
-						self.chat_widget.render(frame.area(), frame.buffer);
-						if let Some((x, y)) = self.chat_widget.cursor_pos(frame.area()) {
-							frame.set_cursor_position((x, y));
-						}
-					})?;
+					// Check if we should use Root widget (for animations/Yazi) or ChatWidget (for normal chat)
+					let dx_state = self.chat_widget.dx_chat_state.borrow();
+					let use_root_widget = dx_state.animation_mode;
+					drop(dx_state);
+
+					if use_root_widget {
+						// Use Root widget for animations and Yazi (DIRECT DX CODE!)
+						tui.draw(viewport_height, |frame| {
+							let mut dx_core = self.chat_widget.dx_core.borrow_mut();
+							let mut dx_bridge = self.chat_widget.dx_bridge.borrow_mut();
+							let root = crate::root::Root::new(&dx_core, &mut dx_bridge);
+							use ratatui::widgets::Widget;
+							root.render(frame.area(), frame.buffer);
+						})?;
+					} else {
+						// Use ChatWidget for normal chat
+						tui.draw(viewport_height, |frame| {
+							self.chat_widget.render(frame.area(), frame.buffer);
+							if let Some((x, y)) = self.chat_widget.cursor_pos(frame.area()) {
+								frame.set_cursor_position((x, y));
+							}
+						})?;
+					}
 					if self.chat_widget.external_editor_state() == ExternalEditorState::Requested {
 						self.chat_widget.set_external_editor_state(ExternalEditorState::Active);
 						self.app_event_tx.send(AppEvent::LaunchExternalEditor);
