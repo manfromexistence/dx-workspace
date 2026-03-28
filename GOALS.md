@@ -8,6 +8,10 @@
 - [ ] Token -> Saving
 - [ ] Serializer, Local Model -> Speed
 
+git clone https://github.com/maxcurzi/tplay video && cd video && rm -rf .git && cd ..
+git clone https://github.com/buildoak/tortuise 3d && cd 3d && rm -rf .git && cd ..
+git clone https://github.com/ratatui/ratatui-image image && cd image && rm -rf .git && cd ..
+
 Audio
 Suzume
 Pirates of the carabian
