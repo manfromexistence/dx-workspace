@@ -46,3 +46,11 @@ Use message list items instead of any weird sloppy UI because message link works
 Make sure that when you click on the message list it successfully changes the model.
 
 And make our whole TUI connect with Codex. Show the Codex path in our input action button and token info next to it. Completely integrate the Codex with our dx TUI.
+
+Now you can look at the assets folder "F:\codex\codex-rs\dx\assets" And there you can find some new sounds that I have added. Now please implement all those sounds in our different screens like:
+the matrix sound in the matrix screen
+the wave sound in the wave screen
+the firework sound in the firework screen
+the rain sound in the rain screen
+the space sound in the space-like screen
+and things like that. Implement all the sounds in the screens correctly. If some screen doesn't match with the sound name then use curl and download the sound from the internet for that specific screen.
