@@ -1,9 +1,9 @@
 use fb_term::Term;
 
-pub(super) struct Panic;
+pub struct Panic;
 
 impl Panic {
-	pub(super) fn install() {
+	pub fn install() {
 		better_panic::install();
 
 		let hook = std::panic::take_hook();

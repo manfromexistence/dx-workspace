@@ -170,3 +170,19 @@
 - **In Progress**: File browser
 - **Remaining**: File browser, voice mode, chat features
 - **Estimated Completion**: ~5-8 more integration tasks
+
+
+---
+
+## ✅ COMPLETED (2026-03-29)
+
+### Root Widget Integration
+- Added `dx_core: RefCell<fb_core::Core>` to ChatWidget
+- Added `dx_bridge: RefCell<YaziChatBridge>` to ChatWidget  
+- Initialize DX subsystems in `src/codex.rs` main function
+- App.rs checks `animation_mode` and uses Root widget when true
+- Root widget handles all DX rendering (animations + Yazi)
+- Made Panic module public for initialization
+- Hardcoded keys: '1' shows Matrix, '3' shows Yazi
+
+**APPROACH: DIRECT DX CODE - NO WRAPPERS, NO BRIDGES!**

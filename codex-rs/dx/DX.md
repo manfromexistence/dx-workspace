@@ -71,3 +71,4 @@ First of all create a short description so that you can continue working on the 
 then use that in our codex-tui-dx too as the code is there and the dx binary was created to be integrated with the codex-tui its whole purpose is to get merged with codex-tui
 
 you can just directly use them - bro use direct dx codex and edit them to fit in the codx-tui
+bro directly use them

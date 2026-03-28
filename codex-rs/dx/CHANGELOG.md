@@ -220,3 +220,22 @@ If issues arise, revert these changes in order:
   - Sounds change with each animation
   - Smooth transitions
 - **Next**: File browser (Yazi) integration
+
+
+## 2026-03-29 - Root Widget Integration (DIRECT DX CODE!)
+
+### Added
+- `dx_core: RefCell<fb_core::Core>` field to ChatWidget
+- `dx_bridge: RefCell<YaziChatBridge>` field to ChatWidget
+- DX subsystem initialization in `src/codex.rs` main function
+- Root widget rendering in app.rs when `animation_mode` is true
+- Made Panic module public for initialization
+
+### Changed
+- App.rs now conditionally uses Root widget (for animations/Yazi) or ChatWidget (for chat)
+- Hardcoded keys: '1' shows Matrix animation, '3' shows Yazi file browser
+
+### Technical Details
+- Using DIRECT DX CODE - no wrappers, no bridges
+- Root widget from DX-TUI handles all animation and Yazi rendering
+- Proper DX initialization sequence: fb_shared, fb_tty, fb_term, fb_fs, fb_config, fb_vfs, fb_adapter, fb_boot, fb_dds, fb_widgets, fb_watcher, fb_plugin
