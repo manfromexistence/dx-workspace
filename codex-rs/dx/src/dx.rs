@@ -18,6 +18,7 @@ mod bridge;
 mod chat;
 mod chat_components;
 mod chat_input;
+mod codex_backend;
 mod codex_integration;
 mod components;
 mod dispatcher;

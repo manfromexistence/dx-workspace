@@ -30,17 +30,27 @@ impl ModelProvider {
 /// Get all available models
 pub fn get_available_models() -> Vec<ModelInfo> {
 	vec![
-		// Local model (default, unlimited)
+		// Mistral model (default for Codex)
+		ModelInfo {
+			id: "mistral-large-latest".to_string(),
+			display_name: "Mistral Large".to_string(),
+			description: "Mistral's most capable model (Default)".to_string(),
+			provider: ModelProvider::Codex,
+			is_default: true,
+			is_unlimited: false,
+			context_window: Some(128_000),
+		},
+		// Local model (unlimited)
 		ModelInfo {
 			id: "local-infinity".to_string(),
-			display_name: "Infinity".to_string(),
+			display_name: "Infinity (Local)".to_string(),
 			description: "Unlimited local model with infinite context".to_string(),
 			provider: ModelProvider::Local,
-			is_default: true,
+			is_default: false,
 			is_unlimited: true,
 			context_window: None,
 		},
-		// Codex models (from models.json)
+		// Other Codex models
 		ModelInfo {
 			id: "gpt-5.4".to_string(),
 			display_name: "GPT-5.4".to_string(),
@@ -109,10 +119,10 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn test_default_model_is_local() {
+	fn test_default_model_is_mistral() {
 		let default = get_default_model();
-		assert_eq!(default.provider, ModelProvider::Local);
-		assert!(default.is_unlimited);
+		assert_eq!(default.provider, ModelProvider::Codex);
+		assert_eq!(default.id, "mistral-large-latest");
 		assert!(default.is_default);
 	}
 
