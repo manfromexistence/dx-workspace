@@ -151,10 +151,6 @@ enum Subcommand {
     /// Inspect feature flags.
     Features(FeaturesCli),
 
-    /// Test local LLM integration (verify model loading and basic inference).
-    #[clap(name = "test-local-llm")]
-    TestLocalLlm(TestLocalLlmCommand),
-
     /// Configure a provider (fetch models and set defaults).
     Configure(ConfigureCommand),
 }
@@ -164,17 +160,6 @@ struct CompletionCommand {
     /// Shell to generate completions for
     #[clap(value_enum, default_value_t = Shell::Bash)]
     shell: Shell,
-}
-
-#[derive(Debug, Parser)]
-struct TestLocalLlmCommand {
-    /// Test prompt to send to the local LLM
-    #[arg(value_name = "PROMPT", default_value = "Hello, who are you?")]
-    prompt: String,
-
-    /// Model path (defaults to F:/cli/models/llm/Qwen3.5-0.8B-Q4_K_M.gguf)
-    #[arg(long, value_name = "PATH")]
-    model_path: Option<String>,
 }
 
 #[derive(Debug, Parser)]
@@ -616,60 +601,6 @@ fn stage_str(stage: Stage) -> &'static str {
         Stage::Deprecated => "deprecated",
         Stage::Removed => "removed",
     }
-}
-
-async fn run_test_local_llm(cmd: TestLocalLlmCommand) -> anyhow::Result<()> {
-    use codex_local_llm::LocalLlm;
-    use std::path::PathBuf;
-
-    println!("=== Testing Local LLM Integration ===\n");
-
-    // Determine model path
-    let model_path = if let Some(path) = cmd.model_path {
-        PathBuf::from(path)
-    } else {
-        PathBuf::from("F:/cli/models/llm/Qwen3.5-0.8B-Q4_K_M.gguf")
-    };
-
-    println!("Model path: {}", model_path.display());
-
-    // Check if model file exists
-    if !model_path.exists() {
-        anyhow::bail!(
-            "Model file not found at: {}\n\nPlease ensure the model is downloaded to this location.",
-            model_path.display()
-        );
-    }
-
-    println!("✓ Model file found\n");
-
-    // Create LocalLlm instance
-    println!("Initializing LocalLlm...");
-    let llm = LocalLlm::with_model_path(model_path);
-
-    // Initialize (load model)
-    println!("Loading model (this may take a few seconds)...");
-    llm.initialize().await?;
-    println!("✓ Model loaded successfully\n");
-
-    // Test generation
-    println!("Prompt: {}", cmd.prompt);
-    println!("\nGenerating response...\n");
-    println!("Response:");
-    println!("---");
-
-    // For now, just confirm initialization works
-    // TODO: Add actual generation once LocalLlm::generate() is implemented
-    println!("(Generation not yet implemented - but model loaded successfully!)");
-    println!("---\n");
-
-    println!("✓ Local LLM test completed successfully!");
-    println!("\nNext steps:");
-    println!("  1. Implement LocalLlm::generate() method");
-    println!("  2. Integrate into client.rs for direct calls");
-    println!("  3. Test with: just dx");
-
-    Ok(())
 }
 
 fn run_configure_provider(
@@ -1358,10 +1289,6 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                 disable_feature_in_config(&interactive, &feature).await?;
             }
         },
-        Some(Subcommand::TestLocalLlm(cmd)) => {
-            reject_remote_mode_for_subcommand(root_remote.as_deref(), "test-local-llm")?;
-            run_test_local_llm(cmd).await?;
-        }
         Some(Subcommand::Configure(cmd)) => {
             reject_remote_mode_for_subcommand(root_remote.as_deref(), "configure")?;
             run_configure_provider(cmd).await?;

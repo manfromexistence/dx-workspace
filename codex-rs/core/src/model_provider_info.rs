@@ -337,7 +337,6 @@ pub const DEFAULT_OLLAMA_PORT: u16 = 11434;
 
 pub const LMSTUDIO_OSS_PROVIDER_ID: &str = "lmstudio";
 pub const OLLAMA_OSS_PROVIDER_ID: &str = "ollama";
-pub const LOCAL_LLM_PROVIDER_ID: &str = "local-llm";
 
 /// Built-in default provider list.
 pub fn built_in_model_providers(
@@ -364,7 +363,6 @@ pub fn built_in_model_providers(
             LMSTUDIO_OSS_PROVIDER_ID,
             create_oss_provider(DEFAULT_LMSTUDIO_PORT, WireApi::Responses),
         ),
-        (LOCAL_LLM_PROVIDER_ID, create_local_llm_provider()),
         // === NEW: Anthropic ===
         (
             "anthropic",
@@ -720,28 +718,6 @@ pub fn built_in_model_providers(
     .into_iter()
     .map(|(k, v)| (k.to_string(), v))
     .collect()
-}
-
-pub fn create_local_llm_provider() -> ModelProviderInfo {
-    ModelProviderInfo {
-        name: "Local LLM".into(),
-        base_url: None, // No HTTP - direct llama.cpp integration
-        env_key: None,
-        env_key_aliases: None,
-        env_key_instructions: None,
-        experimental_bearer_token: None,
-        wire_api: WireApi::Responses,
-        query_params: None,
-        http_headers: None,
-        env_http_headers: None,
-        request_max_retries: None,
-        stream_max_retries: None,
-        stream_idle_timeout_ms: None,
-        websocket_connect_timeout_ms: None,
-        requires_openai_auth: false,
-        auth_style: default_auth_style(),
-        supports_websockets: false,
-    }
 }
 
 pub fn create_oss_provider(default_provider_port: u16, wire_api: WireApi) -> ModelProviderInfo {

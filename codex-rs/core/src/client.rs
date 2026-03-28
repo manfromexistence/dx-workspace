@@ -1414,11 +1414,6 @@ impl ModelClientSession {
         service_tier: Option<ServiceTier>,
         turn_metadata_header: Option<&str>,
     ) -> Result<ResponseStream> {
-        // Check if this is the local-llm provider (has no base_url)
-        if self.client.state.provider.base_url.is_none() {
-            return self.stream_local_llm(prompt, model_info).await;
-        }
-
         let wire_api = self.client.state.provider.wire_api;
         match wire_api {
             WireApi::Responses => {
@@ -1475,96 +1470,6 @@ impl ModelClientSession {
                 "Google Gemini API is not yet implemented in this fork".into(),
             )),
         }
-    }
-
-    /// Stream responses from the local LLM (direct llama.cpp integration).
-    async fn stream_local_llm(
-        &mut self,
-        prompt: &Prompt,
-        _model_info: &ModelInfo,
-    ) -> Result<ResponseStream> {
-        use codex_local_llm::LocalLlm;
-        use tokio::sync::mpsc;
-
-        // Create a channel for streaming events
-        let (tx, rx) = mpsc::channel(100);
-
-        // Extract the user's message from the prompt
-        let user_message = prompt
-            .input
-            .iter()
-            .filter_map(|item| match item {
-                ResponseItem::Message { role, content, .. } if role == "user" => Some(
-                    content
-                        .iter()
-                        .filter_map(|c| match c {
-                            codex_protocol::models::ContentItem::InputText { text } => {
-                                Some(text.clone())
-                            }
-                            _ => None,
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n"),
-                ),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        if user_message.is_empty() {
-            return Err(CodexErr::InvalidRequest(
-                "No user message found in prompt".to_string(),
-            ));
-        }
-
-        // Initialize and run the local LLM in a background task
-        tokio::spawn(async move {
-            let llm = LocalLlm::new();
-
-            // Initialize the model
-            if let Err(e) = llm.initialize().await {
-                let _ = tx
-                    .send(Err(CodexErr::InvalidRequest(format!(
-                        "Failed to initialize local LLM: {}",
-                        e
-                    ))))
-                    .await;
-                return;
-            }
-
-            // Send Created event
-            let _ = tx.send(Ok(ResponseEvent::Created)).await;
-
-            // Generate response with streaming
-            let tx_clone = tx.clone();
-            let result = llm
-                .generate_stream(&user_message, move |token| {
-                    let _ = tx_clone.try_send(Ok(ResponseEvent::OutputTextDelta(token)));
-                })
-                .await;
-
-            match result {
-                Ok(()) => {
-                    // Send completion event
-                    let _ = tx
-                        .send(Ok(ResponseEvent::Completed {
-                            response_id: "local-llm-response".to_string(),
-                            token_usage: None,
-                        }))
-                        .await;
-                }
-                Err(e) => {
-                    let _ = tx
-                        .send(Err(CodexErr::InvalidRequest(format!(
-                            "Local LLM generation failed: {}",
-                            e
-                        ))))
-                        .await;
-                }
-            }
-        });
-
-        Ok(ResponseStream { rx_event: rx })
     }
 
     /// Permanently disables WebSockets for this Codex session and resets WebSocket state.

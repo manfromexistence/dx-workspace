@@ -146,11 +146,10 @@ pub const CONFIG_TOML_FILE: &str = "config.toml";
 const OPENAI_BASE_URL_ENV_VAR: &str = "OPENAI_BASE_URL";
 #[cfg(target_os = "linux")]
 const SYSTEM_BWRAP_PATH: &str = "/usr/bin/bwrap";
-const RESERVED_MODEL_PROVIDER_IDS: [&str; 4] = [
+const RESERVED_MODEL_PROVIDER_IDS: [&str; 3] = [
     OPENAI_PROVIDER_ID,
     OLLAMA_OSS_PROVIDER_ID,
     LMSTUDIO_OSS_PROVIDER_ID,
-    crate::model_provider_info::LOCAL_LLM_PROVIDER_ID,
 ];
 
 #[cfg(target_os = "linux")]

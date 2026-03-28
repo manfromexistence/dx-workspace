@@ -56,3 +56,15 @@ the space sound in the space-like screen
 and things like that. Implement all the sounds in the screens correctly. If some screen doesn't match with the sound name then use curl and download the sound from the internet for that specific screen.
 
 Now please integrate the whole codex into our dx dui. Please learn from the codex dui that is around the dx dui code base and just implement it correctly in our dx dui. When we run into the AI, make sure to show the answer from codex and fully integrate codex into our dx tui And please show me a list and tell me what we need to integrate in our dx tui of codex to implement the codex fully in our dx tui instead of the codex tui.
+
+And in Codex code I previously added a local model running feature but in that local model running it was always just not finding the model. In dxdui I implemented the local gduf model running fully.
+Now you can do two things:
+1. If the local model running of the Codex core integration I did is similar to dx local gduf model running, then just update it like the current dxdui local gduf model running.
+2. If not then remove the local model running entirely from the Codex code that I implemented earlier.
+Currently if we try to add another provider, it is defaulting to local gduf running and the local gduf is not working too so it is creating a mess in Codex code. Implement it correctly or if it is hard then just remove it correctly because in our dxdui I implemented it correctly. Do what is best.
+
+And make it so that when there is no base URL it was defaulting to the local model. Please try to run the local model because I already implemented multi-provider in Codex TOI so make sure that we use that instead of that local model running and even worse, the provider character. 
+
+And about your checklist bro, we literally diverted our plan to not run the Codex TUI inside our DX TUI because Codex TUI has a fundamental TUI problem. It's really good to just recreate it in our DX TUI as Codex TUI uses the Codex code and other protocol anyways so we will be doing the same thing instead of wrapping the correct UI inside our DX TUI.
+
+Now we already set the Mistral API key in our operating system and we implemented the codex to work on the Mistral latest low model with the API key. In our dxdui make sure Mistral is the default model with the codex and render the codex messages like the codex tui rendering in our dx message list correctly. 
