@@ -163,3 +163,26 @@ If issues arise, revert these changes in order:
   - All timer-based DX logic now runs in codex-tui-dx
   - Font cycling, menu updates, state updates all working
 - **Next**: Test with `cargo run --bin codex-tui-dx`
+
+
+### Added - Menu System Integration (2026-03-29 Latest)
+- **Integrated DX Menu System** (`src/chatwidget.rs`):
+  - Press '0' key to toggle menu overlay (works on any screen)
+  - Menu renders on top of everything using `dx_state.menu.render_in_area()`
+  - All 25 main menu items accessible
+  - Menu navigation keys working:
+    - Up/Down or j/k: Navigate menu items
+    - PageUp/PageDown: Jump 10 items
+    - Home/End or g/G: Jump to top/bottom
+    - Enter: Select item / enter submenu
+    - Esc: Go back to main menu or close menu
+  - Menu opening/closing animations (random effects)
+  - UI sounds play on menu open/close and navigation
+  - Uses REAL DX menu code - no duplication!
+- **Menu Features**:
+  - 25 submenus: Theme, Keyboard Shortcuts, Providers, Plugins, Skills, etc.
+  - Theme picker with live preview
+  - Model selection
+  - Content viewer for file attachments
+  - Recording mode for keyboard shortcuts
+- **Next**: Test menu with `cargo run --bin codex-tui-dx`

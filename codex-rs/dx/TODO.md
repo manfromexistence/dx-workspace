@@ -26,6 +26,7 @@
 - [ ] Exit animation sounds (train)
 
 #### 3. Input Features
+- [x] ~~Menu system (25 submenus)~~ ✅ (completed: 2026-03-29)
 - [ ] DX chat input (multi-line, cursor, selection)
 - [ ] Voice mode (hold Space key)
 - [ ] File attachment system
@@ -60,11 +61,11 @@
 
 ## 🚀 IN PROGRESS
 
-### Current Task: Integrate Menu System
-- [ ] Route '0' key press to toggle menu
-- [ ] Render menu overlay in ChatWidget
-- [ ] Handle menu navigation (j/k, arrows, PageUp/Down)
-- [ ] Implement all 25 submenus
+### Current Task: Integrate Animation Carousel
+- [ ] Handle Left/Right navigation in ChatWidget
+- [ ] Render animations in transcript area
+- [ ] Play animation sounds
+- [ ] Implement all 11 animations
 
 ---
 
@@ -126,6 +127,7 @@
 - [x] Create DX dispatcher bridge module
 - [x] Integrate timer logic (font cycling, menu updates)
 - [x] ~~Integrate audio system (splash sound plays)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Integrate menu system (press '0' to toggle, all navigation working)~~ ✅ (completed: 2026-03-29)
 
 ---
 
@@ -153,17 +155,17 @@
 
 ## 🎯 NEXT IMMEDIATE TASK
 
-**Integrate Audio System**
-1. Play `assets/birds.mp3` when showing DX splash
-2. Call `dx_chat_state.play_animation_sound()` in ChatWidget
-3. Stop sound when leaving splash (when messages appear)
+**Integrate Animation Carousel**
+1. Handle Left/Right arrow keys in ChatWidget
+2. Render animations in transcript area (Matrix, Confetti, GameOfLife, etc.)
+3. Play animation sounds (looping)
 4. Test with `cargo run --bin codex-tui-dx`
 
 ---
 
 ## 📊 Progress Summary
 
-- **Completed**: 10 steps (Splash screen, rainbow animation, font cycling, dispatcher bridge)
-- **In Progress**: Audio integration
-- **Remaining**: Menu, animations, file browser, event routing, voice mode, chat features
-- **Estimated Completion**: ~15-20 more integration tasks
+- **Completed**: 12 steps (Splash, rainbow, font cycling, dispatcher bridge, audio, menu)
+- **In Progress**: Animation carousel
+- **Remaining**: Animations, file browser, event routing, voice mode, chat features
+- **Estimated Completion**: ~10-15 more integration tasks
