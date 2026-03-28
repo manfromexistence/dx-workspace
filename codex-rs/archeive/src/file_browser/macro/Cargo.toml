@@ -1,0 +1,14 @@
+[package]
+name = "fb-macro"
+description            = "Yazi macros"
+version = "26.2.2"
+edition = "2024"
+license = "MIT"
+authors = ["DX Contributors"]
+homepage = "https://github.com/sxyazi/yazi"
+repository = "https://github.com/sxyazi/yazi"
+rust-version = "1.85"
+
+[lints]
+workspace = true
+

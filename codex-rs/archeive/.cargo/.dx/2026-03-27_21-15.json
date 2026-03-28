@@ -1,0 +1,16 @@
+[
+  {
+    "role": "User",
+    "content": "hi",
+    "timestamp": "2026-03-27T21:15:31.580587700+06:00",
+    "token_count": 1,
+    "thinking_expanded": false
+  },
+  {
+    "role": "Assistant",
+    "content": "Hello! How can I assist you today?",
+    "timestamp": "2026-03-27T21:15:31.898785700+06:00",
+    "token_count": 0,
+    "thinking_expanded": false
+  }
+]
