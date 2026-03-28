@@ -12,4 +12,4 @@ Now in our assets folder I have added many more new sounds so please implement t
 3. theme
 4. chat-input
 5. status-line
-At "F:\codex\codex-rs\dx" folder there is 2 binary codex-tui-dx and dx - now our work is to copy all the dx tui into our codex-tui-dx - all deps and all others stufs are already merge - no conflicts - now just need to integrate the dx tui in codex-tui-dx - 
+At "F:\codex\codex-rs\dx" folder there is 2 binary codex-tui-dx and dx - now our work is to copy all the dx tui into our codex-tui-dx - all deps and all others stufs are already merge - no conflicts - now just need to integrate the dx tui of dx binary into in codex-tui-dx - now the dx-tui is fairly simple and small and professinal and well structed now please just integrate the dx-tui into codex-tui instead of creating ai slopy stubs codes - and just test it with "cargo bun" don't run any other command like cargo check/build/test at all!!!
