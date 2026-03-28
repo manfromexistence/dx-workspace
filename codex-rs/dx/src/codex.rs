@@ -77,25 +77,25 @@ fn into_legacy_exit_info(exit_info: codex_tui_app_server::AppExitInfo) -> AppExi
 }
 
 fn main() -> anyhow::Result<()> {
-	// DX-TUI initialization (DIRECT DX CODE!)
-	codex_tui_dx::panic::Panic::install();
-	fb_shared::init();
-	
-	// Initialize DX subsystems (required for Core::make())
-	fb_tty::init();
-	fb_term::init();
-	fb_fs::init();
-	fb_config::init()?;
-	fb_vfs::init();
-	fb_adapter::init()?;
-	fb_boot::init();
-	fb_dds::init();
-	fb_widgets::init();
-	fb_watcher::init();
-	fb_plugin::init()?;
-	fb_dds::serve();
-	
 	arg0_dispatch_or_else(|arg0_paths: Arg0DispatchPaths| async move {
+		// DX-TUI initialization (DIRECT DX CODE!) - must be in async context
+		codex_tui_dx::panic::Panic::install();
+		fb_shared::init();
+		
+		// Initialize DX subsystems (required for Core::make())
+		fb_tty::init();
+		fb_term::init();
+		fb_fs::init();
+		fb_config::init()?;
+		fb_vfs::init();
+		fb_adapter::init()?;
+		fb_boot::init();
+		fb_dds::init();
+		fb_widgets::init();
+		fb_watcher::init();
+		fb_plugin::init()?;
+		fb_dds::serve();
+		
 		let top_cli = TopCli::parse();
 		let mut inner = top_cli.inner;
 		inner.config_overrides.raw_overrides.splice(0..0, top_cli.config_overrides.raw_overrides);

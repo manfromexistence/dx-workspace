@@ -15,20 +15,27 @@ inclusion: always
 
 ## What Worked
 
-- Added `handle_menu_key()` method to ChatState (single source of truth)
-- Both DX dispatcher and ChatWidget call the same method
-- Menu renders with `render_menu_in_area()` for animations
-- Removed dx_dispatcher_bridge.rs (useless wrapper)
+- Added `dx_core: RefCell<fb_core::Core>` to ChatWidget
+- Added `dx_bridge: RefCell<YaziChatBridge>` to ChatWidget
+- Initialize DX subsystems in async context (src/codex.rs)
+- App.rs checks `animation_mode` and uses Root widget when true
+- Root widget handles ALL DX rendering (animations + Yazi)
+- Made Panic module public
+- Hardcoded keys: '1' shows Matrix, '3' shows Yazi
 
 ## Current Status
 
-- Menu shows with '0' key
-- Navigation works: Up/Down, j/k, PageUp/PageDown, Home/End, Enter, Esc
-- Opening animation needs fixing (only closing animation shows)
+- DX initialization works (in async context)
+- Root widget renders animations and Yazi
+- Press '1' to show Matrix animation
+- Press '3' to show Yazi file browser
+- Menu works with '0' key
 
 ## Integration Points
 
-- `src/state.rs` - ChatState::handle_menu_key() handles all menu keys
-- `src/chatwidget.rs` - Calls handle_menu_key(), renders with render_menu_in_area()
-- `src/dispatcher.rs` - Original DX code unchanged, calls handle_menu_key()
+- `src/codex.rs` - DX initialization in async block
+- `src/app.rs` - Conditionally uses Root widget for animations
+- `src/chatwidget.rs` - Has dx_core and dx_bridge fields
+- `src/root.rs` - DX Root widget (unchanged, direct DX code)
+- `src/state.rs` - ChatState with animation state
 
