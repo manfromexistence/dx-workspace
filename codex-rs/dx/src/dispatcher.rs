@@ -401,6 +401,7 @@ impl<'a> Dispatcher<'a> {
 						}
 					}
 					self.app.bridge.chat_state.animation_start_time = Some(Instant::now());
+					self.app.bridge.chat_state.play_animation_sound(); // Play sound for new animation
 					NEED_RENDER.store(1, Ordering::Relaxed);
 					succ!()
 				}
@@ -420,6 +421,7 @@ impl<'a> Dispatcher<'a> {
 						self.app.bridge.chat_state.current_animation_index = 0;
 					}
 					self.app.bridge.chat_state.animation_start_time = Some(Instant::now());
+					self.app.bridge.chat_state.play_animation_sound(); // Play sound for new animation
 					NEED_RENDER.store(1, Ordering::Relaxed);
 					succ!()
 				}
@@ -596,12 +598,14 @@ impl<'a> Dispatcher<'a> {
 							self.app.bridge.chat_state.current_animation_index = matrix_idx;
 						}
 						self.app.bridge.chat_state.animation_start_time = Some(Instant::now());
+						self.app.bridge.chat_state.play_animation_sound(); // Play sound for animation
 						NEED_RENDER.store(1, Ordering::Relaxed);
 						succ!()
 					}
 					KeyCode::Right => {
 						// Right arrow: Go to file browser
 						self.app.bridge.chat_state.animation_mode = false;
+						self.app.bridge.chat_state.stop_animation_sound(); // Stop sound when leaving animations
 						self.app.bridge.mode = crate::bridge::AppMode::FilePicker;
 						NEED_RENDER.store(1, Ordering::Relaxed);
 						succ!()

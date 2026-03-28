@@ -12,6 +12,7 @@ mod file_browser;
 mod menu;
 
 mod animations;
+mod audio;
 mod autocomplete;
 mod bridge;
 mod chat;

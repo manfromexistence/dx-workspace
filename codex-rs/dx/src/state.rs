@@ -95,6 +95,26 @@ impl AnimationType {
 			Self::Yazi => "Yazi File Manager",
 		}
 	}
+
+	/// Get the sound file path for this animation
+	pub fn sound_file(&self) -> Option<&'static str> {
+		match self {
+			Self::Matrix => Some("assets/matrix.mp3"),
+			Self::Rain => Some("assets/rain.mp3"),
+			Self::Waves => Some("assets/wave.mp3"),
+			Self::Fireworks => Some("assets/fireworks.mp3"),
+			Self::Starfield => Some("assets/space.mp3"),
+			Self::Plasma => Some("assets/plasma.mp3"),
+			// No matching sounds for these animations yet
+			Self::Confetti => None,
+			Self::GameOfLife => None,
+			Self::DVDLogo => None,
+			Self::NyanCat => None,
+			Self::Fire => None,
+			Self::Yazi => None,
+			Self::Splash => None,
+		}
+	}
 }
 
 pub struct ChatState {
@@ -225,6 +245,10 @@ pub struct ChatState {
 
 	// NEW: Session file tracking
 	pub session_filename: String, // Current session's filename (timestamp-based)
+
+	// NEW: Audio player for animation sounds
+	pub audio_player: Option<crate::audio::AudioPlayer>,
+	pub current_animation_sound: Option<String>, // Track currently playing sound
 }
 
 impl ChatState {
@@ -356,6 +380,8 @@ impl ChatState {
 			input_focused: true,        // Start focused by default
 			received_first_focus: true, // Assume we have focus at startup
 			session_filename: Self::generate_session_filename(), // Generate timestamp-based filename
+			audio_player: crate::audio::AudioPlayer::new().ok(), // Initialize audio player
+			current_animation_sound: None, // No sound playing initially
 		};
 
 		// DON'T load messages on startup - always start fresh with splash screen
@@ -751,5 +777,38 @@ impl ChatState {
 			ModelProvider::Local => "Local".to_string(),
 			ModelProvider::Codex => "Codex".to_string(),
 		}
+	}
+
+	/// Play sound for the current animation
+	pub fn play_animation_sound(&mut self) {
+		let all_animations = AnimationType::all();
+		if self.current_animation_index < all_animations.len() {
+			let current_anim = all_animations[self.current_animation_index];
+
+			if let Some(sound_file) = current_anim.sound_file() {
+				// Only play if it's a different sound than currently playing
+				if self.current_animation_sound.as_deref() != Some(sound_file) {
+					if let Some(player) = &self.audio_player {
+						if let Err(e) = player.play_looping(sound_file) {
+							eprintln!("Failed to play sound {}: {}", sound_file, e);
+						} else {
+							self.current_animation_sound = Some(sound_file.to_string());
+							player.set_volume(0.3); // Set volume to 30%
+						}
+					}
+				}
+			} else {
+				// No sound for this animation, stop any playing sound
+				self.stop_animation_sound();
+			}
+		}
+	}
+
+	/// Stop the currently playing animation sound
+	pub fn stop_animation_sound(&mut self) {
+		if let Some(player) = &self.audio_player {
+			player.stop();
+		}
+		self.current_animation_sound = None;
 	}
 }
