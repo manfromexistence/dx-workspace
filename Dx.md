@@ -82,3 +82,5 @@ Now learn from the Codex TUI and in our dx TUI implement the similar learning fr
 Now give me the brutal truth of the checklist of the features that Codex TUI has that our DX TUI doesn't have right now. Give me the brutal honest truth. 
 
 Then what is the next step and tell me, around 100%, how much we are close to implementing the codex fully in our dx.
+
+Please look at the root codex_tui_architecture.md file and look at the codex-rs/dx folder and tell me what is faster to implement. Is it faster to integrate dx, tui into codex? Is it faster to implement codex-tui into dx-tui?
