@@ -464,6 +464,16 @@ impl ChatState {
 				let _ = self.save_messages();
 			}
 			
+			EventMsg::AgentMessageDelta(delta) => {
+				// QUICK WIN #1: Streaming message deltas
+				// Update the last assistant message with delta
+				if let Some(last_msg) = self.messages.last_mut() {
+					if last_msg.role == crate::chat_components::MessageRole::Assistant {
+						last_msg.content.push_str(&delta.text);
+					}
+				}
+			}
+			
 			EventMsg::ToolUse(tool) => {
 				tracing::info!("Tool use: {} - {}", tool.name, tool.input);
 				
@@ -499,10 +509,287 @@ impl ChatState {
 				self.is_loading = false;
 			}
 			
+			EventMsg::Warning(warning) => {
+				// QUICK WIN #3: Show warnings as toasts
+				self.show_toast(format!("⚠️ Warning: {}", warning.message));
+			}
+			
+			EventMsg::TurnStarted(_event) => {
+				// QUICK WIN #4: Turn initialization
+				self.is_loading = true;
+				tracing::info!("Turn started");
+			}
+			
 			EventMsg::TurnComplete => {
 				self.is_loading = false;
 				self.codex_current_turn_id = None;
 				tracing::info!("Turn complete");
+			}
+			
+			EventMsg::TurnAborted(abort) => {
+				// QUICK WIN #5: Show interruption
+				self.is_loading = false;
+				let reason = match abort.reason {
+					codex_protocol::protocol::TurnAbortReason::Interrupted => "interrupted by user",
+					codex_protocol::protocol::TurnAbortReason::ContextLengthExceeded => "context length exceeded",
+					codex_protocol::protocol::TurnAbortReason::RateLimitExceeded => "rate limit exceeded",
+					codex_protocol::protocol::TurnAbortReason::Other => "unknown reason",
+				};
+				self.show_toast(format!("Turn aborted: {}", reason));
+			}
+			
+			EventMsg::TokenCount(token_info) => {
+				// QUICK WIN #2: Token usage tracking
+				// TODO: Store in state and show in status bar
+				tracing::info!("Token usage: input={}, output={}", 
+					token_info.info.input_tokens.unwrap_or(0),
+					token_info.info.output_tokens.unwrap_or(0)
+				);
+			}
+			
+			EventMsg::ExecCommandBegin(exec) => {
+				// QUICK WIN #6: Command execution start
+				let cmd = exec.command.join(" ");
+				self.show_toast(format!("🔧 Executing: {}", cmd));
+				
+				// Add execution message
+				self.messages.push(crate::chat_components::Message::system(
+					format!("Executing command: {}", cmd)
+				));
+			}
+			
+			EventMsg::ExecCommandEnd(exec) => {
+				// QUICK WIN #6: Command execution end
+				let status = if exec.exit_code == 0 { "✓" } else { "✗" };
+				self.show_toast(format!("{} Command finished (exit code: {})", status, exec.exit_code));
+			}
+			
+			EventMsg::ExecCommandOutputDelta(delta) => {
+				// Append command output to last message
+				if let Some(last_msg) = self.messages.last_mut() {
+					if last_msg.role == crate::chat_components::MessageRole::System {
+						last_msg.content.push_str(&delta.text);
+					}
+				}
+			}
+			
+			EventMsg::McpStartupUpdate(update) => {
+				// QUICK WIN #7: MCP startup progress
+				self.show_toast(format!("MCP: {} - {}", update.server_name, update.status));
+			}
+			
+			EventMsg::McpStartupComplete(complete) => {
+				// QUICK WIN #7: MCP startup complete
+				let status = match complete.status {
+					codex_protocol::protocol::McpStartupStatus::Success => "✓ Ready",
+					codex_protocol::protocol::McpStartupStatus::Failed => "✗ Failed",
+					codex_protocol::protocol::McpStartupStatus::Timeout => "⏱ Timeout",
+				};
+				self.show_toast(format!("MCP servers: {}", status));
+			}
+			
+			EventMsg::McpToolCallBegin(tool) => {
+				// MCP tool execution start
+				self.show_toast(format!("🔧 MCP tool: {}", tool.tool_name));
+			}
+			
+			EventMsg::McpToolCallEnd(tool) => {
+				// MCP tool execution end
+				let status = if tool.is_error { "✗" } else { "✓" };
+				self.show_toast(format!("{} MCP tool: {}", status, tool.tool_name));
+			}
+			
+			EventMsg::ThreadNameUpdated(update) => {
+				// Thread renamed
+				self.show_toast(format!("Thread renamed: {}", update.name));
+			}
+			
+			EventMsg::StreamError(err) => {
+				// Stream error
+				self.show_toast(format!("Stream error: {}", err.message));
+				self.is_loading = false;
+			}
+			
+			EventMsg::AgentReasoning(_reasoning) => {
+				// Reasoning tokens (o1, DeepSeek) - final
+				// TODO: Show reasoning in UI
+				tracing::info!("Reasoning complete");
+			}
+			
+			EventMsg::AgentReasoningDelta(delta) => {
+				// Reasoning streaming
+				// TODO: Show reasoning delta in UI
+				tracing::debug!("Reasoning delta: {}", delta.text);
+			}
+			
+			EventMsg::AgentReasoningRawContent(content) => {
+				// Raw reasoning content
+				tracing::info!("Reasoning raw content: {} chars", content.text.len());
+			}
+			
+			EventMsg::AgentReasoningRawContentDelta(delta) => {
+				// Raw reasoning delta
+				tracing::debug!("Reasoning raw delta: {}", delta.text);
+			}
+			
+			EventMsg::AgentReasoningSectionBreak(_) => {
+				// Reasoning section break
+				tracing::debug!("Reasoning section break");
+			}
+			
+			EventMsg::PlanDelta(delta) => {
+				// Plan mode streaming
+				tracing::debug!("Plan delta: {}", delta.text);
+			}
+			
+			EventMsg::PlanUpdate(_update) => {
+				// Plan update
+				tracing::info!("Plan updated");
+			}
+			
+			EventMsg::ImageGenerationBegin(img) => {
+				// Image generation start
+				self.show_toast(format!("🎨 Generating image: {}", img.prompt));
+			}
+			
+			EventMsg::ImageGenerationEnd(img) => {
+				// Image generation end
+				let status = if img.is_error { "✗" } else { "✓" };
+				self.show_toast(format!("{} Image generation complete", status));
+			}
+			
+			EventMsg::ViewImageToolCall(img) => {
+				// Image viewing
+				self.show_toast(format!("🖼️ Viewing image: {}", img.image_url));
+			}
+			
+			EventMsg::WebSearchBegin(search) => {
+				// Web search start
+				self.show_toast(format!("🔍 Searching: {}", search.query));
+			}
+			
+			EventMsg::WebSearchEnd(search) => {
+				// Web search end
+				let status = if search.is_error { "✗" } else { "✓" };
+				self.show_toast(format!("{} Search complete: {} results", status, search.results.len()));
+			}
+			
+			EventMsg::PatchApplyBegin(patch) => {
+				// Patch application start
+				self.show_toast(format!("📝 Applying patch to {}", patch.file_path));
+			}
+			
+			EventMsg::PatchApplyEnd(patch) => {
+				// Patch application end
+				let status = if patch.is_error { "✗" } else { "✓" };
+				self.show_toast(format!("{} Patch applied", status));
+			}
+			
+			EventMsg::TerminalInteraction(interaction) => {
+				// Terminal interaction
+				tracing::debug!("Terminal interaction: {}", interaction.text);
+			}
+			
+			EventMsg::GuardianAssessment(assessment) => {
+				// Content moderation
+				use codex_protocol::protocol::GuardianAssessmentStatus;
+				match assessment.status {
+					GuardianAssessmentStatus::Blocked => {
+						self.show_toast("⛔ Content blocked by moderation".to_string());
+					}
+					GuardianAssessmentStatus::Flagged => {
+						self.show_toast("⚠️ Content flagged by moderation".to_string());
+					}
+					GuardianAssessmentStatus::Passed => {
+						// Content passed, no action needed
+					}
+				}
+			}
+			
+			EventMsg::DeprecationNotice(notice) => {
+				// Deprecation warning
+				self.show_toast(format!("⚠️ Deprecated: {}", notice.message));
+			}
+			
+			EventMsg::BackgroundEvent(bg) => {
+				// Background event
+				tracing::info!("Background event: {}", bg.message);
+			}
+			
+			EventMsg::UndoStarted(_) => {
+				// Undo operation started
+				self.show_toast("↩️ Undoing...".to_string());
+			}
+			
+			EventMsg::UndoCompleted(_) => {
+				// Undo operation completed
+				self.show_toast("✓ Undo complete".to_string());
+			}
+			
+			EventMsg::TurnDiff(_diff) => {
+				// Turn diff
+				// TODO: Show diff in UI
+				tracing::info!("Turn diff available");
+			}
+			
+			EventMsg::ExitedReviewMode(_) => {
+				// Exited review mode
+				self.show_toast("Exited review mode".to_string());
+			}
+			
+			EventMsg::CollabAgentSpawnBegin(spawn) => {
+				// Collaboration agent spawning
+				self.show_toast(format!("🤖 Spawning agent: {}", spawn.agent_name));
+			}
+			
+			EventMsg::ModelReroute(_) => {
+				// Model rerouted
+				self.show_toast("Model rerouted".to_string());
+			}
+			
+			// Approval requests - TODO: Show approval dialog
+			EventMsg::ExecApprovalRequest(req) => {
+				let cmd = req.command.join(" ");
+				self.show_toast(format!("⚠️ Approval needed: {}", cmd));
+				// TODO: Show approval dialog in menu
+			}
+			
+			EventMsg::ApplyPatchApprovalRequest(req) => {
+				self.show_toast(format!("⚠️ Patch approval needed: {}", req.file_path));
+				// TODO: Show approval dialog in menu
+			}
+			
+			EventMsg::ElicitationRequest(req) => {
+				self.show_toast(format!("❓ Input needed: {}", req.prompt));
+				// TODO: Show input dialog
+			}
+			
+			EventMsg::RequestUserInput(req) => {
+				self.show_toast(format!("❓ {}", req.prompt));
+				// TODO: Show input dialog
+			}
+			
+			EventMsg::RequestPermissions(req) => {
+				self.show_toast(format!("🔐 Permission needed: {}", req.reason));
+				// TODO: Show permission dialog
+			}
+			
+			// Skills and plugins - TODO: Store in state
+			EventMsg::ListSkillsResponse(skills) => {
+				// QUICK WIN #8: Store skills list
+				tracing::info!("Received {} skills", skills.skills.len());
+				// TODO: Store in ChatState
+				self.show_toast(format!("Skills loaded: {}", skills.skills.len()));
+			}
+			
+			EventMsg::ListCustomPromptsResponse(_prompts) => {
+				// Custom prompts list
+				tracing::info!("Custom prompts received");
+			}
+			
+			EventMsg::McpListToolsResponse(_tools) => {
+				// MCP tools list
+				tracing::info!("MCP tools list received");
 			}
 			
 			EventMsg::ShutdownComplete => {
@@ -511,7 +798,7 @@ impl ChatState {
 			
 			_ => {
 				// Log other events for debugging
-				tracing::debug!("Codex event: {:?}", event.msg);
+				tracing::debug!("Unhandled Codex event: {:?}", event.msg);
 			}
 		}
 	}

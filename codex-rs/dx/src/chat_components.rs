@@ -156,6 +156,7 @@ pub enum ToolStatus {
 pub enum MessageRole {
 	User,
 	Assistant,
+	System, // For system messages (command execution, etc.)
 }
 
 impl Message {
