@@ -793,7 +793,7 @@ impl ChatState {
 						// Silently try to play - don't show errors
 						if player.play_looping(sound_file).is_ok() {
 							self.current_animation_sound = Some(sound_file.to_string());
-							player.set_volume(0.3); // Set volume to 30%
+							player.set_volume(0.1); // Set volume to 10%
 						}
 					}
 				}

@@ -54,3 +54,5 @@ the firework sound in the firework screen
 the rain sound in the rain screen
 the space sound in the space-like screen
 and things like that. Implement all the sounds in the screens correctly. If some screen doesn't match with the sound name then use curl and download the sound from the internet for that specific screen.
+
+Now please integrate the whole codex into our dx dui. Please learn from the codex dui that is around the dx dui code base and just implement it correctly in our dx dui. When we run into the AI, make sure to show the answer from codex and fully integrate codex into our dx tui And please show me a list and tell me what we need to integrate in our dx tui of codex to implement the codex fully in our dx tui instead of the codex tui.

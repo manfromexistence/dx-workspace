@@ -111,8 +111,8 @@ fn play_train_sounds() {
 		return;
 	};
 
-	// Set volume to 5% (quieter train sounds)
-	sink.set_volume(0.05);
+	// Set volume to 10%
+	sink.set_volume(0.1);
 
 	// Play whistle sound from embedded data
 	let cursor = Cursor::new(TRAIN_WHISTLE_SOUND);
