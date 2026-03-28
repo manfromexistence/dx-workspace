@@ -7,9 +7,13 @@ Now in our assets folder I have added many more new sounds so please implement t
 - satisfying clicking
 - many more things like that
 
+
+At "F:\codex\codex-rs\dx" folder there is 2 binary codex-tui-dx and dx - now our work is to copy all the dx tui into our codex-tui-dx - all deps and all others stufs are already merge - no conflicts - now just need to integrate the dx tui of dx binary into in codex-tui-dx - now the dx-tui is fairly simple and small and professinal and well structed now please just integrate the dx-tui into codex-tui instead of creating ai slopy stubs codes - and just test it with "cargo bun" don't run any other command like cargo check/build/test at all!!!
+We have to integrate all these into our codex-tui:
 1. screen
 2. menu
 3. theme
 4. chat-input
 5. status-line
-At "F:\codex\codex-rs\dx" folder there is 2 binary codex-tui-dx and dx - now our work is to copy all the dx tui into our codex-tui-dx - all deps and all others stufs are already merge - no conflicts - now just need to integrate the dx tui of dx binary into in codex-tui-dx - now the dx-tui is fairly simple and small and professinal and well structed now please just integrate the dx-tui into codex-tui instead of creating ai slopy stubs codes - and just test it with "cargo bun" don't run any other command like cargo check/build/test at all!!!
+Please create a TODO.md file in the root folder and track everything like what has completed and what task needs to be done and how much did we complete the task and things like that. Also, make sure to ask me clarification questions if it's a really tricky one. But if it's just an easy choice, then just choose the best options available in that position.
+And in the codex-tui-dx we are already showing welcome screen now please implement the dx-tui screens in there correctly!!!
