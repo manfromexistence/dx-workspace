@@ -17,3 +17,5 @@ We have to integrate all these into our codex-tui:
 5. status-line
 Please create a TODO.md file in the root folder and track everything like what has completed and what task needs to be done and how much did we complete the task and things like that. Also, make sure to ask me clarification questions if it's a really tricky one. But if it's just an easy choice, then just choose the best options available in that position.
 And in the codex-tui-dx we are already showing welcome screen now please implement the dx-tui screens in there correctly!!!
+
+And we have to comment out dx input and action input and and show the codex-tui bottom pane - for now we will only focuso on implementing screens in codex-tui and codex-tui already has a welcome screen now just implmment it correclty and implmemnt one by one its not that easy!!!
