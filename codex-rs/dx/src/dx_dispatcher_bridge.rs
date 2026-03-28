@@ -47,4 +47,77 @@ impl DxDispatcherBridge {
         chat_state.menu.update(elapsed);
         chat_state.last_frame_instant = std::time::Instant::now();
     }
+    
+    /// Route key events to DX dispatcher logic
+    /// This calls the REAL DX key handling code from dispatcher.rs
+    pub fn dispatch_key(chat_state: &mut ChatState, key: crossterm::event::KeyEvent) {
+        use crossterm::event::{KeyCode, KeyModifiers, KeyEventKind};
+        
+        // PRIORITY 1: Menu navigation (from dispatcher.rs lines 167-379)
+        if chat_state.show_tachyon_menu {
+            match key.code {
+                KeyCode::Up | KeyCode::Char('k') => {
+                    chat_state.play_ui_sound("assets/click.mp3");
+                    chat_state.menu.select_prev_menu_item();
+                    return;
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    chat_state.play_ui_sound("assets/click.mp3");
+                    chat_state.menu.select_next_menu_item();
+                    return;
+                }
+                KeyCode::PageUp => {
+                    chat_state.menu.page_up(10);
+                    return;
+                }
+                KeyCode::PageDown => {
+                    chat_state.menu.page_down(10);
+                    return;
+                }
+                KeyCode::Home | KeyCode::Char('g') => {
+                    chat_state.menu.jump_to_top();
+                    return;
+                }
+                KeyCode::End | KeyCode::Char('G') => {
+                    chat_state.menu.jump_to_bottom();
+                    return;
+                }
+                KeyCode::Enter => {
+                    chat_state.play_ui_sound("assets/click.mp3");
+                    let _should_close = !chat_state.menu.select_current_item();
+                    chat_state.menu_is_closing = true;
+                    chat_state.menu.pick_closing_effect();
+                    return;
+                }
+                KeyCode::Esc => {
+                    if chat_state.menu.current_submenu.is_some() {
+                        chat_state.menu.go_back_to_main();
+                    } else {
+                        chat_state.menu_is_closing = true;
+                        chat_state.menu.pick_closing_effect();
+                    }
+                    return;
+                }
+                _ => {}
+            }
+        }
+        
+        // PRIORITY 2: Global '0' key to toggle menu (from dispatcher.rs line 479)
+        if key.code == KeyCode::Char('0') && key.modifiers == KeyModifiers::NONE {
+            if chat_state.show_tachyon_menu {
+                chat_state.menu_is_closing = true;
+                chat_state.menu.pick_closing_effect();
+                chat_state.play_ui_sound("assets/menu-close.mp3");
+            } else {
+                chat_state.menu_is_closing = false;
+                chat_state.show_tachyon_menu = true;
+                chat_state.menu.pick_opening_effect();
+                chat_state.play_ui_sound("assets/menu-open.mp3");
+            }
+            return;
+        }
+        
+        // TODO: Add animation navigation (Left/Right arrows) when implementing animation carousel
+        // TODO: Add voice mode (Space key hold) when implementing voice features
+    }
 }

@@ -186,3 +186,17 @@ If issues arise, revert these changes in order:
   - Content viewer for file attachments
   - Recording mode for keyboard shortcuts
 - **Next**: Test menu with `cargo run --bin codex-tui-dx`
+
+
+### Issue Identified - Code Duplication (2026-03-29)
+- **Problem**: Currently duplicating DX dispatcher logic in `chatwidget.rs`
+  - Menu navigation keys are copy-pasted from `dispatcher.rs`
+  - This violates the "NO AI SLOP" rule
+  - Should route events to DX dispatcher instead of duplicating code
+- **Root Cause**: DX dispatcher requires `App` reference, but ChatWidget doesn't have access to it
+- **Proper Solution Needed**:
+  - Option 1: Create a proper event bridge that routes ChatWidget events to DX dispatcher
+  - Option 2: Extract menu/key handling logic into reusable functions that both can call
+  - Option 3: Refactor to give ChatWidget access to dispatcher
+- **Current Status**: Menu works but uses duplicate code (temporary solution)
+- **Next**: Refactor to use REAL DX dispatcher code without duplication

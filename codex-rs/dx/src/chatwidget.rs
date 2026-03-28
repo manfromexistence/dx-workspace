@@ -3971,93 +3971,15 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// PRIORITY 1: Handle '0' key to toggle menu (DX integration)
-		if matches!(key_event, KeyEvent { code: KeyCode::Char('0'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, .. }) {
+		// Route ALL key events to DX dispatcher bridge when showing welcome screen
+		if self.transcript_cells.is_empty() {
 			let mut dx_state = self.dx_chat_state.borrow_mut();
-			if dx_state.show_tachyon_menu {
-				// Closing menu - pick random closing animation
-				dx_state.menu_is_closing = true;
-				dx_state.menu.pick_closing_effect();
-				dx_state.play_ui_sound("assets/menu-close.mp3");
-			} else {
-				// Opening menu - pick random opening animation
-				dx_state.menu_is_closing = false;
-				dx_state.show_tachyon_menu = true;
-				dx_state.menu.pick_opening_effect();
-				dx_state.play_ui_sound("assets/menu-open.mp3");
-			}
+			
+			// Call the REAL DX dispatcher key handling logic
+			crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_key(&mut dx_state, key_event);
+			
 			self.frame_requester.schedule_frame();
 			return;
-		}
-		
-		// PRIORITY 2: Handle menu navigation when menu is visible
-		{
-			let dx_state = self.dx_chat_state.borrow();
-			if dx_state.show_tachyon_menu {
-				drop(dx_state); // Drop immutable borrow
-				let mut dx_state = self.dx_chat_state.borrow_mut();
-				
-				// Handle menu navigation keys
-				match key_event {
-					KeyEvent { code: KeyCode::Up, kind: KeyEventKind::Press | KeyEventKind::Repeat, modifiers: KeyModifiers::NONE, .. }
-					| KeyEvent { code: KeyCode::Char('k'), kind: KeyEventKind::Press | KeyEventKind::Repeat, modifiers: KeyModifiers::NONE, .. } => {
-						dx_state.play_ui_sound("assets/click.mp3");
-						dx_state.menu.select_prev_menu_item();
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::Down, kind: KeyEventKind::Press | KeyEventKind::Repeat, modifiers: KeyModifiers::NONE, .. }
-					| KeyEvent { code: KeyCode::Char('j'), kind: KeyEventKind::Press | KeyEventKind::Repeat, modifiers: KeyModifiers::NONE, .. } => {
-						dx_state.play_ui_sound("assets/click.mp3");
-						dx_state.menu.select_next_menu_item();
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::PageUp, kind: KeyEventKind::Press | KeyEventKind::Repeat, .. } => {
-						dx_state.menu.page_up(10);
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::PageDown, kind: KeyEventKind::Press | KeyEventKind::Repeat, .. } => {
-						dx_state.menu.page_down(10);
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::Home, kind: KeyEventKind::Press, modifiers: KeyModifiers::NONE, .. }
-					| KeyEvent { code: KeyCode::Char('g'), kind: KeyEventKind::Press, modifiers: KeyModifiers::NONE, .. } => {
-						dx_state.menu.jump_to_top();
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::End, kind: KeyEventKind::Press, modifiers: KeyModifiers::NONE, .. }
-					| KeyEvent { code: KeyCode::Char('G'), kind: KeyEventKind::Press, modifiers: KeyModifiers::SHIFT, .. } => {
-						dx_state.menu.jump_to_bottom();
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::Enter, kind: KeyEventKind::Press, .. } => {
-						dx_state.play_ui_sound("assets/click.mp3");
-						let _should_close = !dx_state.menu.select_current_item();
-						// Close menu after selection
-						dx_state.menu_is_closing = true;
-						dx_state.menu.pick_closing_effect();
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyEvent { code: KeyCode::Esc, kind: KeyEventKind::Press, .. } => {
-						// Go back to main menu if in submenu, otherwise close menu
-						if dx_state.menu.current_submenu.is_some() {
-							dx_state.menu.go_back_to_main();
-						} else {
-							dx_state.menu_is_closing = true;
-							dx_state.menu.pick_closing_effect();
-						}
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					_ => {}
-				}
-			}
 		}
 		
 		match key_event {
@@ -9150,9 +9072,10 @@ impl Renderable for ChatWidget {
 		// Render menu overlay if visible (on top of everything)
 		let dx_state = self.dx_chat_state.borrow();
 		if dx_state.show_tachyon_menu || dx_state.menu_is_closing {
+			let theme_mode = dx_state.theme_mode;
 			drop(dx_state); // Drop borrow before mutable borrow
 			let mut dx_state = self.dx_chat_state.borrow_mut();
-			dx_state.menu.render_in_area(area, buf, &dx_state.theme_mode);
+			dx_state.menu.render_in_area(area, buf, &theme_mode);
 		}
 	}
 
