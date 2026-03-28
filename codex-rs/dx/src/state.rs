@@ -1038,11 +1038,14 @@ impl ChatState {
 		
 		// Handle '0' key to toggle menu
 		if key.code == KeyCode::Char('0') {
-			if self.show_tachyon_menu {
+			if self.show_tachyon_menu || self.menu_is_closing {
+				// Close menu
 				self.menu_is_closing = true;
+				self.show_tachyon_menu = false;
 				self.menu.pick_closing_effect();
 				self.play_ui_sound("assets/menu-close.mp3");
 			} else {
+				// Open menu
 				self.menu_is_closing = false;
 				self.show_tachyon_menu = true;
 				self.menu.pick_opening_effect();
