@@ -2654,9 +2654,10 @@ impl App {
 					if use_root_widget {
 						// Use Root widget for animations and Yazi (DIRECT DX CODE!)
 						tui.draw(viewport_height, |frame| {
+							let dx_state = self.chat_widget.dx_chat_state.borrow();
 							let mut dx_core = self.chat_widget.dx_core.borrow_mut();
 							let mut dx_bridge = self.chat_widget.dx_bridge.borrow_mut();
-							let root = crate::root::Root::new(&dx_core, &mut dx_bridge);
+							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
 							use ratatui::widgets::Widget;
 							root.render(frame.area(), frame.buffer);
 						})?;

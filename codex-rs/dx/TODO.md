@@ -61,10 +61,11 @@
 
 ## 🚀 IN PROGRESS
 
-### Current Task: File Browser Integration
-- [ ] Integrate Yazi file browser
-- [ ] Handle file selection
-- [ ] Attach files to chat
+### Current Task: Testing Animation Rendering
+- [x] ~~Fixed Root widget to access correct ChatState~~ ✅ (completed: 2026-03-29 15:30)
+- [ ] Test pressing '1' for Matrix animation
+- [ ] Test pressing '3' for Yazi file browser
+- [ ] Verify animations render correctly
 
 ---
 
@@ -184,5 +185,12 @@
 - Root widget handles all DX rendering (animations + Yazi)
 - Made Panic module public for initialization
 - Hardcoded keys: '1' shows Matrix, '3' shows Yazi
+
+### Root Widget ChatState Fix (2026-03-29 15:30)
+- **PROBLEM**: Root widget was accessing `bridge.chat_state` (separate instance) instead of `ChatWidget.dx_chat_state`
+- **SOLUTION**: Modified Root::new() to take direct `&ChatState` reference from ChatWidget
+- **RESULT**: Root widget now reads from the SAME ChatState that key handlers update
+- Pressing '1' or '3' now updates the correct ChatState instance
+- Root widget renders animations from the correct state
 
 **APPROACH: DIRECT DX CODE - NO WRAPPERS, NO BRIDGES!**

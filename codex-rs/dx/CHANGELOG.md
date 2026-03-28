@@ -2,6 +2,27 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-29 15:30] - Root Widget ChatState Fix
+
+### Fixed - Root Widget Accessing Wrong ChatState
+- **Problem**: Root widget was reading from `bridge.chat_state` (separate instance) instead of `ChatWidget.dx_chat_state`
+  - When pressing '1' or '3', keys updated `ChatWidget.dx_chat_state.animation_mode`
+  - But Root widget checked `bridge.chat_state.animation_mode` (different instance)
+  - Result: animations never showed because Root was checking the wrong state
+  
+- **Solution**: Modified Root widget to take direct ChatState reference
+  - Changed `Root::new()` signature to accept `chat_state: &'a ChatState` parameter
+  - Added `Root::new_from_bridge()` for DX binary compatibility (uses bridge's chat_state)
+  - Updated `app.rs` to pass `&dx_state` from `ChatWidget.dx_chat_state` to Root::new()
+  - Root widget now reads from the SAME ChatState instance that key handlers update
+  
+- **Files Changed**:
+  - `src/root.rs`: Added chat_state parameter to Root struct and new() method
+  - `src/app.rs`: Pass dx_chat_state reference to Root::new()
+  - `src/file_browser/app/render.rs`: Use new_from_bridge() for DX binary
+
+- **Result**: Pressing '1' or '3' should now correctly show animations/Yazi
+
 ## [2026-03-29] - DX-TUI Integration Phase 1
 
 ### Changed - Use Real DX splash::render (Latest)

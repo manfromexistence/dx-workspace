@@ -9003,9 +9003,9 @@ impl Renderable for ChatWidget {
 			// Use DX dispatcher bridge for timer updates
 			let mut dx_state = self.dx_chat_state.borrow_mut();
 			
-			// Set animation mode to Splash (index 0)
-			dx_state.animation_mode = true;
-			dx_state.current_animation_index = 0; // Splash
+			// DON'T set animation_mode = true here!
+			// animation_mode should only be true when user explicitly enters animation carousel (pressing 1, 3, etc.)
+			// When showing welcome screen, we render splash directly in ChatWidget, not via Root widget
 			
 			// Play splash sound if not already playing
 			if dx_state.current_animation_sound.as_deref() != Some("assets/birds.mp3") {

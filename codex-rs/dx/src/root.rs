@@ -7,18 +7,28 @@ use tracing::error;
 
 use crate::file_browser::{cmp, confirm, help, input, mgr, pick, spot, tasks, which};
 use crate::{
-	bridge::{AppMode, YaziChatBridge},
-	state::AnimationType,
+	bridge::YaziChatBridge,
+	state::{AnimationType, ChatState},
 };
 
 pub struct Root<'a> {
 	core: &'a Core,
 	bridge: &'a mut YaziChatBridge,
+	chat_state: &'a ChatState, // DIRECT reference to the REAL ChatState from ChatWidget
 }
 
 impl<'a> Root<'a> {
-	pub fn new(core: &'a Core, bridge: &'a mut YaziChatBridge) -> Self {
-		Self { core, bridge }
+	pub fn new(core: &'a Core, bridge: &'a mut YaziChatBridge, chat_state: &'a ChatState) -> Self {
+		Self { core, bridge, chat_state }
+	}
+
+	// For DX binary only - uses bridge's chat_state
+	pub fn new_from_bridge(core: &'a Core, bridge: &'a mut YaziChatBridge) -> Self {
+		// SAFETY: We're creating a reference to bridge.chat_state that lives as long as bridge
+		// This is safe because bridge is borrowed mutably for 'a
+		let chat_state_ptr = &bridge.chat_state as *const ChatState;
+		let chat_state = unsafe { &*chat_state_ptr };
+		Self { core, bridge, chat_state }
 	}
 
 	pub fn reflow(area: Rect) -> mlua::Result<Table> {
@@ -31,7 +41,7 @@ impl<'a> Root<'a> {
 impl Widget for Root<'_> {
 	fn render(self, area: Rect, buf: &mut Buffer) {
 		// Clear the entire screen with theme background color first
-		let bg_color = self.bridge.chat_state.theme.bg;
+		let bg_color = self.chat_state.theme.bg;
 		for y in area.top()..area.bottom() {
 			for x in area.left()..area.right() {
 				buf[(x, y)].reset();
@@ -40,13 +50,13 @@ impl Widget for Root<'_> {
 		}
 
 		// PRIORITY 1: Check if we're in animation mode (splash/animations carousel)
-		if self.bridge.chat_state.animation_mode {
+		if self.chat_state.animation_mode {
 			let animations = AnimationType::all();
-			let current_anim = animations[self.bridge.chat_state.current_animation_index];
+			let current_anim = animations[self.chat_state.current_animation_index];
 
 			// For Matrix animation, clear everything first before any rendering
 			if current_anim == AnimationType::Matrix {
-				let bg_color = self.bridge.chat_state.theme_bg_color();
+				let bg_color = self.chat_state.theme_bg_color();
 				for y in area.top()..area.bottom() {
 					for x in area.left()..area.right() {
 						buf[(x, y)].reset();
@@ -57,19 +67,10 @@ impl Widget for Root<'_> {
 
 			// Special case: Yazi screen in animation carousel
 			if current_anim == AnimationType::Yazi {
-				// Show Yazi file picker with fixed-height chat at bottom (4 lines total)
-				let chunks = ratatui::layout::Layout::default()
-					.direction(ratatui::layout::Direction::Vertical)
-					.constraints([
-						ratatui::layout::Constraint::Min(10), // Yazi file picker (rest of space)
-						ratatui::layout::Constraint::Length(4), // Chat input (fixed 4 lines)
-					])
-					.split(area);
+				// Show Yazi file picker FULLSCREEN (no chat input - codex bottom pane handles that)
+				let yazi_area = area;
 
-				let yazi_area = chunks[0];
-				let chat_area = chunks[1];
-
-				// Render yazi in the top area
+				// Render yazi fullscreen
 				let mut f = || {
 					let area = fb_binding::elements::Rect::from(yazi_area);
 					let root = LUA.globals().raw_get::<Table>("Root")?.call_method::<Table>("new", area)?;
@@ -96,9 +97,10 @@ impl Widget for Root<'_> {
 					pick::Pick::new(self.core).render(yazi_area, buf);
 				}
 
-				if self.core.input.visible {
-					input::Input::new(self.core).render(yazi_area, buf);
-				}
+				// COMMENTED OUT: DX input box (codex bottom pane handles input)
+				// if self.core.input.visible {
+				// 	input::Input::new(self.core).render(yazi_area, buf);
+				// }
 
 				if self.core.confirm.visible {
 					confirm::Confirm::new(self.core).render(yazi_area, buf);
@@ -116,85 +118,61 @@ impl Widget for Root<'_> {
 					which::Which::new(self.core).render(yazi_area, buf);
 				}
 
-				// Render chat at the bottom
-				self.bridge.chat_state.render_dimmed(chat_area, area, buf);
+				// COMMENTED OUT: DX chat rendering (codex bottom pane handles input)
+				// self.chat_state.render_dimmed(chat_area, area, buf);
 				return;
 			}
 
-			// All other animations - render chat TUI with animations
-			self.bridge.chat_state.render(area, buf);
+			// All other animations - render ONLY the animation (no DX chat UI)
+			match current_anim {
+				AnimationType::Splash => {
+					crate::splash::render(
+						area,
+						buf,
+						&self.chat_state.theme,
+						self.chat_state.splash_font_index,
+						&self.chat_state.rainbow_animation,
+					);
+				}
+				AnimationType::Matrix => {
+					self.chat_state.render_matrix_animation_in_area(area, buf);
+				}
+				AnimationType::Confetti => {
+					self.chat_state.render_confetti_animation_in_area(area, buf);
+				}
+				AnimationType::GameOfLife => {
+					self.chat_state.render_gameoflife_animation_in_area(area, buf);
+				}
+				AnimationType::Starfield => {
+					self.chat_state.render_starfield_animation_in_area(area, buf);
+				}
+				AnimationType::Rain => {
+					self.chat_state.render_rain_animation_in_area(area, buf);
+				}
+				AnimationType::NyanCat => {
+					self.chat_state.render_nyancat_animation_in_area(area, buf);
+				}
+				AnimationType::DVDLogo => {
+					self.chat_state.render_dvdlogo_animation_in_area(area, buf);
+				}
+				AnimationType::Fire => {
+					self.chat_state.render_fire_animation_in_area(area, buf);
+				}
+				AnimationType::Plasma => {
+					self.chat_state.render_plasma_animation_in_area(area, buf);
+				}
+				AnimationType::Waves => {
+					self.chat_state.render_waves_animation_in_area(area, buf);
+				}
+				AnimationType::Fireworks => {
+					self.chat_state.render_fireworks_animation_in_area(area, buf);
+				}
+				_ => {}
+			}
 			return;
 		}
 
-		// PRIORITY 2: Check mode for normal operation
-		match self.bridge.mode {
-			AppMode::Chat => {
-				// Full chat mode - render chat TUI
-				self.bridge.chat_state.render(area, buf);
-			}
-			AppMode::FilePicker => {
-				// Split screen: Yazi file picker with fixed-height chat at bottom (4 lines total)
-				let chunks = ratatui::layout::Layout::default()
-					.direction(ratatui::layout::Direction::Vertical)
-					.constraints([
-						ratatui::layout::Constraint::Min(10), // Yazi file picker (rest of space)
-						ratatui::layout::Constraint::Length(4), // Chat input (fixed 4 lines)
-					])
-					.split(area);
-
-				let yazi_area = chunks[0];
-				let chat_area = chunks[1];
-
-				// Render yazi in the top area
-				let mut f = || {
-					let area = fb_binding::elements::Rect::from(yazi_area);
-					let root = LUA.globals().raw_get::<Table>("Root")?.call_method::<Table>("new", area)?;
-
-					render_once(root.call_method("redraw", ())?, buf, |p| self.core.mgr.area(p));
-					Ok::<_, mlua::Error>(())
-				};
-				if let Err(e) = f() {
-					error!("Failed to redraw the `Root` component:\n{e}");
-				}
-
-				mgr::Preview::new(self.core).render(yazi_area, buf);
-				mgr::Modal::new(self.core).render(yazi_area, buf);
-
-				if self.core.tasks.visible {
-					tasks::Tasks::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.active().spot.visible() {
-					spot::Spot::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.pick.visible {
-					pick::Pick::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.input.visible {
-					input::Input::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.confirm.visible {
-					confirm::Confirm::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.help.visible {
-					help::Help::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.cmp.visible {
-					cmp::Cmp::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.which.active {
-					which::Which::new(self.core).render(yazi_area, buf);
-				}
-
-				// Render dimmed chat at the bottom
-				self.bridge.chat_state.render_dimmed(chat_area, area, buf);
-			}
-		}
+		// PRIORITY 2: Normal operation - don't render anything (ChatWidget handles it)
+		// Root widget is ONLY for animations and Yazi
 	}
 }
