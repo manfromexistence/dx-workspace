@@ -1,11 +1,9 @@
-//! Scrollbar widget for the Codex TUI using tui-scrollbar crate
+//! Scrollbar widget for the Codex TUI
 //!
-//! This module provides a scrollbar implementation using the tui-scrollbar crate
-//! which offers more advanced features and better performance than a custom implementation.
+//! This module provides a simple, visible scrollbar implementation that renders
+//! a track and thumb directly to the buffer.
 
-pub use tui_scrollbar::{ScrollBar, ScrollBarArrows, ScrollBarOrientation, ScrollLengths};
-
-use ratatui_core::widgets::Widget;
+use ratatui::style::{Color, Style};
 
 /// Scrollbar state that tracks scroll position and content dimensions
 #[derive(Debug, Clone, Default)]
@@ -59,22 +57,54 @@ impl ScrollbarState {
 		self.position < self.content_height.saturating_sub(self.viewport_height)
 	}
 
-	/// Get scroll lengths for tui-scrollbar
-	pub fn scroll_lengths(&self) -> ScrollLengths {
-		ScrollLengths { content_len: self.content_height, viewport_len: self.viewport_height }
+	/// Calculate thumb position and size
+	pub fn thumb_position_and_size(&self, track_height: usize) -> (usize, usize) {
+		if self.content_height == 0 || self.viewport_height == 0 || track_height == 0 {
+			return (0, 0);
+		}
+
+		// If content fits in viewport, no scrolling needed
+		if self.content_height <= self.viewport_height {
+			return (0, track_height);
+		}
+
+		// Calculate thumb size proportional to viewport/content ratio
+		let thumb_size = ((self.viewport_height as f64 / self.content_height as f64) * track_height as f64)
+			.max(1.0)
+			.min(track_height as f64) as usize;
+
+		// Calculate thumb position based on scroll position
+		let max_scroll = self.content_height.saturating_sub(self.viewport_height);
+		let max_thumb_pos = track_height.saturating_sub(thumb_size);
+		
+		let thumb_pos = if max_scroll > 0 {
+			((self.position as f64 / max_scroll as f64) * max_thumb_pos as f64) as usize
+		} else {
+			0
+		};
+
+		(thumb_pos, thumb_size)
 	}
 }
 
-/// Custom scrollbar widget wrapper for Codex TUI
+/// Custom scrollbar widget for Codex TUI
 #[derive(Debug, Clone)]
 pub struct CustomScrollbar {
 	/// Whether to show arrows
 	show_arrows: bool,
+	/// Track style
+	track_style: Style,
+	/// Thumb style
+	thumb_style: Style,
 }
 
 impl Default for CustomScrollbar {
 	fn default() -> Self {
-		Self { show_arrows: false }
+		Self {
+			show_arrows: false,
+			track_style: Style::default().fg(Color::DarkGray),
+			thumb_style: Style::default().fg(Color::White),
+		}
 	}
 }
 
@@ -88,9 +118,17 @@ impl CustomScrollbar {
 		self
 	}
 
+	pub fn track_style(mut self, style: Style) -> Self {
+		self.track_style = style;
+		self
+	}
+
+	pub fn thumb_style(mut self, style: Style) -> Self {
+		self.thumb_style = style;
+		self
+	}
+
 	/// Render the scrollbar with the given state
-	///
-	/// This method accepts ratatui types and converts them to ratatui_core types internally
 	pub fn render(
 		&self,
 		area: ratatui::layout::Rect,
@@ -101,113 +139,48 @@ impl CustomScrollbar {
 			return;
 		}
 
-		let scroll_lengths = state.scroll_lengths();
+		let track_height = if self.show_arrows {
+			area.height.saturating_sub(2) as usize
+		} else {
+			area.height as usize
+		};
 
-		let scrollbar = ScrollBar::vertical(scroll_lengths)
-			.offset(state.position)
-			.glyph_set(tui_scrollbar::GlyphSet::box_drawing()); // Use box drawing for visible track
+		let start_y = if self.show_arrows { 1 } else { 0 };
 
-		let scrollbar =
-			if self.show_arrows { scrollbar.arrows(ScrollBarArrows::Both) } else { scrollbar };
+		// Draw arrows if enabled
+		if self.show_arrows && area.height >= 2 {
+			// Up arrow
+			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, area.y)) {
+				cell.set_symbol("▲");
+				cell.set_style(self.track_style);
+			}
+			// Down arrow
+			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, area.y + area.height - 1)) {
+				cell.set_symbol("▼");
+				cell.set_style(self.track_style);
+			}
+		}
 
-		// Convert ratatui types to ratatui_core types
-		let core_area =
-			ratatui_core::layout::Rect { x: area.x, y: area.y, width: area.width, height: area.height };
+		// Calculate thumb position and size
+		let (thumb_pos, thumb_size) = state.thumb_position_and_size(track_height);
 
-		// Create a temporary ratatui_core buffer and render to it
-		let mut core_buf = ratatui_core::buffer::Buffer::empty(core_area);
-		scrollbar.render(core_area, &mut core_buf);
-
-		// Copy the rendered content back to the ratatui buffer
-		for y in 0..core_area.height {
-			for x in 0..core_area.width {
-				if let Some(core_cell) = core_buf.cell((x, y)) {
-					if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x + x, area.y + y)) {
-						cell.set_symbol(core_cell.symbol());
-						// Convert style from ratatui_core to ratatui
-						let core_style = core_cell.style();
-						let mut style = ratatui::style::Style::default();
-						if let Some(fg) = core_style.fg {
-							style = style.fg(convert_color(fg));
-						}
-						if let Some(bg) = core_style.bg {
-							style = style.bg(convert_color(bg));
-						}
-						style = style.add_modifier(convert_modifier(core_style.add_modifier));
-						style = style.remove_modifier(convert_modifier(core_style.sub_modifier));
-						cell.set_style(style);
-					}
+		// Draw track and thumb
+		for i in 0..track_height {
+			let y = area.y + start_y + i as u16;
+			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, y)) {
+				if i >= thumb_pos && i < thumb_pos + thumb_size {
+					// Draw thumb
+					cell.set_symbol("█");
+					cell.set_style(self.thumb_style);
+				} else {
+					// Draw track
+					cell.set_symbol("│");
+					cell.set_style(self.track_style);
 				}
 			}
 		}
 	}
-}
 
-// Helper function to convert ratatui_core::Color to ratatui::Color
-fn convert_color(color: ratatui_core::style::Color) -> ratatui::style::Color {
-	use ratatui::style::Color as RatatuiColor;
-	use ratatui_core::style::Color as CoreColor;
-
-	match color {
-		CoreColor::Reset => RatatuiColor::Reset,
-		CoreColor::Black => RatatuiColor::Black,
-		CoreColor::Red => RatatuiColor::Red,
-		CoreColor::Green => RatatuiColor::Green,
-		CoreColor::Yellow => RatatuiColor::Yellow,
-		CoreColor::Blue => RatatuiColor::Blue,
-		CoreColor::Magenta => RatatuiColor::Magenta,
-		CoreColor::Cyan => RatatuiColor::Cyan,
-		CoreColor::Gray => RatatuiColor::Gray,
-		CoreColor::DarkGray => RatatuiColor::DarkGray,
-		CoreColor::LightRed => RatatuiColor::LightRed,
-		CoreColor::LightGreen => RatatuiColor::LightGreen,
-		CoreColor::LightYellow => RatatuiColor::LightYellow,
-		CoreColor::LightBlue => RatatuiColor::LightBlue,
-		CoreColor::LightMagenta => RatatuiColor::LightMagenta,
-		CoreColor::LightCyan => RatatuiColor::LightCyan,
-		CoreColor::White => RatatuiColor::White,
-		CoreColor::Rgb(r, g, b) => RatatuiColor::Rgb(r, g, b),
-		CoreColor::Indexed(i) => RatatuiColor::Indexed(i),
-	}
-}
-
-// Helper function to convert ratatui_core::Modifier to ratatui::Modifier
-fn convert_modifier(modifier: ratatui_core::style::Modifier) -> ratatui::style::Modifier {
-	let mut result = ratatui::style::Modifier::empty();
-
-	if modifier.contains(ratatui_core::style::Modifier::BOLD) {
-		result |= ratatui::style::Modifier::BOLD;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::DIM) {
-		result |= ratatui::style::Modifier::DIM;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::ITALIC) {
-		result |= ratatui::style::Modifier::ITALIC;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::UNDERLINED) {
-		result |= ratatui::style::Modifier::UNDERLINED;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::SLOW_BLINK) {
-		result |= ratatui::style::Modifier::SLOW_BLINK;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::RAPID_BLINK) {
-		result |= ratatui::style::Modifier::RAPID_BLINK;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::REVERSED) {
-		result |= ratatui::style::Modifier::REVERSED;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::HIDDEN) {
-		result |= ratatui::style::Modifier::HIDDEN;
-	}
-	if modifier.contains(ratatui_core::style::Modifier::CROSSED_OUT) {
-		result |= ratatui::style::Modifier::CROSSED_OUT;
-	}
-
-	result
-}
-
-// For compatibility with StatefulWidget pattern
-impl CustomScrollbar {
 	/// Render as a stateful widget (for compatibility)
 	pub fn render_stateful(
 		&self,

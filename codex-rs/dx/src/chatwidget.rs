@@ -3985,6 +3985,36 @@ impl ChatWidget {
 				self.scroll_down(1);
 				return;
 			}
+			// Scrollbar controls - Up/Down arrows (scroll message list by 3 lines)
+			// Let the bottom pane handle it first, if it doesn't consume it, scroll the message list
+			KeyEvent {
+				code: KeyCode::Up,
+				modifiers: KeyModifiers::NONE,
+				kind: KeyEventKind::Press | KeyEventKind::Repeat,
+				..
+			} => {
+				// Try to let bottom pane handle it (for command history)
+				let result = self.bottom_pane.handle_key_event(key_event);
+				// If bottom pane didn't consume it, scroll the message list
+				if matches!(result, InputResult::None) {
+					self.scroll_up(3);
+				}
+				return;
+			}
+			KeyEvent {
+				code: KeyCode::Down,
+				modifiers: KeyModifiers::NONE,
+				kind: KeyEventKind::Press | KeyEventKind::Repeat,
+				..
+			} => {
+				// Try to let bottom pane handle it (for command history)
+				let result = self.bottom_pane.handle_key_event(key_event);
+				// If bottom pane didn't consume it, scroll the message list
+				if matches!(result, InputResult::None) {
+					self.scroll_down(3);
+				}
+				return;
+			}
 			KeyEvent { code: KeyCode::Char(c), modifiers, kind: KeyEventKind::Press, .. }
 				if modifiers.contains(KeyModifiers::CONTROL) && c.eq_ignore_ascii_case(&'c') =>
 			{
@@ -8824,7 +8854,7 @@ impl Renderable for ChatWidget {
 			)
 			.position(self.scroll_position.get());
 
-			let scrollbar = CustomScrollbar::new();
+			let scrollbar = CustomScrollbar::new().show_arrows(true);
 
 			let scrollbar_area = Rect {
 				x: area.x + area.width.saturating_sub(1),
