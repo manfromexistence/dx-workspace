@@ -3980,6 +3980,47 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 			}
 		}
 		
+		// Handle Left/Right arrow keys for animation navigation when showing welcome
+		if self.transcript_cells.is_empty() {
+			use crossterm::event::{KeyCode, KeyModifiers};
+			
+			if key_event.modifiers.is_empty() || key_event.modifiers == KeyModifiers::NONE {
+				match key_event.code {
+					KeyCode::Left => {
+						let mut dx_state = self.dx_chat_state.borrow_mut();
+						let all_animations = crate::state::AnimationType::all();
+						
+						// Navigate to previous animation
+						if dx_state.current_animation_index == 0 {
+							dx_state.current_animation_index = all_animations.len() - 1;
+						} else {
+							dx_state.current_animation_index -= 1;
+						}
+						
+						dx_state.animation_start_time = Some(std::time::Instant::now());
+						dx_state.play_animation_sound();
+						dx_state.play_ui_sound("assets/click.mp3");
+						self.frame_requester.schedule_frame();
+						return;
+					}
+					KeyCode::Right => {
+						let mut dx_state = self.dx_chat_state.borrow_mut();
+						let all_animations = crate::state::AnimationType::all();
+						
+						// Navigate to next animation
+						dx_state.current_animation_index = (dx_state.current_animation_index + 1) % all_animations.len();
+						
+						dx_state.animation_start_time = Some(std::time::Instant::now());
+						dx_state.play_animation_sound();
+						dx_state.play_ui_sound("assets/click.mp3");
+						self.frame_requester.schedule_frame();
+						return;
+					}
+					_ => {}
+				}
+			}
+		}
+		
 		match key_event {
 			// Scrollbar controls - PageUp/PageDown
 			KeyEvent {
@@ -8950,19 +8991,70 @@ impl Renderable for ChatWidget {
 			dx_state.menu.update(elapsed);
 			dx_state.last_frame_instant = std::time::Instant::now();
 			
-			// Call the actual DX splash render function
-			crate::splash::render(
-				transcript_area,
-				buf,
-				&dx_state.theme,
-				dx_state.splash_font_index,
-				&dx_state.rainbow_animation,
-			);
+			// Render current animation based on current_animation_index
+			let all_animations = crate::state::AnimationType::all();
+			let current_anim = all_animations[dx_state.current_animation_index];
+			
+			match current_anim {
+				crate::state::AnimationType::Splash => {
+					// Call the actual DX splash render function
+					crate::splash::render(
+						transcript_area,
+						buf,
+						&dx_state.theme,
+						dx_state.splash_font_index,
+						&dx_state.rainbow_animation,
+					);
+				}
+				crate::state::AnimationType::Matrix => {
+					dx_state.render_matrix_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Confetti => {
+					dx_state.render_confetti_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::GameOfLife => {
+					dx_state.render_gameoflife_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Starfield => {
+					dx_state.render_starfield_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Rain => {
+					dx_state.render_rain_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::NyanCat => {
+					dx_state.render_nyancat_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::DVDLogo => {
+					dx_state.render_dvdlogo_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Fire => {
+					dx_state.render_fire_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Plasma => {
+					dx_state.render_plasma_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Waves => {
+					dx_state.render_waves_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Fireworks => {
+					dx_state.render_fireworks_animation_in_area(transcript_area, buf);
+				}
+				crate::state::AnimationType::Yazi => {
+					// TODO: Yazi file browser integration
+					crate::splash::render(
+						transcript_area,
+						buf,
+						&dx_state.theme,
+						dx_state.splash_font_index,
+						&dx_state.rainbow_animation,
+					);
+				}
+			}
 			
 			// Schedule next frame for animations
 			self.frame_requester.schedule_frame();
 			
-			// Skip the rest of the rendering since we've already rendered the splash
+			// Skip the rest of the rendering since we've already rendered the animation
 			// Don't add any lines to all_lines
 		} else {
 			// Stop splash sound when leaving welcome screen
