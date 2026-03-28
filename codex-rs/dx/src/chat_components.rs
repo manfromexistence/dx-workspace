@@ -134,6 +134,21 @@ pub struct Message {
 	pub timestamp: chrono::DateTime<chrono::Local>,
 	pub token_count: usize,
 	pub thinking_expanded: bool,
+	pub tool_calls: Vec<ToolCall>, // NEW: Track tool executions
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ToolCall {
+	pub name: String,
+	pub input: String,
+	pub status: ToolStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum ToolStatus {
+	Running,
+	Complete,
+	Failed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -153,6 +168,7 @@ impl Message {
 			timestamp: chrono::Local::now(),
 			token_count,
 			thinking_expanded: false,
+			tool_calls: Vec::new(),
 		}
 	}
 
@@ -165,6 +181,30 @@ impl Message {
 			timestamp: chrono::Local::now(),
 			token_count,
 			thinking_expanded: false, // Start collapsed, will expand when <think> is detected
+			tool_calls: Vec::new(),
+		}
+	}
+	
+	#[allow(dead_code)]
+	pub fn add_tool_call(&mut self, name: String, input: String) {
+		self.tool_calls.push(ToolCall {
+			name,
+			input,
+			status: ToolStatus::Running,
+		});
+	}
+	
+	#[allow(dead_code)]
+	pub fn complete_last_tool_call(&mut self) {
+		if let Some(tool) = self.tool_calls.last_mut() {
+			tool.status = ToolStatus::Complete;
+		}
+	}
+	
+	#[allow(dead_code)]
+	pub fn fail_last_tool_call(&mut self) {
+		if let Some(tool) = self.tool_calls.last_mut() {
+			tool.status = ToolStatus::Failed;
 		}
 	}
 }
@@ -234,6 +274,9 @@ impl<'a> MessageList<'a> {
 					// For user messages, just count lines
 					msg.content.lines().count()
 				};
+				
+				// Add tool calls to height calculation
+				let tool_lines = msg.tool_calls.len();
 
 				match msg.role {
 					MessageRole::User => {
@@ -241,8 +284,8 @@ impl<'a> MessageList<'a> {
 						content_lines + 3 + 1
 					}
 					MessageRole::Assistant => {
-						// Assistant message: content + header + gap (no borders)
-						content_lines + 1 + 1
+						// Assistant message: content + header + tool calls + gap (no borders)
+						content_lines + 1 + tool_lines + 1
 					}
 				}
 			})
@@ -398,13 +441,49 @@ impl Widget for MessageList<'_> {
 						.style(Style::default().bg(self.theme.bg))
 						.render(Rect { x: msg_area.x, y: msg_area.y, width: msg_area.width, height: 1 }, buf);
 
+					let mut content_y_offset = 1;
+					
+					// Render tool calls if any
+					if !msg.tool_calls.is_empty() {
+						for tool in &msg.tool_calls {
+							if content_y_offset >= msg_height {
+								break;
+							}
+							
+							let (icon, color) = match tool.status {
+								ToolStatus::Running => ("⚙️ ", self.theme.accent),
+								ToolStatus::Complete => ("✓ ", ratatui::style::Color::Green),
+								ToolStatus::Failed => ("✗ ", ratatui::style::Color::Red),
+							};
+							
+							let tool_line = Line::from(vec![
+								Span::styled(icon, Style::default().fg(color)),
+								Span::styled(&tool.name, Style::default().fg(color).add_modifier(Modifier::ITALIC)),
+							]);
+							
+							Paragraph::new(tool_line)
+								.style(Style::default().bg(self.theme.bg))
+								.render(
+									Rect {
+										x: msg_area.x,
+										y: msg_area.y + content_y_offset as u16,
+										width: msg_area.width,
+										height: 1,
+									},
+									buf,
+								);
+							
+							content_y_offset += 1;
+						}
+					}
+
 					// Render content
-					if msg_height > 1 {
+					if msg_height > content_y_offset {
 						let content_area = Rect {
 							x: msg_area.x,
-							y: msg_area.y + 1,
+							y: msg_area.y + content_y_offset as u16,
 							width: msg_area.width,
-							height: (msg_height - 1) as u16,
+							height: (msg_height - content_y_offset) as u16,
 						};
 
 						// Create Text from lines for proper rendering

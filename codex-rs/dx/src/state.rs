@@ -448,16 +448,16 @@ impl ChatState {
 			EventMsg::AssistantMessage(msg) => {
 				// Update the last assistant message or add new one
 				if let Some(last_msg) = self.messages.last_mut() {
-					if last_msg.role == crate::chat::MessageRole::Assistant {
+					if last_msg.role == crate::chat_components::MessageRole::Assistant {
 						// Append to existing assistant message (streaming)
 						last_msg.content.push_str(&msg.text);
 					} else {
 						// Add new assistant message
-						self.messages.push(crate::chat::Message::assistant(msg.text));
+						self.messages.push(crate::chat_components::Message::assistant(msg.text));
 					}
 				} else {
 					// No messages yet, add first assistant message
-					self.messages.push(crate::chat::Message::assistant(msg.text));
+					self.messages.push(crate::chat_components::Message::assistant(msg.text));
 				}
 				
 				// Save messages
@@ -466,10 +466,35 @@ impl ChatState {
 			
 			EventMsg::ToolUse(tool) => {
 				tracing::info!("Tool use: {} - {}", tool.name, tool.input);
-				// Could add a system message showing tool use
+				
+				// Add tool call to the last assistant message
+				if let Some(last_msg) = self.messages.last_mut() {
+					if last_msg.role == crate::chat_components::MessageRole::Assistant {
+						last_msg.add_tool_call(tool.name.clone(), tool.input.clone());
+					}
+				}
+				
+				// Show toast
+				self.show_toast(format!("🔧 Running tool: {}", tool.name));
+			}
+			
+			EventMsg::ToolResult(_result) => {
+				// Mark the last tool call as complete
+				if let Some(last_msg) = self.messages.last_mut() {
+					if last_msg.role == crate::chat_components::MessageRole::Assistant {
+						last_msg.complete_last_tool_call();
+					}
+				}
 			}
 			
 			EventMsg::Error(err) => {
+				// Mark last tool as failed if there is one
+				if let Some(last_msg) = self.messages.last_mut() {
+					if last_msg.role == crate::chat_components::MessageRole::Assistant {
+						last_msg.fail_last_tool_call();
+					}
+				}
+				
 				self.show_toast(format!("Error: {}", err.message));
 				self.is_loading = false;
 			}

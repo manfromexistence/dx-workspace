@@ -188,37 +188,37 @@ if let Some(op_tx) = &self.app.state.codex_op_tx {
 
 ## 📋 IMPLEMENTATION STEPS
 
-### Step 1: Create Agent Module ✅ (Partially Done)
+### Step 1: Create Agent Module ✅ DONE
 - [x] Created `codex_backend.rs` with initialization
-- [ ] Create `codex_agent.rs` with spawn function
-- [ ] Extract spawn_agent() logic from Codex TUI
-- [ ] Adapt to use DX event channels
+- [x] Create `codex_agent.rs` with spawn function
+- [x] Extract spawn_agent() logic from Codex TUI
+- [x] Adapt to use DX event channels
 
-### Step 2: Update ChatState
-- [ ] Add fields to `ChatState`:
+### Step 2: Update ChatState ✅ DONE
+- [x] Add fields to `ChatState`:
   ```rust
-  pub codex_thread_manager: Option<Arc<ThreadManager>>,
   pub codex_op_tx: Option<UnboundedSender<Op>>,
   pub codex_event_rx: Option<UnboundedReceiver<Event>>,
-  pub codex_thread: Option<Arc<CodexThread>>,
+  pub codex_session_configured: bool,
+  pub codex_current_turn_id: Option<String>,
   ```
-- [ ] Initialize Codex backend in `ChatState::new()`
-- [ ] Call spawn_codex_agent() and store channels
+- [x] Initialize Codex backend in `ChatState::new()`
+- [x] Call spawn_codex_agent() and store channels
 
-### Step 3: Event Processing
-- [ ] Add `handle_codex_event()` method to `ChatState`
-- [ ] Process different EventMsg types:
+### Step 3: Event Processing ✅ DONE
+- [x] Add `handle_codex_event()` method to `ChatState`
+- [x] Process different EventMsg types:
   - `SessionConfigured` - Store session info
   - `AssistantMessage` - Add to message list
   - `ToolUse` - Show tool execution
   - `Error` - Show error message
   - `TurnComplete` - Mark turn as done
   - `ShutdownComplete` - Clean up
-- [ ] Poll `codex_event_rx` in `update()` method
+- [x] Poll `codex_event_rx` in `update()` method
 
-### Step 4: Message Routing in Dispatcher
-- [ ] Detect when using Codex model (not local-infinity)
-- [ ] Route to Codex via Op submission:
+### Step 4: Message Routing in Dispatcher ✅ DONE
+- [x] Detect when using Codex model (not local-infinity)
+- [x] Route to Codex via Op submission:
   ```rust
   if model.provider == ModelProvider::Codex {
       // Use Codex
@@ -229,16 +229,16 @@ if let Some(op_tx) = &self.app.state.codex_op_tx {
   }
   ```
 
-### Step 5: Message Rendering
-- [ ] Update MessageList to render Codex responses
-- [ ] Handle streaming text updates
-- [ ] Show tool execution status
-- [ ] Display errors appropriately
+### Step 5: Message Rendering ✅ DONE
+- [x] Update MessageList to render Codex responses (basic)
+- [x] Handle streaming text updates
+- [x] Show tool execution status (visual indicator with icons)
+- [x] Display errors appropriately
 
-### Step 6: Cleanup
-- [ ] Handle shutdown properly
-- [ ] Stop Codex thread when closing app
-- [ ] Clean up resources
+### Step 6: Cleanup ✅ DONE
+- [x] Handle shutdown properly
+- [x] Stop Codex thread when closing app (Drop impl)
+- [x] Clean up resources
 
 ---
 
@@ -255,16 +255,29 @@ if let Some(op_tx) = &self.app.state.codex_op_tx {
 
 ---
 
-## 🚀 MINIMAL VIABLE INTEGRATION
+## 🚀 MINIMAL VIABLE INTEGRATION ✅ COMPLETE
 
 To get Codex working in DX TUI with minimal code:
 
-1. **Extract spawn_agent()** from `agent.rs` → Create `codex_agent.rs`
-2. **Add 3 fields to ChatState**: `codex_op_tx`, `codex_event_rx`, `codex_thread`
-3. **Initialize in ChatState::new()**: Call `initialize_codex_backend()` and `spawn_codex_agent()`
-4. **Poll events in update()**: Check `codex_event_rx` and process events
-5. **Route messages in dispatcher**: Submit to Codex when using Codex models
-6. **Render responses**: Add Codex messages to message list
+1. ✅ **Extract spawn_agent()** from `agent.rs` → Create `codex_agent.rs`
+2. ✅ **Add 4 fields to ChatState**: `codex_op_tx`, `codex_event_rx`, `codex_session_configured`, `codex_current_turn_id`
+3. ✅ **Initialize in ChatState::new()**: Call `initialize_codex_backend()` and `spawn_codex_agent()`
+4. ✅ **Poll events in update()**: Check `codex_event_rx` and process events
+5. ✅ **Route messages in dispatcher**: Submit to Codex when using Codex models
+6. ✅ **Render responses**: Add Codex messages to message list
+
+## 🎯 NEXT ENHANCEMENTS
+
+Now that basic integration is complete, we can add:
+
+1. **Tool Execution UI** - Show visual indicators when tools are running
+2. **File Attachments** - Support sending files with messages
+3. **Advanced Features**:
+   - Reasoning effort selection
+   - Collaboration mode
+   - Model-specific settings
+4. **Better Error Handling** - More detailed error messages
+5. **Conversation Management** - Save/load Codex conversations
 
 ---
 
