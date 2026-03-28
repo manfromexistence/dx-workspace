@@ -84,3 +84,7 @@ Now give me the brutal truth of the checklist of the features that Codex TUI has
 Then what is the next step and tell me, around 100%, how much we are close to implementing the codex fully in our dx.
 
 Please look at the root codex_tui_architecture.md file and look at the codex-rs/dx folder and tell me what is faster to implement. Is it faster to integrate dx, tui into codex? Is it faster to implement codex-tui into dx-tui?
+
+Now in our codex-rs/dx folder codex-tui-dx binary please do this make sure we have full codex-tui inside the dx folder and don't change anything related to dx binary as there are two binary and only change the codex-tui-dx binary related files
+
+So as you can see this is not an easy task so maybe ask for a better AI for help and make sure the better AI uses GitHub to fetch details. You have to mention that we are in a local file and that the Codex open-source GitHub repo has these files. Now users give me solutions to implement this feature. Make the help file like this. 
