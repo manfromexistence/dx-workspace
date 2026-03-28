@@ -789,9 +789,8 @@ impl ChatState {
 				// Only play if it's a different sound than currently playing
 				if self.current_animation_sound.as_deref() != Some(sound_file) {
 					if let Some(player) = &self.audio_player {
-						if let Err(e) = player.play_looping(sound_file) {
-							eprintln!("Failed to play sound {}: {}", sound_file, e);
-						} else {
+						// Silently try to play - don't show errors
+						if player.play_looping(sound_file).is_ok() {
 							self.current_animation_sound = Some(sound_file.to_string());
 							player.set_volume(0.3); // Set volume to 30%
 						}

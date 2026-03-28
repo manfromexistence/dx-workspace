@@ -1,9 +1,15 @@
 // Audio playback module for DX animations
 use rodio::{Decoder, OutputStream, Sink, Source};
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
+use std::io::Cursor;
 use std::sync::{Arc, Mutex};
+
+// Embed audio files directly into the binary
+const MATRIX_SOUND: &[u8] = include_bytes!("../assets/matrix.mp3");
+const RAIN_SOUND: &[u8] = include_bytes!("../assets/rain.mp3");
+const WAVE_SOUND: &[u8] = include_bytes!("../assets/wave.mp3");
+const FIREWORKS_SOUND: &[u8] = include_bytes!("../assets/fireworks.mp3");
+const SPACE_SOUND: &[u8] = include_bytes!("../assets/space.mp3");
+const PLASMA_SOUND: &[u8] = include_bytes!("../assets/plasma.mp3");
 
 pub struct AudioPlayer {
 	_stream: OutputStream,
@@ -18,36 +24,30 @@ impl AudioPlayer {
 		Ok(Self { _stream: stream, sink: Arc::new(Mutex::new(Some(sink))) })
 	}
 
-	/// Resolve the asset path relative to the executable or current directory
-	fn resolve_asset_path(path: &str) -> PathBuf {
-		// Try multiple locations
-		let locations = vec![
-			PathBuf::from(path),                                                     // Relative to current dir
-			std::env::current_exe().ok().and_then(|exe| exe.parent().map(|p| p.join(path))), // Relative to exe
-			std::env::current_dir().ok().map(|d| d.join(path)),                      // Explicit current dir
-		];
-
-		for location in locations.into_iter().flatten() {
-			if location.exists() {
-				return location;
-			}
+	/// Get embedded audio data by path
+	fn get_embedded_audio(path: &str) -> Option<&'static [u8]> {
+		match path {
+			"assets/matrix.mp3" => Some(MATRIX_SOUND),
+			"assets/rain.mp3" => Some(RAIN_SOUND),
+			"assets/wave.mp3" => Some(WAVE_SOUND),
+			"assets/fireworks.mp3" => Some(FIREWORKS_SOUND),
+			"assets/space.mp3" => Some(SPACE_SOUND),
+			"assets/plasma.mp3" => Some(PLASMA_SOUND),
+			_ => None,
 		}
-
-		// Fallback to original path
-		PathBuf::from(path)
 	}
 
-	/// Play a sound file (looping)
+	/// Play a sound file (looping) from embedded data
 	pub fn play_looping(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
 		// Stop any currently playing sound
 		self.stop();
 
-		// Resolve the full path
-		let full_path = Self::resolve_asset_path(path);
+		// Get embedded audio data
+		let audio_data = Self::get_embedded_audio(path).ok_or("Audio file not found")?;
 
-		// Open the audio file - silently fail if not found
-		let file = File::open(&full_path)?;
-		let source = Decoder::new(BufReader::new(file))?;
+		// Create a cursor from the embedded data
+		let cursor = Cursor::new(audio_data);
+		let source = Decoder::new(cursor)?;
 
 		// Create a new sink and play
 		if let Ok(mut sink_guard) = self.sink.lock() {
