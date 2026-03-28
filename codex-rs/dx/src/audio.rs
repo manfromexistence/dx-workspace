@@ -12,6 +12,14 @@ const SPACE_SOUND: &[u8] = include_bytes!("../assets/space.mp3");
 const PLASMA_SOUND: &[u8] = include_bytes!("../assets/plasma.mp3");
 const TRAIN_RUNNING_SOUND: &[u8] = include_bytes!("../assets/train-running.mp3");
 const TRAIN_WHISTLE_SOUND: &[u8] = include_bytes!("../assets/train-whistle.mp3");
+const CONFETTI_SOUND: &[u8] = include_bytes!("../assets/confetti.mp3");
+const GAME_OF_LIFE_SOUND: &[u8] = include_bytes!("../assets/game-of-life.mp3");
+const JUMP_SOUND: &[u8] = include_bytes!("../assets/jump.mp3");
+const NEON_CAT_SOUND: &[u8] = include_bytes!("../assets/neon-cat.mp3");
+const SOIL_SOUND: &[u8] = include_bytes!("../assets/soil.mp3");
+const FIRE_SOUND: &[u8] = include_bytes!("../assets/fire.mp3");
+const EAGLE_SOUND: &[u8] = include_bytes!("../assets/eagle.mp3");
+const BIRDS_SOUND: &[u8] = include_bytes!("../assets/birds.mp3");
 
 pub struct AudioPlayer {
 	_stream: OutputStream,
@@ -37,6 +45,14 @@ impl AudioPlayer {
 			"assets/plasma.mp3" => Some(PLASMA_SOUND),
 			"assets/train-running.mp3" => Some(TRAIN_RUNNING_SOUND),
 			"assets/train-whistle.mp3" => Some(TRAIN_WHISTLE_SOUND),
+			"assets/confetti.mp3" => Some(CONFETTI_SOUND),
+			"assets/game-of-life.mp3" => Some(GAME_OF_LIFE_SOUND),
+			"assets/jump.mp3" => Some(JUMP_SOUND),
+			"assets/neon-cat.mp3" => Some(NEON_CAT_SOUND),
+			"assets/soil.mp3" => Some(SOIL_SOUND),
+			"assets/fire.mp3" => Some(FIRE_SOUND),
+			"assets/eagle.mp3" => Some(EAGLE_SOUND),
+			"assets/birds.mp3" => Some(BIRDS_SOUND),
 			_ => None,
 		}
 	}

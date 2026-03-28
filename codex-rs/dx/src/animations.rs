@@ -282,6 +282,7 @@ impl ChatState {
 			// Each explosion has a different center and timing
 			let explosion_offset = explosion_id * (explosion_cycle_ms / num_explosions);
 			let local_time = (elapsed_ms.wrapping_add(explosion_offset)) % explosion_cycle_ms;
+			
 			let age = local_time as f64 / 1000.0; // seconds since this explosion
 
 			// Explosion center - varies per explosion
@@ -808,6 +809,7 @@ impl ChatState {
 		// Color changes on bounce - use rainbow colors
 		let bounce_count_x = raw_x / max_x.max(1);
 		let bounce_count_y = raw_y / max_y.max(1);
+		
 		let color_index = ((bounce_count_x + bounce_count_y).unsigned_abs() as usize * 7) % 50;
 		let logo_color = self.rainbow_color(color_index);
 

@@ -834,6 +834,27 @@ impl<'a> Dispatcher<'a> {
 				}
 			}
 		}
+		// Play interaction sound for Yazi navigation
+		if self.app.bridge.chat_state.animation_mode {
+			let all_animations = crate::AnimationType::all();
+			if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
+				let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
+				if current_anim == crate::AnimationType::Yazi {
+					// Play subtle sound for navigation keys
+					match key.code {
+						KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right 
+						| KeyCode::Enter | KeyCode::Char('j') | KeyCode::Char('k') 
+						| KeyCode::Char('h') | KeyCode::Char('l') => {
+							if let Some(player) = &self.app.bridge.chat_state.audio_player {
+								player.set_volume(0.05); // 5% volume for interactions
+								let _ = player.play_once("assets/eagle.mp3");
+							}
+						}
+						_ => {}
+					}
+				}
+			}
+		}
 		// Route to yazi's normal key handling
 		Router::new(self.app).route(Key::from(key))?;
 		succ!();
@@ -973,6 +994,20 @@ impl<'a> Dispatcher<'a> {
 
 					// Handle left-click for buttons and scrollbar
 					if matches!(button, crossterm::event::MouseButton::Left) {
+						// Play interaction sound for Yazi clicks
+						if self.app.bridge.chat_state.animation_mode {
+							let all_animations = crate::AnimationType::all();
+							if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
+								let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
+								if current_anim == crate::AnimationType::Yazi {
+									if let Some(player) = &self.app.bridge.chat_state.audio_player {
+										player.set_volume(0.05); // 5% volume for clicks
+										let _ = player.play_once("assets/eagle.mp3");
+									}
+								}
+							}
+						}
+						
 						let col = mouse.column;
 						let row = mouse.row;
 
@@ -1196,6 +1231,20 @@ impl<'a> Dispatcher<'a> {
 					}
 				}
 				MouseEventKind::ScrollUp => {
+					// Play interaction sound for Yazi scrolling
+					if self.app.bridge.chat_state.animation_mode {
+						let all_animations = crate::AnimationType::all();
+						if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
+							let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
+							if current_anim == crate::AnimationType::Yazi {
+								if let Some(player) = &self.app.bridge.chat_state.audio_player {
+									player.set_volume(0.05); // 5% volume for scroll
+									let _ = player.play_once("assets/eagle.mp3");
+								}
+							}
+						}
+					}
+					
 					// Check if scrolling over input area
 					let input_area = self.app.bridge.chat_state.input_area;
 					if mouse.column >= input_area.x
@@ -1217,6 +1266,20 @@ impl<'a> Dispatcher<'a> {
 					}
 				}
 				MouseEventKind::ScrollDown => {
+					// Play interaction sound for Yazi scrolling
+					if self.app.bridge.chat_state.animation_mode {
+						let all_animations = crate::AnimationType::all();
+						if self.app.bridge.chat_state.current_animation_index < all_animations.len() {
+							let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
+							if current_anim == crate::AnimationType::Yazi {
+								if let Some(player) = &self.app.bridge.chat_state.audio_player {
+									player.set_volume(0.05); // 5% volume for scroll
+									let _ = player.play_once("assets/eagle.mp3");
+								}
+							}
+						}
+					}
+					
 					// Check if scrolling over input area
 					let input_area = self.app.bridge.chat_state.input_area;
 					if mouse.column >= input_area.x

@@ -13,6 +13,11 @@ use super::{
 
 impl ChatState {
 	pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+		// Update animation sounds before rendering
+		if self.animation_mode {
+			self.update_animation_sounds();
+		}
+		
 		// Update tachyon effects timing
 		let _elapsed = self.last_render.elapsed();
 
