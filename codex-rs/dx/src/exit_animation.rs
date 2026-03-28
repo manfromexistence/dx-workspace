@@ -76,8 +76,11 @@ pub fn show_train_farewell() {
 
 fn play_train_sounds() {
 	use rodio::{Decoder, OutputStream, Sink, Source};
-	use std::fs::File;
-	use std::io::BufReader;
+	use std::io::Cursor;
+
+	// Embed train sounds directly into binary
+	const TRAIN_WHISTLE_SOUND: &[u8] = include_bytes!("../assets/train-whistle.mp3");
+	const TRAIN_RUNNING_SOUND: &[u8] = include_bytes!("../assets/train-running.mp3");
 
 	// Retry logic for audio device initialization
 	let mut stream_result = None;
@@ -92,106 +95,37 @@ fn play_train_sounds() {
 				stream_result = Some(result);
 				break;
 			}
-			Err(e) => {
-				eprintln!("Audio device attempt {} failed: {}", attempt + 1, e);
+			Err(_) => {
+				// Silently retry - don't show errors
 			}
 		}
 	}
 
 	let Some((_stream, stream_handle)) = stream_result else {
-		eprintln!("Warning: No audio output device available after retries");
+		// Silently fail if no audio device
 		return;
 	};
 
 	let Ok(sink) = Sink::try_new(&stream_handle) else {
-		eprintln!("Warning: Failed to create audio sink");
+		// Silently fail if can't create sink
 		return;
 	};
 
 	// Set volume to 5% (quieter train sounds)
 	sink.set_volume(0.05);
 
-	// Try multiple paths for the whistle sound
-	let mut whistle_paths = vec![
-		std::path::PathBuf::from("codex-rs/dx/assets/train-whistle.mp3"),
-		std::path::PathBuf::from("assets/train-whistle.mp3"),
-	];
-
-	// Add executable-relative path if available
-	if let Ok(exe) = std::env::current_exe() {
-		if let Some(parent) = exe.parent() {
-			whistle_paths.push(parent.join("assets/train-whistle.mp3"));
-		}
+	// Play whistle sound from embedded data
+	let cursor = Cursor::new(TRAIN_WHISTLE_SOUND);
+	if let Ok(source) = Decoder::new(cursor) {
+		let buffered = source.buffered();
+		sink.append(buffered);
 	}
 
-	let mut whistle_played = false;
-	for path in whistle_paths {
-		if path.exists() {
-			match File::open(&path) {
-				Ok(file) => match Decoder::new(BufReader::new(file)) {
-					Ok(source) => {
-						// Convert to buffered source for better reliability
-						let buffered = source.buffered();
-						sink.append(buffered);
-						whistle_played = true;
-						break;
-					}
-					Err(e) => {
-						eprintln!("Failed to decode train-whistle.mp3: {}", e);
-					}
-				},
-				Err(e) => {
-					eprintln!("Failed to open train-whistle.mp3: {}", e);
-				}
-			}
-		}
-	}
-
-	if !whistle_played {
-		eprintln!("Warning: Could not load train-whistle.mp3");
-	}
-
-	// No delay - running sound starts immediately after whistle
-	// (whistle is short, so running sound will start naturally after it finishes)
-
-	// Try multiple paths for the running sound
-	let mut running_paths = vec![
-		std::path::PathBuf::from("codex-rs/dx/assets/train-running.mp3"),
-		std::path::PathBuf::from("assets/train-running.mp3"),
-	];
-
-	// Add executable-relative path if available
-	if let Ok(exe) = std::env::current_exe() {
-		if let Some(parent) = exe.parent() {
-			running_paths.push(parent.join("assets/train-running.mp3"));
-		}
-	}
-
-	let mut running_played = false;
-	for path in running_paths {
-		if path.exists() {
-			match File::open(&path) {
-				Ok(file) => match Decoder::new(BufReader::new(file)) {
-					Ok(source) => {
-						// Convert to buffered source for better reliability
-						let buffered = source.buffered();
-						sink.append(buffered);
-						running_played = true;
-						break;
-					}
-					Err(e) => {
-						eprintln!("Failed to decode train-running.mp3: {}", e);
-					}
-				},
-				Err(e) => {
-					eprintln!("Failed to open train-running.mp3: {}", e);
-				}
-			}
-		}
-	}
-
-	if !running_played {
-		eprintln!("Warning: Could not load train-running.mp3");
+	// Play running sound from embedded data
+	let cursor = Cursor::new(TRAIN_RUNNING_SOUND);
+	if let Ok(source) = Decoder::new(cursor) {
+		let buffered = source.buffered();
+		sink.append(buffered);
 	}
 
 	// Wait for sounds to finish playing

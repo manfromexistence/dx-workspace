@@ -578,6 +578,7 @@ impl<'a> Dispatcher<'a> {
 					succ!()
 				} else {
 					// No messages (splash screen) - exit with train animation
+					self.app.bridge.chat_state.stop_animation_sound(); // Stop any playing sounds before exit
 					crate::exit_animation::show_train_farewell();
 					std::process::exit(0);
 				}
@@ -789,6 +790,7 @@ impl<'a> Dispatcher<'a> {
 						succ!()
 					} else {
 						// No messages (splash screen or other screens), show train farewell and exit
+						self.app.bridge.chat_state.stop_animation_sound(); // Stop any playing sounds before exit
 						crate::exit_animation::show_train_farewell();
 						std::process::exit(0);
 					}
@@ -1076,12 +1078,14 @@ impl<'a> Dispatcher<'a> {
 
 									// Exit animation mode and go to file browser
 									self.app.bridge.chat_state.animation_mode = false;
+									self.app.bridge.chat_state.stop_animation_sound(); // Stop sound when leaving animations
 									self.app.bridge.mode = crate::bridge::AppMode::FilePicker;
 								}
 								crate::bridge::AppMode::FilePicker => {
 									// Return to previous state (animation or chat)
 									if self.app.bridge.previous_mode_was_animation {
 										self.app.bridge.chat_state.animation_mode = true;
+										self.app.bridge.chat_state.play_animation_sound(); // Resume sound when returning to animations
 									}
 									self.app.bridge.mode = crate::bridge::AppMode::Chat;
 								}

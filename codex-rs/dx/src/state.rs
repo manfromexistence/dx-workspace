@@ -446,6 +446,7 @@ impl ChatState {
 		// Play intro animation when first message is sent from animation mode
 		if self.animation_mode {
 			self.animation_mode = false;
+			self.stop_animation_sound(); // Stop sound when leaving animation mode
 			self.play_intro_animation();
 		}
 

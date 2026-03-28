@@ -10,6 +10,8 @@ const WAVE_SOUND: &[u8] = include_bytes!("../assets/wave.mp3");
 const FIREWORKS_SOUND: &[u8] = include_bytes!("../assets/fireworks.mp3");
 const SPACE_SOUND: &[u8] = include_bytes!("../assets/space.mp3");
 const PLASMA_SOUND: &[u8] = include_bytes!("../assets/plasma.mp3");
+const TRAIN_RUNNING_SOUND: &[u8] = include_bytes!("../assets/train-running.mp3");
+const TRAIN_WHISTLE_SOUND: &[u8] = include_bytes!("../assets/train-whistle.mp3");
 
 pub struct AudioPlayer {
 	_stream: OutputStream,
@@ -33,6 +35,8 @@ impl AudioPlayer {
 			"assets/fireworks.mp3" => Some(FIREWORKS_SOUND),
 			"assets/space.mp3" => Some(SPACE_SOUND),
 			"assets/plasma.mp3" => Some(PLASMA_SOUND),
+			"assets/train-running.mp3" => Some(TRAIN_RUNNING_SOUND),
+			"assets/train-whistle.mp3" => Some(TRAIN_WHISTLE_SOUND),
 			_ => None,
 		}
 	}
@@ -50,9 +54,32 @@ impl AudioPlayer {
 		let source = Decoder::new(cursor)?;
 
 		// Create a new sink and play
-		if let Ok(mut sink_guard) = self.sink.lock() {
+		if let Ok(sink_guard) = self.sink.lock() {
 			if let Some(sink) = sink_guard.as_ref() {
 				sink.append(source.repeat_infinite());
+				sink.play();
+			}
+		}
+
+		Ok(())
+	}
+
+	/// Play a sound file once (no looping) from embedded data
+	pub fn play_once(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+		// Stop any currently playing sound
+		self.stop();
+
+		// Get embedded audio data
+		let audio_data = Self::get_embedded_audio(path).ok_or("Audio file not found")?;
+
+		// Create a cursor from the embedded data
+		let cursor = Cursor::new(audio_data);
+		let source = Decoder::new(cursor)?;
+
+		// Create a new sink and play
+		if let Ok(sink_guard) = self.sink.lock() {
+			if let Some(sink) = sink_guard.as_ref() {
+				sink.append(source);
 				sink.play();
 			}
 		}
