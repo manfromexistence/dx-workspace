@@ -9005,8 +9005,8 @@ impl Renderable for ChatWidget {
 
 		bottom_pane_renderable.render(bp_area, buf);
 
-		// Always render scrollbar on the right edge
-		if area.width > 0 && transcript_viewport_height > 0 {
+		// Only render scrollbar when there are messages (not showing welcome screen)
+		if !show_welcome && area.width > 0 && transcript_viewport_height > 0 {
 			use crate::scrollbar::{CustomScrollbar, ScrollbarState};
 
 			let scrollbar_state = ScrollbarState::new(
