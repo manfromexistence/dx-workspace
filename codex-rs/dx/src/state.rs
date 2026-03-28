@@ -830,6 +830,7 @@ impl ChatState {
 		use crate::models::ModelProvider;
 
 		if let Some(model) = crate::models::get_model_by_id(model_id) {
+			let model: crate::models::ModelInfo = model;
 			self.current_model = model.clone();
 			self.show_model_picker = false;
 
@@ -888,6 +889,7 @@ impl ChatState {
 						if self.current_animation_index != self.previous_animation_index {
 							if let Some(player) = &self.audio_player {
 								// Play once with 5% volume
+								let player: &crate::audio::AudioPlayer = player;
 								player.set_volume(0.05);
 								let _ = player.play_once(sound_file);
 							}
@@ -899,6 +901,7 @@ impl ChatState {
 						// Only play if it's a different sound than currently playing
 						if self.current_animation_sound.as_deref() != Some(sound_file) {
 							if let Some(player) = &self.audio_player {
+								let player: &crate::audio::AudioPlayer = player;
 								// Silently try to play - don't show errors
 								if player.play_looping(sound_file).is_ok() {
 									self.current_animation_sound = Some(sound_file.to_string());
@@ -921,6 +924,7 @@ impl ChatState {
 	/// Stop the currently playing animation sound
 	pub fn stop_animation_sound(&mut self) {
 		if let Some(player) = &self.audio_player {
+			let player: &crate::audio::AudioPlayer = player;
 			player.stop();
 		}
 		self.current_animation_sound = None;
@@ -929,6 +933,7 @@ impl ChatState {
 	/// Play a sound effect once (not looping)
 	pub fn play_sound_once(&self, sound_file: &str) {
 		if let Some(player) = &self.audio_player {
+			let player: &crate::audio::AudioPlayer = player;
 			// Set volume to 5% before playing
 			player.set_volume(0.05);
 			// Silently try to play - don't show errors
@@ -939,6 +944,7 @@ impl ChatState {
 	/// Play a UI interaction sound at lower volume
 	pub fn play_ui_sound(&self, sound_file: &str) {
 		if let Some(player) = &self.audio_player {
+			let player: &crate::audio::AudioPlayer = player;
 			// Set volume to 3% for UI sounds (more subtle)
 			player.set_volume(0.03);
 			// Silently try to play - don't show errors

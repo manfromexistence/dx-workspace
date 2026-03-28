@@ -19,3 +19,9 @@ Please create a TODO.md file in the root folder and track everything like what h
 And in the codex-tui-dx we are already showing welcome screen now please implement the dx-tui screens in there correctly!!!
 
 And we have to comment out dx input and action input and and show the codex-tui bottom pane - for now we will only focuso on implementing screens in codex-tui and codex-tui already has a welcome screen now just implmment it correclty and implmemnt one by one its not that easy!!!
+
+no we can use them what are you doing why can't we use them as we already code all the code and all deps in place just connect them correctly
+
+And I told you to use Todo.md To drag things. and implement dx-tui slowly instead of merging everything in one go. 
+
+ohh. is that so - then always test it running "cargo run" and fix every errors you find

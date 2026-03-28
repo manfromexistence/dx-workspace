@@ -5,6 +5,7 @@ use fb_shared::{Layer, data::Data, event::ActionCow};
 use fb_widgets::input::InputMode;
 
 use super::app::App;
+use crate::root::Root;
 
 pub struct Executor<'a> {
 	app: &'a mut App,
@@ -52,11 +53,11 @@ impl<'a> Executor<'a> {
 		on!(quit);
 
 		match &*action.name {
-			"resize" => act!(app:resize, cx, crate::Root::reflow as fn(_) -> _),
+			"resize" => act!(app:resize, cx, Root::reflow as fn(_) -> _),
 			"resume" => act!(app:resume, cx, fb_parser::app::ResumeOpt {
 				tx: self.app.signals.tx.clone(),
 				token: action.take_any("token").context("Invalid 'token' in ResumeOpt")?,
-				reflow: crate::Root::reflow,
+				reflow: Root::reflow,
 			}),
 			"stop" => act!(app:stop, cx, fb_parser::app::StopOpt {
 				tx: self.app.signals.tx.clone(),
