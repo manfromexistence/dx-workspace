@@ -270,7 +270,7 @@ To get Codex working in DX TUI with minimal code:
 
 DX TUI already has file attachments and file browser. Only these 4 features from Codex TUI need integration:
 
-### 1. External Editor Integration ❌ TODO
+### 1. External Editor Integration ⚠️ IN PROGRESS (80% done)
 **What it does:** Opens external editor (vim, nano, etc.) for composing messages
 **Codex TUI implementation:**
 - File: `codex-rs/tui/src/external_editor.rs`
@@ -280,10 +280,15 @@ DX TUI already has file attachments and file browser. Only these 4 features from
 - Handles Windows `.cmd`/`.bat` shims via `which` crate
 - Parses command with `shlex` (Unix) or `winsplit` (Windows)
 **DX TUI integration:**
-- Create `codex-rs/dx/src/external_editor.rs` - Copy logic from Codex TUI
-- Add keyboard shortcut (e.g., Ctrl+E) to trigger editor
-- When editor closes, insert returned text into chat input
-- Handle terminal suspend/resume for TUI editors (vim, nano)
+- ✅ Created `codex-rs/dx/src/external_editor.rs` - Copied logic from Codex TUI
+- ✅ Added module declaration in `dx.rs`
+- ✅ Added Ctrl+E keyboard shortcut in dispatcher
+- ✅ Added `open_external_editor()` method to Dispatcher
+- ✅ Detects VISUAL/EDITOR environment variables
+- ✅ Shows toast with editor name
+- ⚠️ TODO: Terminal suspend/resume for TUI editors (vim, nano)
+- ⚠️ TODO: Actually spawn editor and insert result into input
+**Status:** Basic infrastructure complete, needs terminal handling for full implementation
 
 ### 2. Approval Popup UI ❌ TODO
 **What it does:** Shows approval dialog for tool execution (security feature)
