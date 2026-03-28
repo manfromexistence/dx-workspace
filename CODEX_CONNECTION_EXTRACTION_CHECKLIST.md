@@ -272,44 +272,227 @@ DX TUI already has file attachments and file browser. Only these 4 features from
 
 ### 1. External Editor Integration ❌ TODO
 **What it does:** Opens external editor (vim, nano, etc.) for composing messages
-**Codex TUI files to read:**
-- Search for external editor handling in `codex-rs/tui/src/app.rs`
-- Look for editor spawn logic and terminal handling
+**Codex TUI implementation:**
+- File: `codex-rs/tui/src/external_editor.rs`
+- `resolve_editor_command()` - Reads VISUAL or EDITOR env var
+- `run_editor(seed, editor_cmd)` - Writes to temp file, spawns editor, reads result
+- Uses `tempfile` crate for temp file creation
+- Handles Windows `.cmd`/`.bat` shims via `which` crate
+- Parses command with `shlex` (Unix) or `winsplit` (Windows)
 **DX TUI integration:**
-- Add to menu system (already has menu structure)
-- Use DX's menu rendering instead of Codex TUI's popup
+- Create `codex-rs/dx/src/external_editor.rs` - Copy logic from Codex TUI
+- Add keyboard shortcut (e.g., Ctrl+E) to trigger editor
+- When editor closes, insert returned text into chat input
+- Handle terminal suspend/resume for TUI editors (vim, nano)
 
 ### 2. Approval Popup UI ❌ TODO
 **What it does:** Shows approval dialog for tool execution (security feature)
-**Codex TUI files to read:**
-- `codex-rs/tui/src/app.rs` - Search for `AskForApproval` event handling
-- Look for approval dialog rendering and user input
+**Codex TUI implementation:**
+- Uses `AskForApproval` enum: `Never`, `OnRequest`, `UnlessTrusted`
+- Stored in `config.permissions.approval_policy`
+- When tool needs approval, shows popup with tool details
+- User can approve/deny individual tool execution
 **DX TUI integration:**
-- Menu item "20. Approval Policy" already exists
-- Extract approval logic, render with DX menu system
-- Show approval dialog when tool needs permission
+- Menu item "20. Approval Policy" already exists with submenu structure
+- Add approval policy state to `ChatState`
+- When Codex sends tool execution request, check policy
+- If `OnRequest`, show DX menu-style approval dialog
+- Send approval/denial back to Codex via Op channel
 
 ### 3. Skills List UI ❌ TODO
 **What it does:** Lists and manages available skills (reusable agent capabilities)
-**Codex TUI files to read:**
-- `codex-rs/tui/src/chatwidget/skills.rs` - Skills data fetching
-- `codex-rs/tui/src/bottom_pane/skills_toggle_view.rs` - Skills UI rendering
+**Codex TUI implementation:**
+- File: `codex-rs/tui/src/chatwidget/skills.rs`
+- `open_skills_menu()` - Shows skills action menu
+- `open_manage_skills_popup()` - Shows enable/disable toggles
+- `set_skills_from_response()` - Receives skills from backend
+- `update_skill_enabled()` - Toggles skill on/off
+- Skills fetched via `ListSkillsResponseEvent` from Codex backend
 **DX TUI integration:**
-- Menu item "5. Skills" already exists
-- Extract skills list fetching logic
-- Render skills list using DX menu system
-- Add skill selection/toggle functionality
+- Menu item "5. Skills" already exists with submenu: "Per-Skill Toggle", "Skill Path", "Scan Directories"
+- Add skills state to `ChatState`: `skills_all: Vec<ProtocolSkillMetadata>`
+- Handle `ListSkillsResponseEvent` in `handle_codex_event()`
+- Implement submenu handlers:
+  - "Per-Skill Toggle" → Show list with checkboxes
+  - "Skill Path" → Show skill file paths
+  - "Scan Directories" → Trigger skill rescan
+- Use DX menu system to render skills list
 
 ### 4. Plugin Marketplace UI ❌ TODO
 **What it does:** Browse and install MCP plugins/apps
-**Codex TUI files to read:**
-- `codex-rs/tui/src/chatwidget/plugins.rs` - Plugin data and installation
-- Look for plugin list fetching and installation logic
+**Codex TUI implementation:**
+- File: `codex-rs/tui/src/chatwidget/plugins.rs`
+- `add_plugins_output()` - Opens plugin marketplace
+- `on_plugins_loaded()` - Receives plugin list from backend
+- `on_plugin_detail_loaded()` - Shows plugin details
+- `on_plugin_install_loaded()` - Handles installation
+- Fetches via `AppEvent::FetchPluginsList`, `FetchPluginDetail`, `FetchPluginInstall`
+- Uses `PluginListResponse`, `PluginReadResponse`, `PluginInstallResponse`
 **DX TUI integration:**
-- Menu item "4. Plugins & Apps" already exists
-- Extract plugin marketplace backend
-- Render plugin list with DX menu system
-- Add plugin installation flow
+- Menu item "4. Plugins & Apps" already exists with submenu: "Plugin Management", "Marketplace Discovery", "Connector Apps", "Suggestion Allowlist"
+- Add plugin state to `ChatState`: `plugins_cache: PluginsCacheState`
+- Send plugin fetch requests to app-server via existing client
+- Handle plugin responses and show in DX menu
+- Implement submenu handlers:
+  - "Marketplace Discovery" → Browse available plugins
+  - "Plugin Management" → Install/uninstall plugins
+  - "Connector Apps" → Manage plugin apps
+- Use DX menu system to render plugin list and details
+
+---
+
+## 📊 COMPLETE FEATURE COMPARISON: CODEX TUI vs DX TUI
+
+### ✅ CORE FEATURES ALREADY IN DX (100% Complete)
+1. ✅ Chat interface with message history
+2. ✅ File browser (Yazi integration)
+3. ✅ File attachments (drag & drop)
+4. ✅ Model selection UI
+5. ✅ Theme system
+6. ✅ Keyboard shortcuts
+7. ✅ Mouse support (click, scroll, drag)
+8. ✅ Clipboard integration
+9. ✅ Scrolling (chat + input)
+10. ✅ Custom animations
+11. ✅ Audio system
+12. ✅ Local GGUF model support
+
+### ✅ CODEX BACKEND INTEGRATION (100% Complete)
+13. ✅ ThreadManager connection
+14. ✅ Event-driven architecture
+15. ✅ Op channel for message submission
+16. ✅ Streaming responses
+17. ✅ Tool execution tracking with visual indicators
+18. ✅ Session management
+19. ✅ Graceful shutdown
+20. ✅ Multi-provider support (Mistral default)
+21. ✅ Error handling and toasts
+
+### ❌ MISSING CODEX TUI FEATURES (4 features)
+22. ❌ External editor integration (Ctrl+E to open vim/nano)
+23. ❌ Approval policy UI (tool execution permissions)
+24. ❌ Skills management UI (enable/disable skills)
+25. ❌ Plugin marketplace UI (browse/install plugins)
+
+### 🚫 CODEX TUI FEATURES WE DON'T NEED (Already have better alternatives)
+- ❌ Codex TUI's file picker → DX has Yazi file browser ✅
+- ❌ Codex TUI's attachment UI → DX has drag & drop ✅
+- ❌ Codex TUI's theme picker → DX has theme menu ✅
+- ❌ Codex TUI's model picker → DX has model menu ✅
+- ❌ Codex TUI's scrolling → DX has custom scrolling ✅
+- ❌ Codex TUI's status line → DX has custom status ✅
+
+### 🎯 ADVANCED CODEX FEATURES (Optional - Not Critical)
+These exist in Codex TUI but are advanced features we can add later:
+- Voice/Realtime API integration
+- Session resume/fork
+- Conversation history search
+- Git diff integration
+- Branch detection
+- Reasoning effort selection
+- Collaboration mode
+- Plan tool integration
+- Windows sandbox integration
+- Web search integration
+- MCP server management UI
+- Memory/RAG integration
+- Multi-agent orchestration
+- Network proxy settings
+- Project trust levels
+- Developer instructions
+- Feature flags UI
+- Hooks & events UI
+
+---
+
+## 🎯 PROGRESS CALCULATION
+
+### Critical Features for "Codex Fully Integrated"
+**Total: 25 features**
+- Core DX features: 12 ✅
+- Codex backend: 9 ✅
+- Missing UI features: 4 ❌
+
+**Current Progress: 84% (21/25 features complete)**
+
+### If We Include Optional Advanced Features
+**Total: ~45 features**
+- Critical features: 25 (21 done, 4 todo)
+- Optional advanced: ~20 (0 done)
+
+**Current Progress: 47% (21/45 features complete)**
+
+---
+
+## 📈 REALISTIC ASSESSMENT
+
+### For "Codex Fully Integrated in DX" - We are at **84%**
+
+The 4 missing features are UI-only integrations:
+1. External editor - 2-3 hours work
+2. Approval policy - 3-4 hours work
+3. Skills management - 4-5 hours work
+4. Plugin marketplace - 5-6 hours work
+
+**Estimated time to 100%: 14-18 hours of focused development**
+
+### What "100%" Means
+- ✅ All Codex backend functionality working
+- ✅ Streaming, tool execution, session management
+- ✅ Multi-provider support
+- ✅ DX's superior UI (file browser, animations, themes)
+- ✅ 4 remaining UI features (editor, approvals, skills, plugins)
+
+### What We're NOT Implementing (By Design)
+- Codex TUI's inferior UI widgets (we have better ones)
+- Advanced features that aren't core to chat functionality
+- Features that require significant backend changes
+
+---
+
+## 🎬 NEXT STEPS (In Priority Order)
+
+### Step 1: External Editor Integration (Easiest - 2-3 hours)
+- Copy `external_editor.rs` from Codex TUI
+- Add keyboard shortcut (Ctrl+E)
+- Handle terminal suspend/resume
+- Insert editor result into chat input
+
+### Step 2: Approval Policy UI (Medium - 3-4 hours)
+- Add approval state to ChatState
+- Intercept tool execution events
+- Show DX menu-style approval dialog
+- Send approval/denial via Op channel
+
+### Step 3: Skills Management (Medium - 4-5 hours)
+- Add skills state to ChatState
+- Handle ListSkillsResponseEvent
+- Implement submenu handlers (toggle, path, scan)
+- Render skills list with DX menu
+
+### Step 4: Plugin Marketplace (Hardest - 5-6 hours)
+- Add plugin cache state
+- Connect to app-server plugin API
+- Handle plugin list/detail/install/uninstall
+- Render marketplace with DX menu
+
+---
+
+## 🏆 SUMMARY
+
+**We are 84% complete** for full Codex integration in DX TUI.
+
+The remaining 16% is purely UI work - connecting existing Codex backend logic to DX's menu system. No complex backend integration needed, just wiring up 4 features that already have menu items in place.
+
+**DX TUI is already superior to Codex TUI** in many ways:
+- Better file browser (Yazi vs basic picker)
+- Better animations and visual effects
+- Better theme system
+- Better mouse support
+- Audio system
+- Local GGUF support alongside Codex
+
+Once we add the 4 missing UI features, DX will be a complete replacement for Codex TUI with significant improvements.
 
 ---
 

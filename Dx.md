@@ -80,3 +80,5 @@ Now learn from the Codex TUI and in our dx TUI implement the similar learning fr
 - Plugin marketplace UI
 
 Now give me the brutal truth of the checklist of the features that Codex TUI has that our DX TUI doesn't have right now. Give me the brutal honest truth. 
+
+Then what is the next step and tell me, around 100%, how much we are close to implementing the codex fully in our dx.
