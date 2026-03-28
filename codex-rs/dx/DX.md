@@ -39,3 +39,23 @@ Now please list what other files that we have to integrate in the codex-tui, and
 Now please list what other files that we have to integrate in the codex-tui, and make sure to only integrate one file at a time, not one function one file at a time. Now, currently we are planning, so don't do any stupid thing. Just give me a small brief detail about what we are going to do next. So that I can give you clarifications. 
 
 You are god of stupidity. So we will not just blindly implement useless code so that you can mess everything up. We will implement all the DX/TUI inside our codex_tui. Now we already implemented the splash screen of the DX/TUI. Now the DX/TUI has the sounds that we recently added. Now make sure to implement those sounds in the codex_tui too. 
+
+And as you are not obeying or following the steering files anyway, just give me a description with all files small and formatted so that I can mention this on the fly, so that you can follow the guidelines of the project. 
+
+
+PROJECT RULES - DX-TUI Integration into Codex-TUI-DX
+CRITICAL RULES:
+ONLY run cargo run - NEVER cargo check/build/test
+Use REAL DX code - Call actual DX functions, NEVER duplicate logic
+NO AI SLOP - Don't create wrapper files or copy-paste code
+Test IMMEDIATELY after every change with cargo run
+Update TODO.md and CHANGELOG.md after every task
+INTEGRATION STRATEGY:
+DX has complete dispatcher in 
+dispatcher.rs
+ that handles ALL events
+ChatWidget should route events to DX dispatcher, not duplicate its logic
+Use 
+dx_dispatcher_bridge.rs
+ to bridge ChatWidget → DX dispatcher
+Edit DX files directly if needed, don't create new wrapper files

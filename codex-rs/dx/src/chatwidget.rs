@@ -3971,6 +3971,39 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+		// GLOBAL: Handle '0' key to toggle menu (works everywhere)
+		if matches!(key_event, KeyEvent { code: KeyCode::Char('0'), .. }) 
+			&& (key_event.modifiers.is_empty() || key_event.modifiers == KeyModifiers::NONE) 
+		{
+			let mut dx_state = self.dx_chat_state.borrow_mut();
+			if dx_state.show_tachyon_menu {
+				dx_state.menu_is_closing = true;
+				dx_state.menu.pick_closing_effect();
+				dx_state.play_ui_sound("assets/menu-close.mp3");
+			} else {
+				dx_state.menu_is_closing = false;
+				dx_state.show_tachyon_menu = true;
+				dx_state.menu.pick_opening_effect();
+				dx_state.play_ui_sound("assets/menu-open.mp3");
+			}
+			self.frame_requester.schedule_frame();
+			return;
+		}
+		
+		// GLOBAL: Handle menu navigation when menu is visible (works everywhere)
+		{
+			let dx_state = self.dx_chat_state.borrow();
+			if dx_state.show_tachyon_menu {
+				drop(dx_state);
+				let mut dx_state = self.dx_chat_state.borrow_mut();
+				
+				// Route to DX dispatcher for menu handling
+				crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_key(&mut dx_state, key_event);
+				self.frame_requester.schedule_frame();
+				return;
+			}
+		}
+		
 		// Route ALL key events to DX dispatcher bridge when showing welcome screen
 		if self.transcript_cells.is_empty() {
 			let mut dx_state = self.dx_chat_state.borrow_mut();
