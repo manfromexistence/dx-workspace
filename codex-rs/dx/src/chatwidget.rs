@@ -861,6 +861,8 @@ pub struct ChatWidget {
 	scrollbar_area: std::cell::Cell<ratatui::layout::Rect>,
 	scrollbar_dragging: std::cell::Cell<bool>,
 	auto_scroll_enabled: std::cell::Cell<bool>,
+	// Welcome screen animation
+	welcome_animation: crate::ascii_animation::AsciiAnimation,
 }
 
 /// Snapshot of active-cell state that affects transcript overlay rendering.
@@ -3418,6 +3420,10 @@ impl ChatWidget {
 
 		let current_cwd = Some(config.cwd.clone());
 		let queued_message_edit_binding = queued_message_edit_binding_for_terminal(terminal_info());
+		
+		// Clone frame_requester for animation before moving it to BottomPane
+		let animation_frame_requester = frame_requester.clone();
+		
 		let mut widget = Self {
 			app_event_tx: app_event_tx.clone(),
 			frame_requester: frame_requester.clone(),
@@ -3533,6 +3539,7 @@ impl ChatWidget {
 scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
+welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 };
 
 		widget.prefetch_rate_limits();
@@ -3612,6 +3619,10 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 		let current_cwd = Some(config.cwd.clone());
 
 		let queued_message_edit_binding = queued_message_edit_binding_for_terminal(terminal_info());
+		
+		// Clone frame_requester for animation before moving it to BottomPane
+		let animation_frame_requester = frame_requester.clone();
+		
 		let mut widget = Self {
 			app_event_tx: app_event_tx.clone(),
 			frame_requester: frame_requester.clone(),
@@ -3727,6 +3738,7 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
+welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 };
 
 		widget.prefetch_rate_limits();
@@ -3801,6 +3813,10 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 			CollaborationMode { mode: ModeKind::Default, settings: fallback_default };
 
 		let queued_message_edit_binding = queued_message_edit_binding_for_terminal(terminal_info());
+		
+		// Clone frame_requester for animation before moving it to BottomPane
+		let animation_frame_requester = frame_requester.clone();
+		
 		let mut widget = Self {
 			app_event_tx: app_event_tx.clone(),
 			frame_requester: frame_requester.clone(),
@@ -3916,6 +3932,7 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
+welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 };
 
 		widget.prefetch_rate_limits();
@@ -7779,10 +7796,13 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 			false
 		};
 
-		self.flush_active_cell();
+		// Don't flush the session header to history - we want to keep showing the welcome screen
+		// self.flush_active_cell();
 
 		if !merged_header && let Some(cell) = session_info_cell {
-			self.add_boxed_history(cell);
+			// Don't add session info to history either - keep it in active_cell for welcome screen logic
+			// self.add_boxed_history(cell);
+			self.active_cell = Some(cell);
 		}
 	}
 
@@ -8886,19 +8906,48 @@ impl Renderable for ChatWidget {
 		// We'll render them as lines directly, not using RenderableItem
 		let mut all_lines: Vec<Line<'static>> = Vec::new();
 		
-		// Add lines from all history cells
-		for cell in &self.transcript_cells {
-			let cell_lines = cell.display_lines(content_area.width);
-			if !cell_lines.is_empty() {
-				all_lines.extend(cell_lines);
-			}
-		}
+		// Check if we should show welcome screen (no transcript cells)
+		let show_welcome = self.transcript_cells.is_empty();
 		
-		// Add lines from active cell if present
-		if let Some(cell) = &self.active_cell {
-			let cell_lines = cell.display_lines(content_area.width);
-			if !cell_lines.is_empty() {
-				all_lines.extend(cell_lines);
+		if show_welcome {
+			// Show animated welcome screen with ASCII art
+			self.welcome_animation.schedule_next_frame();
+			
+			// Get current animation frame
+			let frame = self.welcome_animation.current_frame();
+			
+			// Add animation frames
+			for line in frame.lines() {
+				all_lines.push(Line::from(line.to_string()));
+			}
+			
+			// Add spacing
+			all_lines.push(Line::from(""));
+			
+			// Welcome message
+			use ratatui::style::{Modifier, Style};
+			use ratatui::text::Span;
+			all_lines.push(Line::from(vec![
+				Span::raw("  "),
+				Span::raw("Welcome to "),
+				Span::styled("Codex", Style::default().add_modifier(Modifier::BOLD)),
+				Span::raw(", OpenAI's command-line coding agent"),
+			]));
+		} else {
+			// Add lines from all history cells
+			for cell in &self.transcript_cells {
+				let cell_lines = cell.display_lines(content_area.width);
+				if !cell_lines.is_empty() {
+					all_lines.extend(cell_lines);
+				}
+			}
+			
+			// Add lines from active cell if present
+			if let Some(cell) = &self.active_cell {
+				let cell_lines = cell.display_lines(content_area.width);
+				if !cell_lines.is_empty() {
+					all_lines.extend(cell_lines);
+				}
 			}
 		}
 		
