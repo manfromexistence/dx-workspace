@@ -70,9 +70,12 @@ pub fn render(
 	let content_height = content_lines.len() as u16;
 	let top_padding = (area.height.saturating_sub(content_height)) / 2;
 
+	// Ensure the render area doesn't exceed the available area
+	let render_height = content_height.min(area.height.saturating_sub(top_padding));
+
 	// Render everything centered
 	Paragraph::new(content_lines).alignment(ratatui::layout::Alignment::Center).render(
-		Rect { x: area.x, y: area.y + top_padding, width: area.width, height: content_height },
+		Rect { x: area.x, y: area.y + top_padding, width: area.width, height: render_height },
 		buf,
 	);
 }
