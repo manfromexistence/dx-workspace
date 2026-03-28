@@ -2634,7 +2634,16 @@ impl App {
 					}
 					// Allow widgets to process any pending timers before rendering.
 					self.chat_widget.pre_draw_tick();
-					tui.draw(self.chat_widget.desired_height(tui.terminal.size()?.width), |frame| {
+					let terminal_size = tui.terminal.size()?;
+					let desired_content_height = self.chat_widget.desired_height(terminal_size.width);
+					let viewport_y = tui.terminal.viewport_area.y;
+					let remaining_screen_height = terminal_size.height.saturating_sub(viewport_y);
+					let viewport_height = desired_content_height.max(remaining_screen_height);
+
+					// Pass transcript cells to ChatWidget before rendering
+					self.chat_widget.set_transcript_cells(self.transcript_cells.clone());
+
+					tui.draw(viewport_height, |frame| {
 						self.chat_widget.render(frame.area(), frame.buffer);
 						if let Some((x, y)) = self.chat_widget.cursor_pos(frame.area()) {
 							frame.set_cursor_position((x, y));

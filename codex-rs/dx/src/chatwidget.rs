@@ -656,6 +656,9 @@ pub struct ChatWidget {
 	codex_op_tx: UnboundedSender<Op>,
 	bottom_pane: BottomPane,
 	active_cell: Option<Box<dyn HistoryCell>>,
+	/// History cells to render in the transcript area.
+	/// This is populated by the App before rendering.
+	transcript_cells: Vec<Arc<dyn HistoryCell>>,
 	/// Monotonic-ish counter used to invalidate transcript overlay caching.
 	///
 	/// The transcript overlay appends a cached "live tail" for the current active cell. Most
@@ -3427,6 +3430,7 @@ impl ChatWidget {
 				skills: None,
 			}),
 			active_cell,
+			transcript_cells: Vec::new(),
 			active_cell_revision: 0,
 			config,
 			skills_all: Vec::new(),
@@ -3617,6 +3621,7 @@ impl ChatWidget {
 				skills: None,
 			}),
 			active_cell,
+			transcript_cells: Vec::new(),
 			active_cell_revision: 0,
 			config,
 			skills_all: Vec::new(),
@@ -3802,6 +3807,7 @@ impl ChatWidget {
 				skills: None,
 			}),
 			active_cell: None,
+			transcript_cells: Vec::new(),
 			active_cell_revision: 0,
 			config,
 			skills_all: Vec::new(),
@@ -7731,12 +7737,10 @@ impl ChatWidget {
 			false
 		};
 
-		// DON'T flush the active cell - keep the session header in active_cell so it persists
-		// self.flush_active_cell();
+		self.flush_active_cell();
 
 		if !merged_header && let Some(cell) = session_info_cell {
-			// Keep the session header in active_cell instead of adding to history
-			self.active_cell = Some(cell);
+			self.add_boxed_history(cell);
 		}
 	}
 
@@ -8736,57 +8740,53 @@ impl Renderable for ChatWidget {
 			height: display_bp_height,
 		};
 
-		let transcript_renderable = match &self.active_cell {
-			Some(cell) => RenderableItem::Borrowed(cell)
-				.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0)),
-			None => {
-				let mut col = ColumnRenderable::new();
-				RenderableItem::Owned(Box::new(col))
+		// Build transcript content from history cells + active cell
+		// We'll render them as lines directly, not using RenderableItem
+		let mut all_lines: Vec<Line<'static>> = Vec::new();
+		
+		// Add lines from all history cells
+		for cell in &self.transcript_cells {
+			let cell_lines = cell.display_lines(content_area.width);
+			if !cell_lines.is_empty() {
+				all_lines.extend(cell_lines);
 			}
-		};
-
-		let transcript_content_height = transcript_renderable.desired_height(content_area.width);
+		}
+		
+		// Add lines from active cell if present
+		if let Some(cell) = &self.active_cell {
+			let cell_lines = cell.display_lines(content_area.width);
+			if !cell_lines.is_empty() {
+				all_lines.extend(cell_lines);
+			}
+		}
+		
+		// Create a paragraph from all lines
+		use ratatui::widgets::{Paragraph, Wrap};
+		use ratatui::text::Text;
+		let transcript_paragraph = Paragraph::new(Text::from(all_lines))
+			.wrap(Wrap { trim: false });
+		
+		let transcript_content_height = transcript_paragraph.line_count(content_area.width) as u16;
 
 		// Store dimensions for scrolling
 		self.viewport_height.set(transcript_viewport_height as usize);
 		self.content_height.set(transcript_content_height as usize);
 
 		// Reset scroll position to 0 if content fits in viewport
-		// This ensures the session header is always visible when there's little content
 		if transcript_content_height <= transcript_viewport_height {
 			self.scroll_position.set(0);
 		}
 
 		if transcript_content_height > transcript_viewport_height {
-			let full_content_area = Rect {
-				x: 0,
-				y: 0,
-				width: transcript_area.width,
-				height: transcript_content_height,
-			};
-			let mut temp_buf = Buffer::empty(full_content_area);
-			transcript_renderable.render(full_content_area, &mut temp_buf);
-
+			// Content doesn't fit, need to scroll
 			let scroll_offset = self.scroll_position.get().min(
 				transcript_content_height.saturating_sub(transcript_viewport_height) as usize,
 			);
-			for y in 0..transcript_viewport_height {
-				let source_y = y + scroll_offset as u16;
-				if source_y < transcript_content_height {
-					for x in 0..transcript_area.width {
-						if let Some(source_cell) =
-							temp_buf.cell(ratatui::layout::Position::new(x, source_y))
-						{
-							if let Some(dest_cell) = buf.cell_mut(ratatui::layout::Position::new(
-								transcript_area.x + x,
-								transcript_area.y + y,
-							)) {
-								*dest_cell = source_cell.clone();
-							}
-						}
-					}
-				}
-			}
+			
+			// Render paragraph with scrolling
+			use ratatui::widgets::Widget;
+			let scrolled_paragraph = transcript_paragraph.scroll((scroll_offset as u16, 0));
+			scrolled_paragraph.render(transcript_area, buf);
 
 			// Add scroll indicator in the bottom-right corner of transcript area
 			let scroll_percent = if transcript_content_height > transcript_viewport_height {
@@ -8800,19 +8800,16 @@ impl Renderable for ChatWidget {
 			let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
 
 			use ratatui::style::{Color, Style};
-			if let Some(cell) =
-				buf.cell_mut(ratatui::layout::Position::new(indicator_x, indicator_y))
-			{
-				buf.set_string(
-					indicator_x,
-					indicator_y,
-					&indicator,
-					Style::default().fg(Color::Black).bg(Color::Cyan),
-				);
-			}
+			buf.set_string(
+				indicator_x,
+				indicator_y,
+				&indicator,
+				Style::default().fg(Color::Black).bg(Color::Cyan),
+			);
 		} else {
 			// Content fits in viewport, render directly
-			transcript_renderable.render(transcript_area, buf);
+			use ratatui::widgets::Widget;
+			transcript_paragraph.render(transcript_area, buf);
 		}
 
 		bottom_pane_renderable.render(bp_area, buf);
@@ -8845,6 +8842,7 @@ impl Renderable for ChatWidget {
 	fn desired_height(&self, _width: u16) -> u16 {
 		// Return u16::MAX to force the viewport to fill the entire terminal screen.
 		// This ensures the bottom pane stays pinned at the absolute bottom.
+		// History is now rendered INSIDE the ChatWidget's transcript area, not above the viewport.
 		u16::MAX
 	}
 
@@ -8886,6 +8884,12 @@ impl Renderable for ChatWidget {
 		};
 
 		transcript_renderable.cursor_pos(transcript_area)
+	}
+}
+
+impl ChatWidget {
+	pub fn set_transcript_cells(&mut self, cells: Vec<Arc<dyn HistoryCell>>) {
+		self.transcript_cells = cells;
 	}
 }
 
