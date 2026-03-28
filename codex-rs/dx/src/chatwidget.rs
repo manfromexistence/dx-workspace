@@ -3981,7 +3981,8 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 		}
 		
 		// Handle Left/Right arrow keys for animation navigation when showing welcome
-		if self.transcript_cells.is_empty() {
+		// Only handle if input box is empty (no text typed)
+		if self.transcript_cells.is_empty() && self.bottom_pane.composer_is_empty() {
 			use crossterm::event::{KeyCode, KeyModifiers};
 			
 			if key_event.modifiers.is_empty() || key_event.modifiers == KeyModifiers::NONE {
@@ -4010,6 +4011,27 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 						// Navigate to next animation
 						dx_state.current_animation_index = (dx_state.current_animation_index + 1) % all_animations.len();
 						
+						dx_state.animation_start_time = Some(std::time::Instant::now());
+						dx_state.play_animation_sound();
+						dx_state.play_ui_sound("assets/click.mp3");
+						self.frame_requester.schedule_frame();
+						return;
+					}
+					// HARDCODED: Press '1' to show animation carousel (Matrix)
+					KeyCode::Char('1') => {
+						let mut dx_state = self.dx_chat_state.borrow_mut();
+						dx_state.current_animation_index = 1; // Matrix (first carousel animation)
+						dx_state.animation_start_time = Some(std::time::Instant::now());
+						dx_state.play_animation_sound();
+						dx_state.play_ui_sound("assets/click.mp3");
+						self.frame_requester.schedule_frame();
+						return;
+					}
+					// HARDCODED: Press '3' to show Yazi file picker
+					KeyCode::Char('3') => {
+						let mut dx_state = self.dx_chat_state.borrow_mut();
+						let all_animations = crate::state::AnimationType::all();
+						dx_state.current_animation_index = all_animations.len() - 1; // Yazi (last animation)
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
 						dx_state.play_ui_sound("assets/click.mp3");
