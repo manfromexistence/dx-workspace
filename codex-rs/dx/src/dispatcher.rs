@@ -371,6 +371,13 @@ impl<'a> Dispatcher<'a> {
 			let all_animations = crate::AnimationType::all();
 			let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
 
+			// Handle Ctrl+E for external editor (works in animation mode too)
+			if key.code == KeyCode::Char('e') && key.modifiers.contains(KeyModifiers::CONTROL) {
+				self.open_external_editor();
+				NEED_RENDER.store(1, Ordering::Relaxed);
+				return succ!();
+			}
+
 			// Handle navigation keys based on current screen
 			match key.code {
 				KeyCode::Left => {
@@ -1598,44 +1605,6 @@ impl<'a> Dispatcher<'a> {
 	fn check_and_extract_file_paths(&mut self) {
 		let input_content = self.app.bridge.chat_state.input.content.clone();
 
-	/// Submit message to Codex backend
-	fn submit_to_codex(&mut self, message: String) {
-		use codex_protocol::protocol::Op;
-		
-		// Check if Codex is initialized
-		if let Some(op_tx) = &self.app.bridge.chat_state.codex_op_tx {
-			// Add user message to UI
-			self.app.bridge.chat_state.messages.push(crate::chat::Message::user(message.clone()));
-			
-			// Add empty assistant message for streaming
-			self.app.bridge.chat_state.messages.push(crate::chat::Message::assistant(String::new()));
-			
-			// Set loading state
-			self.app.bridge.chat_state.is_loading = true;
-			
-			// Clear input
-			self.app.bridge.chat_state.input.clear();
-			
-			// Save messages
-			let _ = self.app.bridge.chat_state.save_messages();
-			
-			// Submit to Codex
-			let op = Op::UserMessage {
-				text: message,
-				attachments: vec![],
-			};
-			
-			if let Err(e) = op_tx.send(op) {
-				tracing::error!("Failed to send op to Codex: {}", e);
-				self.app.bridge.chat_state.show_toast("Failed to send message to Codex".to_string());
-				self.app.bridge.chat_state.is_loading = false;
-			}
-		} else {
-			// Codex not initialized yet
-			self.app.bridge.chat_state.show_toast("Codex is still initializing...".to_string());
-		}
-	}
-
 		// Skip if input is empty
 		if input_content.trim().is_empty() {
 			return;
@@ -1702,5 +1671,70 @@ impl<'a> Dispatcher<'a> {
 
 			NEED_RENDER.store(1, Ordering::Relaxed);
 		}
+	}
+
+	/// Submit message to Codex backend
+	fn submit_to_codex(&mut self, message: String) {
+		use codex_protocol::protocol::Op;
+		
+		// Check if Codex is initialized
+		if let Some(op_tx) = &self.app.bridge.chat_state.codex_op_tx {
+			// Add user message to UI
+			self.app.bridge.chat_state.messages.push(crate::chat::Message::user(message.clone()));
+			
+			// Add empty assistant message for streaming
+			self.app.bridge.chat_state.messages.push(crate::chat::Message::assistant(String::new()));
+			
+			// Set loading state
+			self.app.bridge.chat_state.is_loading = true;
+			
+			// Clear input
+			self.app.bridge.chat_state.input.clear();
+			
+			// Save messages
+			let _ = self.app.bridge.chat_state.save_messages();
+			
+			// Submit to Codex
+			let op = Op::UserMessage {
+				text: message,
+				attachments: vec![],
+			};
+			
+			if let Err(e) = op_tx.send(op) {
+				tracing::error!("Failed to send op to Codex: {}", e);
+				self.app.bridge.chat_state.show_toast("Failed to send message to Codex".to_string());
+				self.app.bridge.chat_state.is_loading = false;
+			}
+		} else {
+			// Codex not initialized yet
+			self.app.bridge.chat_state.show_toast("Codex is still initializing...".to_string());
+		}
+	}
+
+	/// Open external editor (Ctrl+E)
+	fn open_external_editor(&mut self) {
+		use crate::external_editor::resolve_editor_command;
+		
+		// Try to resolve editor command
+		let editor_cmd = match resolve_editor_command() {
+			Ok(cmd) => cmd,
+			Err(e) => {
+				self.app.bridge.chat_state.show_toast(format!("Editor not configured: {}. Set VISUAL or EDITOR environment variable.", e));
+				return;
+			}
+		};
+		
+		// Show toast with editor info
+		let editor_name = editor_cmd.first().map(|s| s.as_str()).unwrap_or("editor");
+		self.app.bridge.chat_state.show_toast(format!("External editor feature: {} (Coming soon!)", editor_name));
+		
+		// TODO: Implement full external editor support
+		// This requires:
+		// 1. Suspending the TUI (raw mode off)
+		// 2. Running editor synchronously
+		// 3. Restoring TUI (raw mode on)
+		// 4. Inserting result into input
+		// 
+		// For now, we show a toast to indicate the feature is recognized
 	}
 }

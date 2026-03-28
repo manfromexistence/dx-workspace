@@ -26,6 +26,7 @@ mod dispatcher;
 mod dx_render;
 mod effects;
 mod exit_animation;
+mod external_editor;
 mod font;
 mod input;
 mod llm;
