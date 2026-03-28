@@ -858,6 +858,9 @@ pub struct ChatWidget {
 	scroll_position: std::cell::Cell<usize>,
 	content_height: std::cell::Cell<usize>,
 	viewport_height: std::cell::Cell<usize>,
+	scrollbar_area: std::cell::Cell<ratatui::layout::Rect>,
+	scrollbar_dragging: std::cell::Cell<bool>,
+	auto_scroll_enabled: std::cell::Cell<bool>,
 }
 
 /// Snapshot of active-cell state that affects transcript overlay rendering.
@@ -3527,7 +3530,10 @@ impl ChatWidget {
 			scroll_position: std::cell::Cell::new(0),
 			content_height: std::cell::Cell::new(0),
 			viewport_height: std::cell::Cell::new(0),
-		};
+scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
+scrollbar_dragging: std::cell::Cell::new(false),
+auto_scroll_enabled: std::cell::Cell::new(true),
+};
 
 		widget.prefetch_rate_limits();
 		widget
@@ -3718,7 +3724,10 @@ impl ChatWidget {
 			scroll_position: std::cell::Cell::new(0),
 			content_height: std::cell::Cell::new(0),
 			viewport_height: std::cell::Cell::new(0),
-		};
+scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
+scrollbar_dragging: std::cell::Cell::new(false),
+auto_scroll_enabled: std::cell::Cell::new(true),
+};
 
 		widget.prefetch_rate_limits();
 		widget
@@ -3904,7 +3913,10 @@ impl ChatWidget {
 			scroll_position: std::cell::Cell::new(0),
 			content_height: std::cell::Cell::new(0),
 			viewport_height: std::cell::Cell::new(0),
-		};
+scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
+scrollbar_dragging: std::cell::Cell::new(false),
+auto_scroll_enabled: std::cell::Cell::new(true),
+};
 
 		widget.prefetch_rate_limits();
 		widget
@@ -8703,6 +8715,106 @@ impl ChatWidget {
 		self.scroll_position.get() < content.saturating_sub(viewport)
 	}
 
+	/// Handle mouse event for scrollbar interaction
+	pub fn handle_mouse_event(&self, mouse: crossterm::event::MouseEvent) {
+		use crossterm::event::{MouseButton, MouseEventKind};
+
+		match mouse.kind {
+			MouseEventKind::Down(MouseButton::Left) => {
+				let scrollbar_area = self.scrollbar_area.get();
+				let col = mouse.column;
+				let row = mouse.row;
+
+				// Check if click is on scrollbar
+				if col >= scrollbar_area.x
+					&& col < scrollbar_area.x + scrollbar_area.width
+					&& row >= scrollbar_area.y
+					&& row < scrollbar_area.y + scrollbar_area.height
+				{
+					// Disable auto-scroll when user interacts with scrollbar
+					self.auto_scroll_enabled.set(false);
+
+					// Calculate scroll position based on click position
+					let relative_y = row.saturating_sub(scrollbar_area.y) as usize;
+					let scrollbar_height = scrollbar_area.height as usize;
+					let max_scroll = self.content_height.get().saturating_sub(self.viewport_height.get());
+
+					// Map click position to scroll offset
+					let new_offset = if scrollbar_height > 0 {
+						(relative_y * max_scroll) / scrollbar_height
+					} else {
+						0
+					};
+
+					self.scroll_position.set(new_offset.min(max_scroll));
+					self.scrollbar_dragging.set(true);
+					self.frame_requester.schedule_frame();
+				}
+			}
+			MouseEventKind::Up(_) => {
+				// Stop dragging when mouse button is released
+				if self.scrollbar_dragging.get() {
+					self.scrollbar_dragging.set(false);
+					self.frame_requester.schedule_frame();
+				}
+			}
+			MouseEventKind::Drag(MouseButton::Left) => {
+				// Handle scrollbar dragging
+				if self.scrollbar_dragging.get() {
+					let scrollbar_area = self.scrollbar_area.get();
+					let row = mouse.row;
+
+					// Calculate scroll position based on drag position
+					let relative_y = row.saturating_sub(scrollbar_area.y) as usize;
+					let scrollbar_height = scrollbar_area.height as usize;
+					let max_scroll = self.content_height.get().saturating_sub(self.viewport_height.get());
+
+					// Map drag position to scroll offset
+					let new_offset = if scrollbar_height > 0 {
+						(relative_y * max_scroll) / scrollbar_height
+					} else {
+						0
+					};
+
+					self.scroll_position.set(new_offset.min(max_scroll));
+					self.frame_requester.schedule_frame();
+				}
+			}
+			MouseEventKind::ScrollUp => {
+				// Disable auto-scroll when user manually scrolls
+				self.auto_scroll_enabled.set(false);
+				self.scroll_up(3);
+			}
+			MouseEventKind::ScrollDown => {
+				// Check if scrolling to bottom - if so, re-enable auto-scroll
+				let was_at_bottom = !self.can_scroll_down();
+				self.scroll_down(3);
+				if !was_at_bottom && !self.can_scroll_down() {
+					self.auto_scroll_enabled.set(true);
+				}
+			}
+			_ => {}
+		}
+	}
+
+	/// Enable auto-scroll (scroll to bottom when new messages arrive)
+	pub fn enable_auto_scroll(&self) {
+		self.auto_scroll_enabled.set(true);
+		self.scroll_to_bottom();
+	}
+
+	/// Check if auto-scroll is enabled
+	pub fn is_auto_scroll_enabled(&self) -> bool {
+		self.auto_scroll_enabled.get()
+	}
+
+	/// Auto-scroll to bottom if enabled (called when new content arrives)
+	pub fn auto_scroll_if_enabled(&self) {
+		if self.auto_scroll_enabled.get() {
+			self.scroll_to_bottom();
+		}
+	}
+
 
 }
 
@@ -8862,6 +8974,9 @@ impl Renderable for ChatWidget {
 				width: 1,
 				height: transcript_viewport_height,
 			};
+
+			// Store scrollbar area for mouse interaction
+			self.scrollbar_area.set(scrollbar_area);
 
 			scrollbar.render(scrollbar_area, buf, &scrollbar_state);
 		}

@@ -236,6 +236,7 @@ pub enum TuiEvent {
 	Key(KeyEvent),
 	Paste(String),
 	Draw,
+	Mouse(crossterm::event::MouseEvent),
 }
 
 pub struct Tui {

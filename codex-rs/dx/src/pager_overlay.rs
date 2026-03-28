@@ -668,6 +668,8 @@ impl TranscriptOverlay {
 				}
 				other => self.view.handle_key_event(tui, other),
 			},
+			TuiEvent::Mouse(_) => Ok(()),
+			TuiEvent::Paste(_) => Ok(()),
 			TuiEvent::Draw => {
 				tui.draw(u16::MAX, |frame| {
 					self.render(frame.area(), frame.buffer);
@@ -729,6 +731,8 @@ impl StaticOverlay {
 				}
 				other => self.view.handle_key_event(tui, other),
 			},
+			TuiEvent::Mouse(_) => Ok(()),
+			TuiEvent::Paste(_) => Ok(()),
 			TuiEvent::Draw => {
 				tui.draw(u16::MAX, |frame| {
 					self.render(frame.area(), frame.buffer);

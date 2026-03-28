@@ -93,3 +93,7 @@ Now I have reverted the changes that you did because still the same problem. The
 That is why all the files of codex are so big. We have to come up with a clever way. Currently in the top we are showing the box with codex model detail and a small slash command detail, then there comes a tip, and after that the input box and the status line. Now before the input box we can render a UI that gets the full height so that the input box will automatically be at the bottom. That is the way it gets to the bottom anyway. The input top part has got some more content and it moves the input box to the bottom and then the input box stays at the absolute bottom. We will use that in our favor so try to render a big big wall with a fixed height that is big enough to push the input box to the bottom. 
 
 Now, we are in the in-game. In the src folder of codex-rs/dx folder, you can find the scrollbar.rs file. So, create another one and implement a custom scrollbar in the message list of the Codex tui. Make sure there are two binaries: the previous scrollbar is connected to another binary. So, we have to connect a new scrollbar with our current Codex-tui-dx binary.
+
+If it's possible, please remove the mouse wheel interaction from the info box as it's conflicting with the message list.
+
+So DX binary has an onboarding_screen right? So please render that onboarding_screen in the codex ty2 as the default. Instead of the codec's top or tip details, and when there is a message, please show the message. 

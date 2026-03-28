@@ -220,7 +220,7 @@ impl<S: EventSource + Default + Unpin> TuiEventStream<S> {
 		}
 	}
 
-	/// Map a crossterm event to a [`TuiEvent`], skipping events we don't use (mouse events, etc.).
+	/// Map a crossterm event to a [`TuiEvent`], skipping events we don't use.
 	fn map_crossterm_event(&mut self, event: Event) -> Option<TuiEvent> {
 		match event {
 			Event::Key(key_event) => {
@@ -233,6 +233,7 @@ impl<S: EventSource + Default + Unpin> TuiEventStream<S> {
 			}
 			Event::Resize(_, _) => Some(TuiEvent::Draw),
 			Event::Paste(pasted) => Some(TuiEvent::Paste(pasted)),
+			Event::Mouse(mouse_event) => Some(TuiEvent::Mouse(mouse_event)),
 			Event::FocusGained => {
 				self.terminal_focused.store(true, Ordering::Relaxed);
 				crate::terminal_palette::requery_default_colors();

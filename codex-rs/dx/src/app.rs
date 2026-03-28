@@ -2623,6 +2623,9 @@ impl App {
 					let pasted = pasted.replace("\r", "\n");
 					self.chat_widget.handle_paste(pasted);
 				}
+				TuiEvent::Mouse(mouse_event) => {
+					self.chat_widget.handle_mouse_event(mouse_event);
+				}
 				TuiEvent::Draw => {
 					if self.backtrack_render_pending {
 						self.backtrack_render_pending = false;
@@ -2828,6 +2831,9 @@ impl App {
 					tui.frame_requester().schedule_frame();
 				}
 				self.transcript_cells.push(cell.clone());
+				
+				// Auto-scroll to bottom when new content arrives (if enabled)
+				self.chat_widget.auto_scroll_if_enabled();
 				
 				// NOTE: We no longer call tui.insert_history_lines() because history is now
 				// rendered INSIDE the ChatWidget's transcript area, not above the viewport.
