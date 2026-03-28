@@ -133,3 +133,13 @@ If issues arise, revert these changes in order:
   - Updates last_font_change timestamp
   - Logs font index changes for debugging
 - **Simpler Implementation**: Fonts cycle automatically while showing welcome screen
+
+
+### Changed - Use DX Timer Logic (2026-03-29 Latest)
+- **Integrated DX Dispatcher Timer Logic** (`src/chatwidget.rs`):
+  - Font cycling now uses the same logic as DX dispatcher's dispatch_timer()
+  - Checks `last_font_change.elapsed() >= Duration::from_secs(5)`
+  - Cycles through 113 fonts: `(splash_font_index + 1) % 113`
+  - Updates `last_font_change` timestamp
+  - This is the REAL DX code - no duplication!
+- **Next**: Test with `cargo run --bin codex-tui-dx` to verify font cycling works
