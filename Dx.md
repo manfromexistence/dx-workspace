@@ -30,18 +30,18 @@ Now only on our message list scroll bar there is currently the scroll bar scroll
 
 On exit, the animation is getting the sound one time and one time it's not getting the sound, without literally changing anything. Maybe there's a bug so please fix it so that it can play the sound every time correctly. Now lower the volume of the train sounds.
 
-now only alt+enter is detecting so when pressed shit/ctrl/alt+enter create new lines and put the diamon symbol on the scrollbar to have more padding or maring rigth and make those symbols clickable and when clicked show the field diamond and put the screen view to that place of that chat. As I told you divide the chat messages into the whole screen correctly. If there are two messages then on the top most top of the scroll bar there will be one diamond and on the bottom of the scroll bar there will be another one. This type of pattern will grow alongside the message list items are growing.
+now only alt+enter is detecting so when pressed shit/ctrl/alt+enter create new lines and put the diamon symbol on the scrollbar to have more padding or maring rigth and make those symbols clickable and when clicked show the field diamond and put the screen view to that place of that chat. As I told you divide the chat messages into the whole screen correctly. If there are two messages then on the top most top of the scroll bar there will be one diamond and on the bottom of the scroll bar there will be another one. This TUIpe of pattern will grow alongside the message list items are growing.
 
 Now we have to enter the codex toy in our dx toy message list. Now as you can see we are not going to wrap the codex toy entirely on our dx toy. We are going to make a new brand new toy inside our dx toy, because that codex toy has so many UI problems and also more importantly it has no custom scrollbar. It only works on native terminal but in native terminal we can't show our animations because they require the full terminal support. Now here is the thing: we are not just going to create a sloppy Codex UI. We already have all the source code of the Codex UI so study the codebase and tell me: is there any way we can integrate the Codex UI markdown rendering and agent response rendering without taking the whole Codex UI with the input box and bad UI part? We are going to just use the learnings of the Codex UI, like how it implemented or called the Codex providers or the Codex AI response sandboxing and other stuff. We are just going to integrate it without the bad Codex UI itself.
 
-then please show models of codex and also render models of codex and integrate it in our chage message list and make sure to keep our local model as the default infinity unlimited one and in our provider's model implement Codex models 
+then please show models of codex and also render models of codex and integrate it in our chage message list and make sure to keep our local model as the default infiniTUI unlimited one and in our provider's model implement Codex models 
 
 And connect our input box bottom provider name with the actual provider so it will render the provider name and sync it with the provider menu and with the input box actions provided names. And make sure to connect this with the Corex real provider.
 
 Rename the title from "Codex providers" to just "Providers".
 Remove the custom sloppy UI you created.
 Make the Providers list a manual list item.
-Instead of the local infinity, just put "infinity" as the first model.
+Instead of the local infiniTUI, just put "infiniTUI" as the first model.
 Use message list items instead of any weird sloppy UI because message link works correctly.
 Make sure that when you click on the message list it successfully changes the model.
 
@@ -68,3 +68,7 @@ And make it so that when there is no base URL it was defaulting to the local mod
 And about your checklist bro, we literally diverted our plan to not run the Codex TUI inside our DX TUI because Codex TUI has a fundamental TUI problem. It's really good to just recreate it in our DX TUI as Codex TUI uses the Codex code and other protocol anyways so we will be doing the same thing instead of wrapping the correct UI inside our DX TUI.
 
 Now we already set the Mistral API key in our operating system and we implemented the codex to work on the Mistral latest low model with the API key. In our dxdui make sure Mistral is the default model with the codex and render the codex messages like the codex tui rendering in our dx message list correctly. 
+
+Now in our DX folder we also have a binary about the real Codex TUI. Now please tell me what the real Codex TUI has with the Codex code that we don't have in our DX TUI. Make it check it out and tell me what we still need to do in our DX; then you might fully implement Codex. 
+now we we have to do it in a way so that we will use the actual Codex tui code. Now we will only use the part that we needed for the connection. We'll ignore the part that the Codex tui specifically used for the tui itself.
+Please create a checklist about how we can configure the current Codex tui so that we can implement them in our dx tui, in a way so that the unusable parts are not needed, like the totally tui-specific stuff. We don't need that; we only need the professional code that does the connection of Codex score with that tui so that we can implement it in our dx tui too. 
