@@ -72,3 +72,9 @@ Now we already set the Mistral API key in our operating system and we implemente
 Now in our DX folder we also have a binary about the real Codex TUI. Now please tell me what the real Codex TUI has with the Codex code that we don't have in our DX TUI. Make it check it out and tell me what we still need to do in our DX; then you might fully implement Codex. 
 now we we have to do it in a way so that we will use the actual Codex tui code. Now we will only use the part that we needed for the connection. We'll ignore the part that the Codex tui specifically used for the tui itself.
 Please create a checklist about how we can configure the current Codex tui so that we can implement them in our dx tui, in a way so that the unusable parts are not needed, like the totally tui-specific stuff. We don't need that; we only need the professional code that does the connection of Codex score with that tui so that we can implement it in our dx tui too. 
+
+Now learn from the Codex TUI and in our dx TUI implement the similar learning from the Codex TUI. Implement this with the Codex dx TUI components like the menu and things like that. 
+- External editor integration
+- Approval popup UI
+- Skills list UI
+- Plugin marketplace UI
