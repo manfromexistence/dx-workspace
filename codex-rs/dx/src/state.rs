@@ -993,26 +993,30 @@ impl ChatState {
 				let explosion_cycle_ms: u64 = 5000;
 				let num_explosions = 3;
 				
+				// Track if we should play a sound this frame
+				let mut should_play = false;
+				
 				// Check each explosion independently
 				for explosion_id in 0..num_explosions {
 					let explosion_offset = explosion_id * (explosion_cycle_ms / num_explosions);
 					let local_time = (elapsed_ms.wrapping_add(explosion_offset)) % explosion_cycle_ms;
 					
 					// The sparkle flash appears when local_time < 300ms
-					// Play sound at the very beginning (0-80ms window) to sync with visual
-					if local_time <= 80 {
-						// Calculate a unique timestamp for this specific explosion instance
-						// This represents which "cycle" of this particular explosion we're in
-						let explosion_cycle_number = (elapsed_ms.wrapping_add(explosion_offset)) / explosion_cycle_ms;
-						let unique_id = explosion_cycle_number * 10 + explosion_id;
-						
-						// Only play if this is a new explosion instance
-						if unique_id > self.last_confetti_explosion_time {
-							self.play_sound_once("assets/confetti.mp3");
-							self.last_confetti_explosion_time = unique_id;
-							break; // Only play one sound per update
+					// Detect the exact moment when explosion starts (local_time transitions from high to low)
+					// We want to play sound when local_time is very small (just started)
+					if local_time < 100 {
+						// Check if enough time has passed since last sound (at least 1500ms)
+						// This ensures we don't play duplicate sounds for the same explosion
+						if elapsed_ms > self.last_confetti_explosion_time + 1500 {
+							should_play = true;
+							break;
 						}
 					}
+				}
+				
+				if should_play {
+					self.play_sound_once("assets/confetti.mp3");
+					self.last_confetti_explosion_time = elapsed_ms;
 				}
 			}
 			_ => {
