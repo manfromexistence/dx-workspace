@@ -3971,48 +3971,13 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// GLOBAL: Handle '0' key to toggle menu (works everywhere)
-		if matches!(key_event, KeyEvent { code: KeyCode::Char('0'), .. }) 
-			&& (key_event.modifiers.is_empty() || key_event.modifiers == KeyModifiers::NONE) 
+		// Handle menu keys using ChatState method (REAL DX code in state.rs)
 		{
 			let mut dx_state = self.dx_chat_state.borrow_mut();
-			if dx_state.show_tachyon_menu {
-				dx_state.menu_is_closing = true;
-				dx_state.menu.pick_closing_effect();
-				dx_state.play_ui_sound("assets/menu-close.mp3");
-			} else {
-				dx_state.menu_is_closing = false;
-				dx_state.show_tachyon_menu = true;
-				dx_state.menu.pick_opening_effect();
-				dx_state.play_ui_sound("assets/menu-open.mp3");
-			}
-			self.frame_requester.schedule_frame();
-			return;
-		}
-		
-		// GLOBAL: Handle menu navigation when menu is visible (works everywhere)
-		{
-			let dx_state = self.dx_chat_state.borrow();
-			if dx_state.show_tachyon_menu {
-				drop(dx_state);
-				let mut dx_state = self.dx_chat_state.borrow_mut();
-				
-				// Route to DX dispatcher for menu handling
-				crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_key(&mut dx_state, key_event);
+			if dx_state.handle_menu_key(key_event) {
 				self.frame_requester.schedule_frame();
 				return;
 			}
-		}
-		
-		// Route ALL key events to DX dispatcher bridge when showing welcome screen
-		if self.transcript_cells.is_empty() {
-			let mut dx_state = self.dx_chat_state.borrow_mut();
-			
-			// Call the REAL DX dispatcher key handling logic
-			crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_key(&mut dx_state, key_event);
-			
-			self.frame_requester.schedule_frame();
-			return;
 		}
 		
 		match key_event {
@@ -8971,9 +8936,19 @@ impl Renderable for ChatWidget {
 				dx_state.play_animation_sound();
 			}
 			
-			// Call DX dispatcher timer logic - handles font cycling, menu updates, etc.
-			// This is the REAL DX code from dispatcher.rs!
-			crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_timer(&mut dx_state);
+			// Update DX state (timer logic)
+			dx_state.update();
+			
+			// Update splash font cycling (every 5 seconds)
+			if dx_state.last_font_change.elapsed() >= std::time::Duration::from_secs(5) {
+				dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113;
+				dx_state.last_font_change = std::time::Instant::now();
+			}
+			
+			// Update menu timing
+			let elapsed = dx_state.last_frame_instant.elapsed();
+			dx_state.menu.update(elapsed);
+			dx_state.last_frame_instant = std::time::Instant::now();
 			
 			// Call the actual DX splash render function
 			crate::splash::render(
@@ -9105,10 +9080,10 @@ impl Renderable for ChatWidget {
 		// Render menu overlay if visible (on top of everything)
 		let dx_state = self.dx_chat_state.borrow();
 		if dx_state.show_tachyon_menu || dx_state.menu_is_closing {
-			let theme_mode = dx_state.theme_mode;
 			drop(dx_state); // Drop borrow before mutable borrow
 			let mut dx_state = self.dx_chat_state.borrow_mut();
-			dx_state.menu.render_in_area(area, buf, &theme_mode);
+			// Use render_menu_in_area which handles animations!
+			dx_state.render_menu_in_area(area, buf);
 		}
 	}
 

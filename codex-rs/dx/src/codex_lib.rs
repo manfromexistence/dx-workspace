@@ -108,7 +108,6 @@ pub mod chat_components;
 pub mod chat_input;
 pub mod components;
 pub mod dispatcher;
-pub mod dx_dispatcher_bridge; // Bridge for calling DX dispatcher from ChatWidget
 pub mod dx_render;
 pub mod effects;
 pub mod exit_animation;

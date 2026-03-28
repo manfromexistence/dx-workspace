@@ -1030,4 +1030,76 @@ impl ChatState {
 			}
 		}
 	}
+	
+	/// Handle menu key events - called by both DX dispatcher and ChatWidget
+	/// This is the SINGLE SOURCE OF TRUTH for menu navigation
+	pub fn handle_menu_key(&mut self, key: crossterm::event::KeyEvent) -> bool {
+		use crossterm::event::KeyCode;
+		
+		// Handle '0' key to toggle menu
+		if key.code == KeyCode::Char('0') {
+			if self.show_tachyon_menu {
+				self.menu_is_closing = true;
+				self.menu.pick_closing_effect();
+				self.play_ui_sound("assets/menu-close.mp3");
+			} else {
+				self.menu_is_closing = false;
+				self.show_tachyon_menu = true;
+				self.menu.pick_opening_effect();
+				self.play_ui_sound("assets/menu-open.mp3");
+			}
+			return true;
+		}
+		
+		// Handle menu navigation when menu is visible
+		if self.show_tachyon_menu {
+			match key.code {
+				KeyCode::Up | KeyCode::Char('k') => {
+					self.play_ui_sound("assets/click.mp3");
+					self.menu.select_prev_menu_item();
+					return true;
+				}
+				KeyCode::Down | KeyCode::Char('j') => {
+					self.play_ui_sound("assets/click.mp3");
+					self.menu.select_next_menu_item();
+					return true;
+				}
+				KeyCode::PageUp => {
+					self.menu.page_up(10);
+					return true;
+				}
+				KeyCode::PageDown => {
+					self.menu.page_down(10);
+					return true;
+				}
+				KeyCode::Home | KeyCode::Char('g') => {
+					self.menu.jump_to_top();
+					return true;
+				}
+				KeyCode::End | KeyCode::Char('G') => {
+					self.menu.jump_to_bottom();
+					return true;
+				}
+				KeyCode::Enter => {
+					self.play_ui_sound("assets/click.mp3");
+					let _should_close = !self.menu.select_current_item();
+					self.menu_is_closing = true;
+					self.menu.pick_closing_effect();
+					return true;
+				}
+				KeyCode::Esc => {
+					if self.menu.current_submenu.is_some() {
+						self.menu.go_back_to_main();
+					} else {
+						self.menu_is_closing = true;
+						self.menu.pick_closing_effect();
+					}
+					return true;
+				}
+				_ => {}
+			}
+		}
+		
+		false // Key not handled
+	}
 }
