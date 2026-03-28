@@ -4,6 +4,21 @@ All notable changes to the dx-tui integration will be documented in this file.
 
 ## [2026-03-29] - DX-TUI Integration Phase 1
 
+### Added - Animation Support (Latest)
+- **Rainbow Animation State** (`src/chatwidget.rs`)
+  - Added `dx_rainbow_effect: RefCell<RainbowEffect>` to ChatWidget struct
+  - Added `dx_splash_font_index: Cell<usize>` for font cycling
+  - Added `dx_last_animation_update: Cell<Instant>` for frame timing
+  - Rainbow colors now animate smoothly (updates every 50ms)
+  - Frame scheduling triggers continuous re-renders for animation
+
+- **Animated Splash Rendering** (`src/chatwidget.rs` render method)
+  - Rainbow effect now uses persistent state instead of creating new instance
+  - Calls `frame_requester.schedule_frame()` on EVERY render when showing welcome
+  - RainbowEffect auto-updates based on elapsed time (no manual update needed)
+  - Font index ready for Ctrl+. cycling (to be implemented)
+  - Removed 50ms throttling - now schedules frames continuously for smooth animation
+
 ### Added
 - **DX-TUI Module Integration** (`src/codex_lib.rs`)
   - Exposed all dx-tui modules as public: `animations`, `audio`, `autocomplete`, `bridge`, `chat`, `chat_components`, `chat_input`, `components`, `dispatcher`, `dx_render`, `effects`, `exit_animation`, `external_editor`, `font`, `input`, `llm`, `logs`, `menu`, `modal`, `model_manager`, `models`, `panic`, `perf`, `root`, `scrollbar`, `signals`, `splash`, `state`, `theme`

@@ -863,6 +863,10 @@ pub struct ChatWidget {
 	auto_scroll_enabled: std::cell::Cell<bool>,
 	// Welcome screen animation
 	welcome_animation: crate::ascii_animation::AsciiAnimation,
+	// DX-TUI state for animated splash screen
+	dx_rainbow_effect: std::cell::RefCell<crate::effects::RainbowEffect>,
+	dx_splash_font_index: std::cell::Cell<usize>,
+	dx_last_animation_update: std::cell::Cell<std::time::Instant>,
 }
 
 /// Snapshot of active-cell state that affects transcript overlay rendering.
@@ -3540,6 +3544,9 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
+dx_rainbow_effect: std::cell::RefCell::new(crate::effects::RainbowEffect::new()),
+dx_splash_font_index: std::cell::Cell::new(0),
+dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3739,6 +3746,9 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
+dx_rainbow_effect: std::cell::RefCell::new(crate::effects::RainbowEffect::new()),
+dx_splash_font_index: std::cell::Cell::new(0),
+dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3933,6 +3943,9 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
+dx_rainbow_effect: std::cell::RefCell::new(crate::effects::RainbowEffect::new()),
+dx_splash_font_index: std::cell::Cell::new(0),
+dx_last_animation_update: std::cell::Cell::new(std::time::Instant::now()),
 };
 
 		widget.prefetch_rate_limits();
@@ -8916,12 +8929,22 @@ impl Renderable for ChatWidget {
 			use crate::splash;
 			use crate::theme::{ChatTheme, ThemeVariant};
 			
-			// Create DX theme and rainbow effect
+			// Always schedule next frame for continuous rainbow animation
+			self.frame_requester.schedule_frame();
+			
+			// Update timing for debug purposes
+			let now = std::time::Instant::now();
+			self.dx_last_animation_update.set(now);
+			
+			// Create DX theme
 			let dx_theme = ChatTheme::new(ThemeVariant::Dark);
-			let rainbow = RainbowEffect::new();
+			
+			// Get current rainbow effect state (it auto-updates based on elapsed time)
+			let rainbow = self.dx_rainbow_effect.borrow();
+			let font_index = self.dx_splash_font_index.get();
 			
 			// Render DX splash directly to the transcript area
-			splash::render(transcript_area, buf, &dx_theme, 0, &rainbow);
+			splash::render(transcript_area, buf, &dx_theme, font_index, &*rainbow);
 			
 			// Skip the rest of the rendering since we've already rendered the splash
 			// Don't add any lines to all_lines

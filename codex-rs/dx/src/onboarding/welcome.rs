@@ -96,6 +96,7 @@ impl WidgetRef for &WelcomeWidget {
 			}
 		}
 		
+		// Always schedule next frame for rainbow animation
 		if self.animations_enabled {
 			self.animation.schedule_next_frame();
 		}
