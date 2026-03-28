@@ -33,3 +33,7 @@ update the exiting dx-tui files fit them inside codex-tuiAnd update the chainslo
 no I said to always use dx-tui code directly and then edit to fit in the codex-tui and chatwidget.rs is a big file so try to create smaller files as much possible so that you can just call it and edit it easily and use real dx-tui code and edit instead of createing ai slop
 
 i am telling you fully integrate all the stuffs bot only one funcation you stupid - integrate the full and then go for now the dx-tui related file
+
+Now please list what other files that we have to integrate in the codex-tui, and make sure to only integrate one file at a time, not one function one file at a time.
+
+Now please list what other files that we have to integrate in the codex-tui, and make sure to only integrate one file at a time, not one function one file at a time. Now, currently we are planning, so don't do any stupid thing. Just give me a small brief detail about what we are going to do next. So that I can give you clarifications. 

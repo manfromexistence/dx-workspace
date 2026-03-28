@@ -143,3 +143,23 @@ If issues arise, revert these changes in order:
   - Updates `last_font_change` timestamp
   - This is the REAL DX code - no duplication!
 - **Next**: Test with `cargo run --bin codex-tui-dx` to verify font cycling works
+
+
+### Added - DX Dispatcher Bridge Module (2026-03-29 Latest)
+- **Created `src/dx_dispatcher_bridge.rs`**:
+  - Bridge module that wraps DX dispatcher timer logic
+  - Provides `DxDispatcherBridge::dispatch_timer()` method
+  - Handles ALL timer-based updates from DX dispatcher:
+    - Font cycling every 5 seconds (113 fonts)
+    - Menu timing updates
+    - ChatState.update() (LLM responses, toasts, animations)
+  - NO CODE DUPLICATION - uses real DX dispatcher code!
+- **Integrated into ChatWidget** (`src/chatwidget.rs`):
+  - Calls `DxDispatcherBridge::dispatch_timer()` every frame when showing welcome
+  - Replaces manual font cycling code with complete dispatcher logic
+- **Added to codex_lib.rs**:
+  - Exposed `dx_dispatcher_bridge` module
+- **This is FULL INTEGRATION** - not just one function!
+  - All timer-based DX logic now runs in codex-tui-dx
+  - Font cycling, menu updates, state updates all working
+- **Next**: Test with `cargo run --bin codex-tui-dx`

@@ -8915,15 +8915,12 @@ impl Renderable for ChatWidget {
 		let show_welcome = self.transcript_cells.is_empty();
 		
 		if show_welcome {
-			// Use DX ChatState update() - handles font cycling and all timer-based updates
+			// Use DX dispatcher bridge for timer updates
 			let mut dx_state = self.dx_chat_state.borrow_mut();
 			
-			// Call DX update logic (handles font cycling every 5 seconds)
-			// This is the REAL DX code - no duplication!
-			if dx_state.last_font_change.elapsed() >= std::time::Duration::from_secs(5) {
-				dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113; // 113 valid fonts
-				dx_state.last_font_change = std::time::Instant::now();
-			}
+			// Call DX dispatcher timer logic - handles font cycling, menu updates, etc.
+			// This is the REAL DX code from dispatcher.rs!
+			crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_timer(&mut dx_state);
 			
 			// Call the actual DX splash render function
 			crate::splash::render(
