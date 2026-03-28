@@ -257,6 +257,8 @@ pub struct ChatState {
 	pub last_dvd_bounce_y: i32, // Track last DVD bounce position Y
 	pub last_confetti_explosion_time: u64, // Track last confetti explosion time
 	pub previous_animation_index: usize, // Track previous animation to detect changes
+	pub last_animation_area_width: u16, // Track animation area dimensions for accurate sound timing
+	pub last_animation_area_height: u16,
 
 	// CODEX INTEGRATION COMMENTED OUT
 	// pub codex_op_tx: Option<tokio_mpsc::UnboundedSender<codex_protocol::protocol::Op>>,
@@ -417,6 +419,8 @@ impl ChatState {
 			last_dvd_bounce_y: 0,
 			last_confetti_explosion_time: 0, // Initialize confetti explosion tracking
 			previous_animation_index: 0, // Initialize previous animation tracking
+			last_animation_area_width: 0,
+			last_animation_area_height: 0,
 			// CODEX INTEGRATION COMMENTED OUT
 			// codex_op_tx: None,
 			// codex_event_rx: None,
@@ -862,12 +866,20 @@ impl ChatState {
 		if self.current_animation_index < all_animations.len() {
 			let current_anim = all_animations[self.current_animation_index];
 
+			// Reset animation-specific tracking when switching animations
+			if self.current_animation_index != self.previous_animation_index {
+				self.last_dvd_bounce_x = -999; // Reset to impossible value to trigger first sound
+				self.last_dvd_bounce_y = -999;
+				self.last_confetti_explosion_time = 0;
+			}
+
 			if let Some(sound_file) = current_anim.sound_file() {
 				// Special handling for animations that don't loop
 				match current_anim {
 					AnimationType::Confetti | AnimationType::DVDLogo => {
 						// These animations play sounds on specific events, not continuously
 						// Sound will be triggered in their render methods
+						self.previous_animation_index = self.current_animation_index;
 						return;
 					}
 					AnimationType::Yazi => {
@@ -925,11 +937,15 @@ impl ChatState {
 	}
 	
 	/// Update animation-specific sound triggers (called before rendering)
-	pub fn update_animation_sounds(&mut self) {
+	pub fn update_animation_sounds_with_area(&mut self, area_width: u16, area_height: u16) {
 		let all_animations = AnimationType::all();
 		if self.current_animation_index >= all_animations.len() {
 			return;
 		}
+		
+		// Store area dimensions for next frame
+		self.last_animation_area_width = area_width;
+		self.last_animation_area_height = area_height;
 		
 		let current_anim = all_animations[self.current_animation_index];
 		let elapsed = self.rainbow_animation.elapsed();
@@ -937,23 +953,25 @@ impl ChatState {
 		
 		match current_anim {
 			AnimationType::DVDLogo => {
-				// Calculate DVD bounce counts more accurately
-				// We need to detect when the logo actually hits a wall
+				// Use actual area dimensions for accurate bounce detection
+				let logo_width = 13i32;
+				let logo_height = 5i32;
+				
+				let max_x = (area_width as i32 - logo_width).max(1);
+				let max_y = (area_height as i32 - logo_height).max(1);
+				
 				let speed_x: i32 = 3;
 				let speed_y: i32 = 1;
 				let tick = (elapsed_ms / 100) as i32;
+				
 				let raw_x = tick * speed_x;
 				let raw_y = tick * speed_y;
 				
-				// Use approximate terminal dimensions (will be close enough for sound timing)
-				let max_x = 60; // Approximate
-				let max_y = 20; // Approximate
-				
+				// Calculate bounce counts - this matches the render logic exactly
 				let bounce_count_x = raw_x / max_x.max(1);
 				let bounce_count_y = raw_y / max_y.max(1);
 				
 				// Play sound on bounce (when bounce count changes)
-				// This means the logo hit a wall
 				if bounce_count_x != self.last_dvd_bounce_x || bounce_count_y != self.last_dvd_bounce_y {
 					self.play_sound_once("assets/jump.mp3");
 					self.last_dvd_bounce_x = bounce_count_x;
@@ -961,7 +979,7 @@ impl ChatState {
 				}
 			}
 			AnimationType::Confetti => {
-				// Play sound at the exact moment of each explosion
+				// Match the exact explosion timing from render logic
 				let explosion_cycle_ms: u64 = 5000;
 				let num_explosions = 3;
 				
@@ -970,16 +988,18 @@ impl ChatState {
 					let explosion_offset = explosion_id * (explosion_cycle_ms / num_explosions);
 					let local_time = (elapsed_ms.wrapping_add(explosion_offset)) % explosion_cycle_ms;
 					
-					// Play sound at the very start of explosion (0-50ms window)
-					// This is when the sparkle flash appears
-					if local_time < 50 {
-						// Calculate a unique timestamp for this explosion to avoid duplicates
-						let explosion_timestamp = (elapsed_ms / explosion_cycle_ms) * explosion_cycle_ms + explosion_offset;
+					// The sparkle flash appears when local_time < 300ms
+					// Play sound at the very beginning (0-100ms window)
+					if local_time < 100 {
+						// Calculate unique ID for this specific explosion cycle
+						let cycle_number = elapsed_ms / explosion_cycle_ms;
+						let explosion_id_in_cycle = (elapsed_ms.wrapping_add(explosion_offset)) / explosion_cycle_ms;
+						let unique_explosion_id = cycle_number * num_explosions + explosion_id_in_cycle;
 						
-						// Only play if we haven't played this explosion yet
-						if explosion_timestamp > self.last_confetti_explosion_time {
+						// Only play if this is a new explosion we haven't played yet
+						if unique_explosion_id > self.last_confetti_explosion_time {
 							self.play_sound_once("assets/confetti.mp3");
-							self.last_confetti_explosion_time = explosion_timestamp;
+							self.last_confetti_explosion_time = unique_explosion_id;
 							break; // Only play one sound per update
 						}
 					}

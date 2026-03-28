@@ -13,11 +13,6 @@ use super::{
 
 impl ChatState {
 	pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-		// Update animation sounds before rendering
-		if self.animation_mode {
-			self.update_animation_sounds();
-		}
-		
 		// Update tachyon effects timing
 		let _elapsed = self.last_render.elapsed();
 
@@ -31,6 +26,11 @@ impl ChatState {
 				.direction(Direction::Vertical)
 				.constraints([Constraint::Min(10), Constraint::Length(input_height), Constraint::Length(1)])
 				.split(area);
+
+			// Update animation sounds with actual area dimensions
+			if self.animation_mode {
+				self.update_animation_sounds_with_area(chunks[0].width, chunks[0].height);
+			}
 
 			self.input_area = chunks[1];
 
@@ -154,6 +154,11 @@ impl ChatState {
 					])
 					.split(area);
 
+				// Update animation sounds with actual area dimensions
+				if self.animation_mode {
+					self.update_animation_sounds_with_area(chunks[0].width, chunks[0].height);
+				}
+
 				self.input_area = chunks[1];
 
 				// Clear the animation area first
@@ -192,6 +197,11 @@ impl ChatState {
 				.direction(Direction::Vertical)
 				.constraints([Constraint::Min(10), Constraint::Length(input_height), Constraint::Length(1)])
 				.split(area);
+
+			// Update animation sounds with actual area dimensions
+			if self.animation_mode {
+				self.update_animation_sounds_with_area(chunks[0].width, chunks[0].height);
+			}
 
 			self.input_area = chunks[1];
 
