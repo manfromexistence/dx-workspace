@@ -8918,6 +8918,15 @@ impl Renderable for ChatWidget {
 			// Use DX dispatcher bridge for timer updates
 			let mut dx_state = self.dx_chat_state.borrow_mut();
 			
+			// Set animation mode to Splash (index 0)
+			dx_state.animation_mode = true;
+			dx_state.current_animation_index = 0; // Splash
+			
+			// Play splash sound if not already playing
+			if dx_state.current_animation_sound.as_deref() != Some("assets/birds.mp3") {
+				dx_state.play_animation_sound();
+			}
+			
 			// Call DX dispatcher timer logic - handles font cycling, menu updates, etc.
 			// This is the REAL DX code from dispatcher.rs!
 			crate::dx_dispatcher_bridge::DxDispatcherBridge::dispatch_timer(&mut dx_state);
@@ -8937,6 +8946,12 @@ impl Renderable for ChatWidget {
 			// Skip the rest of the rendering since we've already rendered the splash
 			// Don't add any lines to all_lines
 		} else {
+			// Stop splash sound when leaving welcome screen
+			let mut dx_state = self.dx_chat_state.borrow_mut();
+			if dx_state.animation_mode {
+				dx_state.stop_animation_sound();
+				dx_state.animation_mode = false;
+			}
 			// Add lines from all history cells
 			for cell in &self.transcript_cells {
 				let cell_lines = cell.display_lines(content_area.width);

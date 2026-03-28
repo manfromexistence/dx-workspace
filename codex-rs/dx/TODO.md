@@ -20,7 +20,7 @@
 - [ ] Theme picker with live preview
 
 #### 2. Audio Features
-- [ ] Splash screen sound (`assets/birds.mp3`)
+- [x] ~~Splash screen sound (`assets/birds.mp3`)~~ ✅ (completed: 2026-03-29)
 - [ ] Animation sounds (looping for each animation)
 - [ ] UI sounds (click, typing, scroll, menu open/close)
 - [ ] Exit animation sounds (train)
@@ -60,10 +60,11 @@
 
 ## 🚀 IN PROGRESS
 
-### Current Task: Integrate Audio System
-- [ ] Play splash screen sound when showing DX splash
-- [ ] Stop sound when leaving splash
-- [ ] Integrate audio player initialization
+### Current Task: Integrate Menu System
+- [ ] Route '0' key press to toggle menu
+- [ ] Render menu overlay in ChatWidget
+- [ ] Handle menu navigation (j/k, arrows, PageUp/Down)
+- [ ] Implement all 25 submenus
 
 ---
 
@@ -124,6 +125,7 @@
 - [x] Integrate DX ChatState
 - [x] Create DX dispatcher bridge module
 - [x] Integrate timer logic (font cycling, menu updates)
+- [x] ~~Integrate audio system (splash sound plays)~~ ✅ (completed: 2026-03-29)
 
 ---
 
