@@ -1,0 +1,16 @@
+[
+  {
+    "role": "User",
+    "content": "hello,\n\nwhat are you\nAnd whare you ding\nand thanks for you answer in advance",
+    "timestamp": "2026-03-27T21:46:42.251185600+06:00",
+    "token_count": 19,
+    "thinking_expanded": false
+  },
+  {
+    "role": "Assistant",
+    "content": "Hello! As an AI developed by DX, I am here to help with various tasks. Could you provide more information about what specific information you need assistance with? I'm eager to assist you further.",
+    "timestamp": "2026-03-27T21:46:42.564473900+06:00",
+    "token_count": 0,
+    "thinking_expanded": false
+  }
+]

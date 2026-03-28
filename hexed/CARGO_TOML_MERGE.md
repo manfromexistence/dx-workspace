@@ -1,0 +1,434 @@
+Please merge this cargo.toml:
+```
+[workspace]
+resolver = "2"
+members = [
+    "src/file_browser/actor",
+    "src/file_browser/adapter",
+    "src/file_browser/binding",
+    "src/file_browser/boot",
+    "src/file_browser/build",
+    "src/file_browser/cli",
+    "src/file_browser/codegen",
+    "src/file_browser/config",
+    "src/file_browser/core",
+    "src/file_browser/dds",
+    "src/file_browser/emulator",
+    "src/file_browser/ffi",
+    "src/file_browser/fs",
+    "src/file_browser/macro",
+    "src/file_browser/packing",
+    "src/file_browser/parser",
+    "src/file_browser/plugin",
+    "src/file_browser/proxy",
+    "src/file_browser/scheduler",
+    "src/file_browser/sftp",
+    "src/file_browser/shared",
+    "src/file_browser/shim",
+    "src/file_browser/term",
+    "src/file_browser/tty",
+    "src/file_browser/vfs",
+    "src/file_browser/watcher",
+    "src/file_browser/widgets",
+]
+
+[workspace.package]
+version = "26.2.2"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+authors = ["Your Name <your.email@example.com>"]
+repository = "https://github.com/yourusername/dx-tui"
+homepage = "https://github.com/yourusername/dx-tui"
+
+[workspace.dependencies]
+ansi-to-tui = "8.0.1"
+anyhow = "1.0"
+arc-swap = "1.7"
+async-channel = "2.3"
+async-compression = { version = "0.4", features = ["deflate", "gzip", "zstd", "futures-io"] }
+async-fs = "2.1"
+async-trait = "0.1"
+base64 = "0.22"
+better-panic = "0.3"
+bitflags = "2.6"
+bstr = "1.10"
+byteorder = "1.5"
+bytes = "1.8"
+chrono = "0.4"
+clap = { version = "4.5", features = ["derive", "wrap_help"] }
+color-eyre = "0.6"
+core-foundation-sys = "0.8"
+crossterm = { version = "0.29.0", features = ["event-stream"] }
+dashmap = "6.1"
+dirs = "6.0.0"
+dyn-clone = "1.0"
+either = "1.13"
+encoding_rs = "0.8"
+fd-lock = "4.0"
+fdlimit = "0.3.0"
+flume = "0.12"
+foldhash = "0.2.0"
+futures = "0.3"
+globset = "0.4"
+hashbrown = { version = "0.16.1", features = ["serde"] }
+indexmap = "2.6"
+libc = "0.2"
+log = "0.4"
+lru = "0.16.3"
+md5 = "0.8.0"
+memchr = "2.7"
+mlua = { version = "0.11.6", features = ["lua54", "vendored", "serialize", "macros", "async", "anyhow"] }
+nix = { version = "0.31.2", default-features = false }
+notify = "8.2.0"
+objc2 = "0.6.4"
+once_cell = "1.20"
+ordered-float = { version = "5.1.0", features = ["serde"] }
+parking_lot = "0.12"
+paste = "1.0"
+percent-encoding = "2.3"
+rand = "0.8"
+ratatui = { version = "0.30.0", features = ["serde"] }
+rayon = "1.10"
+regex = "1.11"
+russh = "0.58"
+scopeguard = "1.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_with = "3.11"
+shell-words = "1.1"
+signal-hook = "0.4.3"
+smallvec = "1.13"
+syntect = "5.2"
+tachyonfx = "0.25.0"
+tempfile = "3.14"
+thiserror = "2.0"
+tokio = { version = "1.42", features = ["full"] }
+tokio-stream = "0.1"
+tokio-util = "0.7"
+toml = { version = "1.1.0", features = ["parse"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+twox-hash = "2.0"
+typed-path = "0.12.3"
+unicode-width = "0.2"
+url = "2.5"
+uzers = "0.12"
+uuid = { version = "1.11", features = ["v4"] }
+vergen-gitcl = { version = "9.1.0", default-features = false, features = ["build", "cargo"] }
+which = "8.0.2"
+
+[workspace.lints.rust]
+unsafe_code = "warn"  # Changed from "deny" to "warn" for file_browser code
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(windows)', 'cfg(unix)'] }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+[package]
+name = "dx-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Terminal UI for Codex CLI - AI-powered coding agent"
+
+[features]
+default = ["vendored-lua", "llm"]
+vendored-lua = ["mlua/vendored"]
+llm = ["llama-cpp-2", "tiktoken-rs", "sysinfo"]
+
+[dependencies]
+# File browser dependencies
+fb-actor = { path = "src/file_browser/actor" }
+fb-adapter = { path = "src/file_browser/adapter" }
+fb-binding = { path = "src/file_browser/binding" }
+fb-boot = { path = "src/file_browser/boot" }
+fb-config = { path = "src/file_browser/config" }
+fb-core = { path = "src/file_browser/core" }
+fb-dds = { path = "src/file_browser/dds" }
+fb-emulator = { path = "src/file_browser/emulator" }
+fb-fs = { path = "src/file_browser/fs" }
+fb-macro = { path = "src/file_browser/macro" }
+fb-parser = { path = "src/file_browser/parser" }
+fb-plugin = { path = "src/file_browser/plugin" }
+fb-proxy = { path = "src/file_browser/proxy" }
+fb-shared = { path = "src/file_browser/shared" }
+fb-term = { path = "src/file_browser/term" }
+fb-tty = { path = "src/file_browser/tty" }
+fb-vfs = { path = "src/file_browser/vfs" }
+fb-watcher = { path = "src/file_browser/watcher" }
+fb-widgets = { path = "src/file_browser/widgets" }
+
+# LLM dependencies (optional)
+llama-cpp-2 = { version = "0.1", optional = true }
+sysinfo = { version = "0.38.4", optional = true }
+tiktoken-rs = { version = "0.9", optional = true }
+
+# Font compression
+zstd = "0.13"
+
+# Animation
+palette = "0.7"
+rand.workspace = true
+
+# Clipboard
+cli-clipboard = "0.4"
+
+# FIGlet rendering
+figlet-rs = "1.0.0"
+anyhow.workspace = true
+better-panic.workspace = true
+chrono.workspace = true
+crossterm.workspace = true
+fdlimit.workspace = true
+futures.workspace = true
+mlua.workspace = true
+once_cell.workspace = true
+paste.workspace = true
+ratatui = { workspace = true, features = ["serde"] }
+scopeguard.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tachyonfx.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tokio-stream.workspace = true
+tracing.workspace = true
+tracing-appender = "0.2.4"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+ansi-to-tui.workspace = true
+arc-swap.workspace = true
+async-channel.workspace = true
+async-fs.workspace = true
+async-trait.workspace = true
+base64.workspace = true
+bitflags.workspace = true
+bstr.workspace = true
+byteorder.workspace = true
+bytes.workspace = true
+dirs.workspace = true
+dyn-clone.workspace = true
+either.workspace = true
+encoding_rs.workspace = true
+fd-lock.workspace = true
+flume.workspace = true
+foldhash.workspace = true
+globset.workspace = true
+libc.workspace = true
+log.workspace = true
+lru.workspace = true
+md5.workspace = true
+memchr.workspace = true
+notify.workspace = true
+parking_lot.workspace = true
+percent-encoding.workspace = true
+rayon.workspace = true
+regex.workspace = true
+shell-words.workspace = true
+signal-hook.workspace = true
+smallvec.workspace = true
+syntect.workspace = true
+tempfile.workspace = true
+twox-hash.workspace = true
+typed-path.workspace = true
+unicode-width.workspace = true
+url.workspace = true
+which.workspace = true
+clap = { workspace = true, features = ["derive", "wrap_help"] }
+color-eyre.workspace = true
+core-foundation-sys.workspace = true
+dashmap.workspace = true
+hashbrown = { workspace = true, features = ["serde"] }
+indexmap.workspace = true
+ordered-float = { workspace = true, features = ["serde"] }
+serde_with.workspace = true
+tokio-util.workspace = true
+toml = { workspace = true, features = ["parse"] }
+uuid = { workspace = true, features = ["v4"] }
+async-compression = { workspace = true, features = ["deflate", "gzip", "zstd", "futures-io"] }
+russh.workspace = true
+
+[target."cfg(unix)".dependencies]
+libc.workspace = true
+signal-hook-tokio = { version = "0.4.0", features = ["futures-v0_3"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+crossterm = { workspace = true, features = ["use-dev-tty", "libc"] }
+
+[target.'cfg(all(not(target_os = "macos"), not(target_os = "windows")))'.dependencies]
+tikv-jemallocator = "0.6.1"
+
+[build-dependencies]
+zstd = "0.13"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[[bin]]
+name = "dx"
+path = "src/main.rs"
+
+```
+
+
+With this cargo.toml
+```toml
+[package]
+name = "codex-tui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "codex-tui"
+path = "src/main.rs"
+
+[lib]
+name = "codex_tui"
+path = "src/lib.rs"
+
+[features]
+default = ["voice-input"]
+# Enable vt100-based tests (emulator) when running with `--features vt100-tests`.
+vt100-tests = []
+# Gate verbose debug logging inside the TUI implementation.
+debug-logs = []
+voice-input = ["dep:cpal", "dep:hound"]
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+clap = { workspace = true, features = ["derive"] }
+codex-ansi-escape = { workspace = true }
+codex-app-server-client = { workspace = true }
+codex-app-server-protocol = { workspace = true }
+codex-arg0 = { workspace = true }
+codex-backend-client = { workspace = true }
+codex-chatgpt = { workspace = true }
+codex-client = { workspace = true }
+codex-cloud-requirements = { workspace = true }
+codex-core = { workspace = true }
+codex-features = { workspace = true }
+codex-feedback = { workspace = true }
+codex-file-search = { workspace = true }
+codex-login = { workspace = true }
+codex-otel = { workspace = true }
+codex-protocol = { workspace = true }
+codex-shell-command = { workspace = true }
+codex-state = { workspace = true }
+codex-terminal-detection = { workspace = true }
+codex-tui-app-server = { workspace = true }
+codex-utils-approval-presets = { workspace = true }
+codex-utils-absolute-path = { workspace = true }
+codex-utils-cli = { workspace = true }
+codex-utils-elapsed = { workspace = true }
+codex-utils-fuzzy-match = { workspace = true }
+codex-utils-oss = { workspace = true }
+codex-utils-sandbox-summary = { workspace = true }
+codex-utils-sleep-inhibitor = { workspace = true }
+codex-utils-string = { workspace = true }
+color-eyre = { workspace = true }
+crossterm = { workspace = true, features = ["bracketed-paste", "event-stream"] }
+derive_more = { workspace = true, features = ["is_variant"] }
+diffy = { workspace = true }
+dirs = { workspace = true }
+dunce = { workspace = true }
+image = { workspace = true, features = ["jpeg", "png", "gif", "webp"] }
+itertools = { workspace = true }
+lazy_static = { workspace = true }
+pathdiff = { workspace = true }
+pulldown-cmark = { workspace = true }
+rand = { workspace = true }
+ratatui = { workspace = true, features = [
+    "scrolling-regions",
+    "unstable-backend-writer",
+    "unstable-rendered-line-info",
+    "unstable-widget-ref",
+] }
+ratatui-macros = { workspace = true }
+regex-lite = { workspace = true }
+reqwest = { workspace = true, features = ["json", "multipart"] }
+rmcp = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
+shlex = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+supports-color = { workspace = true }
+tempfile = { workspace = true }
+textwrap = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = [
+    "io-std",
+    "macros",
+    "process",
+    "rt-multi-thread",
+    "signal",
+    "test-util",
+    "time",
+] }
+tokio-stream = { workspace = true, features = ["sync"] }
+toml = { workspace = true }
+tracing = { workspace = true, features = ["log"] }
+tracing-appender = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+syntect = "5"
+two-face = { version = "0.5", default-features = false, features = ["syntect-default-onig"] }
+unicode-segmentation = { workspace = true }
+unicode-width = { workspace = true }
+url = { workspace = true }
+webbrowser = { workspace = true }
+uuid = { workspace = true }
+
+codex-windows-sandbox = { workspace = true }
+tokio-util = { workspace = true, features = ["time"] }
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+cpal = { version = "0.15", optional = true }
+hound = { version = "3.5", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+which = { workspace = true }
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+] }
+winsplit = "0.1"
+
+# Clipboard support via `arboard` is not available on Android/Termux.
+# Only include it for non-Android targets so the crate builds on Android.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+arboard = { workspace = true }
+
+
+[dev-dependencies]
+codex-cli = { workspace = true }
+codex-core = { workspace = true }
+codex-utils-cargo-bin = { workspace = true }
+codex-utils-pty = { workspace = true }
+assert_matches = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+insta = { workspace = true }
+pretty_assertions = { workspace = true }
+rand = { workspace = true }
+serial_test = { workspace = true }
+vt100 = { workspace = true }
+uuid = { workspace = true }
+
+```

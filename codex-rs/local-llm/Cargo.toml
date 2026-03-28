@@ -1,0 +1,22 @@
+[package]
+name = "codex-local-llm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "codex_local_llm"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+# llama-cpp-2 = "0.1.90"  # Commented out: conflicts with V8 C++ runtime symbols
+sysinfo = "0.33"
+tokio = { workspace = true, features = ["sync", "rt"] }
+tracing = { workspace = true }
+
+[features]
+default = []

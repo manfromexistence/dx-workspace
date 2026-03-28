@@ -1,0 +1,32 @@
+[target.'cfg(all(windows, target_env = "msvc"))']
+rustflags = [
+    "-C", "link-arg=/STACK:8388608",
+    "-C", "link-arg=/NODEFAULTLIB:libcmt.lib",
+    "-C", "link-arg=/NODEFAULTLIB:libcmtd.lib",
+    "-C", "link-arg=/FORCE:MULTIPLE",
+]
+
+# MSVC emits a warning about code that may trip "Cortex-A53 MPCore processor bug #843419" (see
+# https://developer.arm.com/documentation/epm048406/latest) which is sometimes emitted by LLVM.
+# Since Arm64 Windows 10+ isn't supported on that processor, it's safe to disable the warning.
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:8388608", "-C", "link-arg=/arm64hazardfree"]
+
+[target.'cfg(all(windows, target_env = "gnu"))']
+rustflags = ["-C", "link-arg=-Wl,--stack,8388608"]
+
+# Enhanced build settings for Ryzen 5 5600 + 8GB RAM
+# Optimized for 3x faster builds while staying within memory limits
+[build]
+jobs = 3                    # UPGRADED: 3 parallel jobs (safe for 8GB RAM)
+incremental = true          # Enable incremental compilation for faster rebuilds
+# rustc-wrapper = "sccache"   # Use sccache for compilation caching (install: cargo install sccache)
+
+[env]
+CARGO_BUILD_JOBS = "3"      # Match jobs setting
+CARGO_INCREMENTAL = "1"     # Enable incremental compilation
+V8_FROM_SOURCE = "0"        # Use pre-built V8 binaries (avoids Windows symlink privilege errors)
+
+# LLD Linker - 5x faster linking on Windows (commented out until llvm installed)
+# [target.x86_64-pc-windows-msvc]
+# linker = "lld-link.exe"

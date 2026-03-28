@@ -1,0 +1,16 @@
+[
+  {
+    "role": "User",
+    "content": "hi\n\nwhat are you\nthatns\n\nthanks",
+    "timestamp": "2026-03-27T21:51:45.543864600+06:00",
+    "token_count": 10,
+    "thinking_expanded": false
+  },
+  {
+    "role": "Assistant",
+    "content": "Hi! I'm called Dx, the AI core of DX. How can I assist you today?",
+    "timestamp": "2026-03-27T21:51:45.860165800+06:00",
+    "token_count": 0,
+    "thinking_expanded": false
+  }
+]

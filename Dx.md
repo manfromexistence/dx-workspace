@@ -1,0 +1,48 @@
+Forget about the model; default model changing as I myself manually will fix that. Now just work on the codex UI so that it can reflect some changes. As in codex UI we have to render our dx UI. Do the first step on that goal and create another UI stuff in the Codex UI.
+Currently the Codex UI has all screen set to auto but the all screen is just showing the latest markdown and auto scrolling with no way to manually scroll the content. Study the Codex UI and on the right side of the Codex UI create a scroll bar so that we can scroll in the Codex UI messages. Currently you may find that Codex UI already has scroll but it has scroll on inline UI mode. As we are currently making the all screen true it is currently using the full screen but it is not using the scroll bar. It previously was only configured around having the native scroll bar but as on all screen there is no native scroll bar, that is why in the current Codex UI there is no way to scroll things. Please create a custom scroll bar for it. 
+
+When we right click on the text auto pastes the text to the input but please on input box top right please create a border button called "pasted text" and in the input don't paste anything or submit anything so on rigth click the clipboard content may be pasted buy not auto sended
+
+And also when we drag and drop any files or image, please show an input box in the top right button next to the pasted button. Make sure all the items are creating good UI in the top right button. Please make the button have a border and be small, only like the title input, so that the buttons are tight or small in width. Give a small button-like height so that they look like buttons correctly.
+
+Now in our tui, the current tui is literally one of the best rust tui in the world so it also has a click handler. Make sure when we click on the buttons, like the top input box stop right buttons that we just created now, it will show a menu with our techone effect menu and show the title of the content, like the pasted text or image with the title or path details on the top left. On the main menu it will render the content. For the pasted text it will render the text inside of the pasted text button and for other image and other stuff, for now we will just render the menu and will render the image or content later; just text rendering is fine.
+
+And in our input box if we paste something or input something with some sts, it's skipping even spaces, like it's including one space but excluding next space. Maybe it's for the with-space interaction that we have in add it in our input box for the voice input but it's kinda like backfiring. Make sure that it works correctly. Make sure that when we hold on Ctrl+Windows key (or any other same key on other desktops like macOS or Linux), it will still do the voice input that we are currently doing on the space key holding. Add another key trigger on the voice key and it will have the two key - ctrl+win/macos(command)/linux(system key)
+
+And for our message list please generate the JSON file in our current workspace, like generate the JSON message list files in our current workspace or directly.
+And currently if we are not focused on the chat input box, it still shows the same rainbow animation. Even when focusing on the chat input box, it still renders the same one. Please make sure that when we are not focusing on our text input box in our terminal TUI, it shows another animation reflecting that no user has focus on the text input.
+
+And put the the paste and image or file button on the top right of the input box instead of the right inside center of the input box
+
+and even through in the first there might be no focus but still the first time the cursor is rainbow and not having that not focus cursor - its activating that cursor later so please fix it
+
+Now please do your search about the sound of a train and a train running and please implement the train running sound when we exit our screen Alongside our rainbow train ascii animation . Make sure that if we press the Ctrl+C command more times then please reset the train animation. That will make a satisfying exit for the user. 
+
+And if there is more text then increase our text input box to max be five characters long. If it's bigger then please put a scroll bar in our input box too, like the scroll bar that we are having in the message list.
+
+Now about our File drag and drop in our TUI. Please make sure that the file just shows the file name instead of the red sign or useless other stuff. Also even though I am adding one file, maybe it's structuring the file part differently so that's why it's counting two files so please fix it. Also make sure that when we drop any files it is kindly showing a dash border but please don't show any dash border or things like that. Even in the past it just shows the pasted text and shows this symbol "|" between the drop button and when we do ctrl+windows/mac/linux system button and hold onto it + press rigth click in input + ctrl+v Please show notifications that this button has been pressed.
+
+Now instead of cancel text on the menu top right, please show three center dots with red, yellow, and green colors. When you click on the red circle dot, please close the menu.
+
+Now currently in the message list when there is more space, we are always showing the scroll bar but please make sure we should only show the scroll bar when the user's mouse is on our Tui And also kindly our chat input box is only a static fixed-height chat input box now. Please make sure that if the text is more than that, our chat input box can grow up to a max of five characters long. When there's even more text, then please put a scroll bar, like the scroll bar that we have in our message list, in our chat input box so that our input box will be professional.
+
+Now only on our message list scroll bar there is currently the scroll bar scrolling through lines. This is good. Now in the scroll bar please create a grid of position symbols, with a small height one-piece and a little bigger symbol, and put it at the top. The top symbol will reflect the fast chat input. If there are three chats currently in the message list, then at the top there will be one symbol, in the center there should be another one, and at the bottom there should be another one representing the three messages. When there is only one, then only the top symbol will be there. This is a system: as the message list grows the symbols will be added to represent all the chat book so that we can click on them and go to that specific message specifically. That is why we will not only have a line-by-line scroll system but also a chat message scroll system that will make the user experience much better.
+
+On exit, the animation is getting the sound one time and one time it's not getting the sound, without literally changing anything. Maybe there's a bug so please fix it so that it can play the sound every time correctly. Now lower the volume of the train sounds.
+
+now only alt+enter is detecting so when pressed shit/ctrl/alt+enter create new lines and put the diamon symbol on the scrollbar to have more padding or maring rigth and make those symbols clickable and when clicked show the field diamond and put the screen view to that place of that chat. As I told you divide the chat messages into the whole screen correctly. If there are two messages then on the top most top of the scroll bar there will be one diamond and on the bottom of the scroll bar there will be another one. This type of pattern will grow alongside the message list items are growing.
+
+Now we have to enter the codex toy in our dx toy message list. Now as you can see we are not going to wrap the codex toy entirely on our dx toy. We are going to make a new brand new toy inside our dx toy, because that codex toy has so many UI problems and also more importantly it has no custom scrollbar. It only works on native terminal but in native terminal we can't show our animations because they require the full terminal support. Now here is the thing: we are not just going to create a sloppy Codex UI. We already have all the source code of the Codex UI so study the codebase and tell me: is there any way we can integrate the Codex UI markdown rendering and agent response rendering without taking the whole Codex UI with the input box and bad UI part? We are going to just use the learnings of the Codex UI, like how it implemented or called the Codex providers or the Codex AI response sandboxing and other stuff. We are just going to integrate it without the bad Codex UI itself.
+
+then please show models of codex and also render models of codex and integrate it in our chage message list and make sure to keep our local model as the default infinity unlimited one and in our provider's model implement Codex models 
+
+And connect our input box bottom provider name with the actual provider so it will render the provider name and sync it with the provider menu and with the input box actions provided names. And make sure to connect this with the Corex real provider.
+
+Rename the title from "Codex providers" to just "Providers".
+Remove the custom sloppy UI you created.
+Make the Providers list a manual list item.
+Instead of the local infinity, just put "infinity" as the first model.
+Use message list items instead of any weird sloppy UI because message link works correctly.
+Make sure that when you click on the message list it successfully changes the model.
+
+And make our whole TUI connect with Codex. Show the Codex path in our input action button and token info next to it. Completely integrate the Codex with our dx TUI.

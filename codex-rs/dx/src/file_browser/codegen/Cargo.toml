@@ -1,0 +1,22 @@
+[package]
+name = "fb-codegen"
+description            = "Yazi code generator"
+version = "26.2.2"
+edition = "2024"
+license = "MIT"
+authors = ["DX Contributors"]
+homepage = "https://github.com/sxyazi/yazi"
+repository = "https://github.com/sxyazi/yazi"
+rust-version = "1.85"
+
+[lints]
+workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+# External dependencies
+syn   = { version = "2.0.117", features = [ "full" ] }
+quote = "1.0.45"
+
