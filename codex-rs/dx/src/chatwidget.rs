@@ -4033,6 +4033,85 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
+		// PRIORITY 1: If in Yazi mode, handle navigation keys (REAL DX CODE!)
+		{
+			let dx_state = self.dx_chat_state.borrow();
+			if dx_state.animation_mode {
+				let all_animations = crate::state::AnimationType::all();
+				let current_anim = all_animations[dx_state.current_animation_index];
+				
+				if current_anim == crate::state::AnimationType::Yazi {
+					drop(dx_state);
+					
+					// Handle Yazi navigation keys directly
+					if let Ok(mut dx_core) = self.dx_core.try_lock() {
+						use crossterm::event::KeyCode;
+						
+						let folder = &mut dx_core.mgr.tabs.items[0].current;
+						let handled = match key_event.code {
+							KeyCode::Up | KeyCode::Char('k') => {
+								// Move cursor up
+								if folder.cursor > 0 {
+									folder.cursor -= 1;
+									folder.arrow(0); // Recalculate offset
+									true
+								} else {
+									false
+								}
+							}
+							KeyCode::Down | KeyCode::Char('j') => {
+								// Move cursor down
+								if folder.cursor < folder.files.len().saturating_sub(1) {
+									folder.cursor += 1;
+									folder.arrow(0); // Recalculate offset
+									true
+								} else {
+									false
+								}
+							}
+							KeyCode::Home | KeyCode::Char('g') => {
+								// Jump to top
+								folder.cursor = 0;
+								folder.arrow(0);
+								true
+							}
+							KeyCode::End | KeyCode::Char('G') => {
+								// Jump to bottom
+								folder.cursor = folder.files.len().saturating_sub(1);
+								folder.arrow(0);
+								true
+							}
+							KeyCode::PageUp => {
+								// Page up
+								folder.cursor = folder.cursor.saturating_sub(10);
+								folder.arrow(0);
+								true
+							}
+							KeyCode::PageDown => {
+								// Page down
+								folder.cursor = (folder.cursor + 10).min(folder.files.len().saturating_sub(1));
+								folder.arrow(0);
+								true
+							}
+							KeyCode::Esc | KeyCode::Char('q') => {
+								// Exit Yazi mode
+								drop(dx_core);
+								let mut dx_state = self.dx_chat_state.borrow_mut();
+								dx_state.animation_mode = false;
+								true
+							}
+							_ => false,
+						};
+						
+						if handled {
+							self.frame_requester.schedule_frame();
+							return;
+						}
+					}
+				}
+			}
+		}
+		
 		// Handle menu keys using ChatState method (REAL DX code in state.rs)
 		{
 			let mut dx_state = self.dx_chat_state.borrow_mut();

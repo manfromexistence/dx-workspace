@@ -84,3 +84,5 @@ why - what are your problems - render it ecacty how dx-tui does - just import dx
 use cargo run not cargo check/build/test or with any subcommand - just pure cago run and fix these errors:
 
 no the important part use dx-tui code directly and edit it directly to be rendered correctly in the codex-tui cause the whole point of dx-tui was to be merged with codex-tui
+
+update the code use real dx codex - import them, edit them to be renderable on codex-tui correctly instead of using sloppy ai code!!!
