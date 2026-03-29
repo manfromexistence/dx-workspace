@@ -324,8 +324,8 @@ impl ChatState {
 			cursor_visible: true,
 			splash_font_index: 0,
 			last_font_change: Instant::now(),
-			animation_mode: true, // Start in animation carousel mode (showing Yazi by default)
-			current_animation_index: 12, // Yazi (last animation in the carousel)
+			animation_mode: true, // Start in animation carousel mode (showing Matrix by default)
+			current_animation_index: 1, // Matrix animation (index 1 in the carousel)
 			animation_start_time: Some(Instant::now()),
 			llm: Arc::new(LocalLlm::new()),
 			llm_tx,
