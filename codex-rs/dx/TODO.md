@@ -61,11 +61,12 @@
 
 ## 🚀 IN PROGRESS
 
-### Current Task: Testing Animation Rendering
-- [x] ~~Fixed Root widget to access correct ChatState~~ ✅ (completed: 2026-03-29 15:30)
-- [ ] Test pressing '1' for Matrix animation
-- [ ] Test pressing '3' for Yazi file browser
-- [ ] Verify animations render correctly
+### Current Task: Fix Yazi File Browser Rendering
+- [x] ~~Fixed Core initialization (removed async file loading)~~ ✅ (completed: 2026-03-29 16:00)
+- [x] ~~Created helper function make_dx_core()~~ ✅ (completed: 2026-03-29 16:00)
+- [x] ~~Compiled successfully~~ ✅ (completed: 2026-03-29 16:00)
+- [ ] Test with `cargo run` - press '3' to show Yazi
+- [ ] Debug Lua Root component if blank screen persists
 
 ---
 

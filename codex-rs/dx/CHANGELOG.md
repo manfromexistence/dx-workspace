@@ -2,6 +2,27 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-29 16:00] - Core Initialization Fix
+
+### Fixed - Yazi Core Initialization
+- **Problem**: Attempted to load files synchronously using async `Files::from_dir_bulk()`
+  - `Files::from_dir_bulk()` is an async function that requires tokio runtime
+  - Can't call async functions in sync context (ChatWidget constructor)
+  - Also had wrong imports: `fb_core::files` doesn't exist (should be `fb_fs::Files`)
+  - Folder struct has no `cwd` field (only `url` field)
+  
+- **Solution**: Simplified Core initialization
+  - Created `ChatWidget::make_dx_core()` helper function
+  - Initialize Core with empty files (Yazi shows empty directory initially)
+  - Set folder URL to current working directory
+  - Set parent folder if available
+  - Removed async file loading (would need actor system to work properly)
+  
+- **Files Changed**:
+  - `src/chatwidget.rs`: Added make_dx_core() helper, simplified initialization
+  
+- **Result**: Code compiles successfully, ready for testing
+
 ## [2026-03-29 15:30] - Root Widget ChatState Fix
 
 ### Fixed - Root Widget Accessing Wrong ChatState

@@ -17,25 +17,34 @@ inclusion: always
 
 - Added `dx_core: RefCell<fb_core::Core>` to ChatWidget
 - Added `dx_bridge: RefCell<YaziChatBridge>` to ChatWidget
-- Initialize DX subsystems in async context (src/codex.rs)
-- App.rs checks `animation_mode` and uses Root widget when true
-- Root widget handles ALL DX rendering (animations + Yazi)
+- Created `ChatWidget::make_dx_core()` helper function
+- Initialize Core with empty files (Yazi shows empty dir initially)
+- Root widget takes direct ChatState reference from ChatWidget
+- App.rs ALWAYS renders ChatWidget (which checks animation_mode)
+- ChatWidget renders Root widget in transcript area when animation_mode=true
 - Made Panic module public
 - Hardcoded keys: '1' shows Matrix, '3' shows Yazi
 
-## Current Status
+## Current Status (2026-03-29 16:00)
 
-- DX initialization works (in async context)
-- Root widget renders animations and Yazi
+- Code compiles successfully ✅
+- Core initialization simplified (no async file loading)
+- Root widget accesses correct ChatState
+- Ready for testing with `cargo run`
 - Press '1' to show Matrix animation
-- Press '3' to show Yazi file browser
+- Press '3' to show Yazi file browser (will show empty initially)
 - Menu works with '0' key
+
+## Known Issues
+
+- Yazi shows empty directory (no files loaded)
+  - Files::from_dir_bulk() is async, can't call in sync constructor
+  - Would need DX actor system running to load files properly
+  - For now, Yazi renders but shows no files
 
 ## Integration Points
 
-- `src/codex.rs` - DX initialization in async block
-- `src/app.rs` - Conditionally uses Root widget for animations
-- `src/chatwidget.rs` - Has dx_core and dx_bridge fields
-- `src/root.rs` - DX Root widget (unchanged, direct DX code)
+- `src/chatwidget.rs` - Has dx_core, dx_bridge, make_dx_core() helper
+- `src/app.rs` - Always renders ChatWidget
+- `src/root.rs` - Root widget takes chat_state parameter
 - `src/state.rs` - ChatState with animation state
-

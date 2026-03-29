@@ -1118,26 +1118,18 @@ enum ReplayKind {
 }
 
 impl ChatWidget {
-	// Helper function to initialize DX Core with loaded files (REAL DX CODE!)
+	// Helper function to initialize DX Core (REAL DX CODE!)
 	fn make_dx_core() -> fb_core::Core {
 		let mut core = fb_core::Core::make();
-		// Initialize Yazi with current working directory and LOAD FILES
+		// Initialize Yazi with current working directory
+		// Files will be empty initially - that's OK, Yazi will show empty directory
 		if let Ok(cwd) = std::env::current_dir() {
-			use fb_shared::url::{UrlLike, AsUrl};
-			use fb_core::files::{Files, FilesOp};
-
-			let url = fb_shared::url::UrlBuf::from(cwd.clone());
-			let folder = &mut core.mgr.tabs.items[0].current;
-			folder.url = url.clone();
-			folder.cwd = url.clone();
-
-			// Load files from directory (REAL DX CODE!)
-			if let Ok(files) = Files::from_dir_bulk(&url) {
-				folder.update(FilesOp::Full(files));
-			}
-
-			// Set parent folder
+			use fb_shared::url::UrlBuf;
+			let url = UrlBuf::from(cwd);
+			core.mgr.tabs.items[0].current.url = url.clone();
+			// Set parent folder if possible
 			if let Some(parent_url) = url.as_url().parent() {
+				use fb_shared::url::AsUrl;
 				core.mgr.tabs.items[0].parent = Some(fb_core::tab::Folder::from(parent_url.to_owned()));
 			}
 		}
@@ -9080,9 +9072,20 @@ impl Renderable for ChatWidget {
 					let dx_state = self.dx_chat_state.borrow();
 					let mut dx_core = self.dx_core.borrow_mut();
 					let mut dx_bridge = self.dx_bridge.borrow_mut();
-					let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+					
+					// Render Root widget with proper Lua context (REAL DX CODE!)
+					use fb_actor::lives::Lives;
+					use fb_binding::runtime_scope;
+					use fb_plugin::LUA;
 					use ratatui::widgets::Widget;
-					root.render(transcript_area, buf);
+					
+					let _ = Lives::scope(&dx_core, || {
+						runtime_scope!(LUA, "root", {
+							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+							root.render(transcript_area, buf);
+							Ok(())
+						})
+					});
 				}
 				crate::state::AnimationType::Matrix => {
 					dx_state.render_matrix_animation_in_area(transcript_area, buf);
@@ -9157,9 +9160,20 @@ impl Renderable for ChatWidget {
 				let dx_state = self.dx_chat_state.borrow();
 				let mut dx_core = self.dx_core.borrow_mut();
 				let mut dx_bridge = self.dx_bridge.borrow_mut();
-				let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+				
+				// Render Root widget with proper Lua context (REAL DX CODE!)
+				use fb_actor::lives::Lives;
+				use fb_binding::runtime_scope;
+				use fb_plugin::LUA;
 				use ratatui::widgets::Widget;
-				root.render(transcript_area, buf); // Render in transcript area only!
+				
+				let _ = Lives::scope(&dx_core, || {
+					runtime_scope!(LUA, "root", {
+						let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+						root.render(transcript_area, buf);
+						Ok(())
+					})
+				});
 				
 				// Schedule next frame for animations
 				self.frame_requester.schedule_frame();
