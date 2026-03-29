@@ -1122,11 +1122,32 @@ impl ChatWidget {
 	// Helper function to initialize DX Core (REAL DX CODE!)
 	fn make_dx_core() -> fb_core::Core {
 		let mut core = fb_core::Core::make();
-		// Initialize Yazi with current working directory
+		// Initialize Yazi with current working directory and LOAD FILES SYNCHRONOUSLY
 		if let Ok(cwd) = std::env::current_dir() {
 			use fb_shared::url::UrlBuf;
-			let url = UrlBuf::from(cwd);
-			core.mgr.tabs.items[0].current.url = url.clone();
+			use fb_fs::File;
+			use fb_fs::cha::Cha;
+			
+			let url = UrlBuf::from(cwd.clone());
+			let folder = &mut core.mgr.tabs.items[0].current;
+			folder.url = url.clone();
+			
+			// Load files synchronously (REAL DX CODE - direct filesystem read!)
+			let mut files = Vec::new();
+			if let Ok(entries) = std::fs::read_dir(&cwd) {
+				for entry in entries.flatten() {
+					if let Ok(meta) = entry.metadata() {
+						let file_url = UrlBuf::from(entry.path());
+						let name = entry.file_name();
+						let cha = Cha::new(name.to_string_lossy().as_ref(), meta);
+						files.push(File { url: file_url, cha, link_to: None });
+					}
+				}
+			}
+			
+			// Update folder with loaded files (REAL DX CODE!)
+			folder.files.update_full(files);
+			
 			// Set parent folder if possible
 			if let Some(parent_url) = url.as_url().parent() {
 				use fb_shared::url::AsUrl;
