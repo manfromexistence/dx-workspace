@@ -869,7 +869,7 @@ pub struct ChatWidget {
 	pub(crate) dx_chat_state: std::cell::RefCell<crate::state::ChatState>,
 	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
 	// Using Arc<Mutex> so we can share Core across threads for async file loading
-	pub(crate) dx_core: std::sync::Arc<tokio::sync::Mutex<fb_core::Core>>,
+	pub(crate) dx_core: std::sync::Arc<std::sync::Mutex<fb_core::Core>>,
 	pub(crate) dx_bridge: std::cell::RefCell<crate::bridge::YaziChatBridge>,
 }
 
@@ -3591,13 +3591,13 @@ impl ChatWidget {
 			scroll_position: std::cell::Cell::new(0),
 			content_height: std::cell::Cell::new(0),
 			viewport_height: std::cell::Cell::new(0),
-scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
-scrollbar_dragging: std::cell::Cell::new(false),
-auto_scroll_enabled: std::cell::Cell::new(true),
-welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::sync::Arc::new(tokio::sync::Mutex::new(Self::make_dx_core())),
-dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
+			scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
+			scrollbar_dragging: std::cell::Cell::new(false),
+			auto_scroll_enabled: std::cell::Cell::new(true),
+			welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
+			dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
+			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3801,7 +3801,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::sync::Arc::new(tokio::sync::Mutex::new(Self::make_dx_core())),
+dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3998,7 +3998,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::sync::Arc::new(tokio::sync::Mutex::new(Self::make_dx_core())),
+dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -4033,7 +4033,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// PRIORITY 1: If in Yazi mode, handle navigation keys (REAL DX CODE!)
+		// PRIORITY 1: If in Yazi mode, handle navigation using REAL DX Folder methods
 		{
 			let dx_state = self.dx_chat_state.borrow();
 			if dx_state.animation_mode {
@@ -4043,55 +4043,36 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 				if current_anim == crate::state::AnimationType::Yazi {
 					drop(dx_state);
 					
-					// Handle Yazi navigation keys directly
-					if let Ok(mut dx_core) = self.dx_core.try_lock() {
+					// Handle Yazi navigation using REAL DX Folder methods
+					if let Ok(mut dx_core) = self.dx_core.lock() {
 						use crossterm::event::KeyCode;
+						use fb_widgets::Step;
 						
 						let folder = &mut dx_core.mgr.tabs.items[0].current;
 						let handled = match key_event.code {
 							KeyCode::Up | KeyCode::Char('k') => {
-								// Move cursor up
-								if folder.cursor > 0 {
-									folder.cursor -= 1;
-									folder.arrow(0); // Recalculate offset
-									true
-								} else {
-									false
-								}
+								// Move cursor up using REAL DX method
+								folder.arrow(Step::from(-1))
 							}
 							KeyCode::Down | KeyCode::Char('j') => {
-								// Move cursor down
-								if folder.cursor < folder.files.len().saturating_sub(1) {
-									folder.cursor += 1;
-									folder.arrow(0); // Recalculate offset
-									true
-								} else {
-									false
-								}
+								// Move cursor down using REAL DX method
+								folder.arrow(Step::from(1))
 							}
 							KeyCode::Home | KeyCode::Char('g') => {
-								// Jump to top
-								folder.cursor = 0;
-								folder.arrow(0);
-								true
+								// Jump to top using REAL DX method
+								folder.arrow(Step::Top)
 							}
 							KeyCode::End | KeyCode::Char('G') => {
-								// Jump to bottom
-								folder.cursor = folder.files.len().saturating_sub(1);
-								folder.arrow(0);
-								true
+								// Jump to bottom using REAL DX method
+								folder.arrow(Step::Bot)
 							}
 							KeyCode::PageUp => {
-								// Page up
-								folder.cursor = folder.cursor.saturating_sub(10);
-								folder.arrow(0);
-								true
+								// Page up using REAL DX method
+								folder.arrow(Step::from(-10))
 							}
 							KeyCode::PageDown => {
-								// Page down
-								folder.cursor = (folder.cursor + 10).min(folder.files.len().saturating_sub(1));
-								folder.arrow(0);
-								true
+								// Page down using REAL DX method
+								folder.arrow(Step::from(10))
 							}
 							KeyCode::Esc | KeyCode::Char('q') => {
 								// Exit Yazi mode
