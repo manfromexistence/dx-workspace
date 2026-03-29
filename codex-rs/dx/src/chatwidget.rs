@@ -4033,7 +4033,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// PRIORITY 1: If in Yazi mode, handle navigation using REAL DX Folder methods
+		// PRIORITY 1: If in Yazi mode, route keys to DX Router (REAL DX CODE!)
 		{
 			let dx_state = self.dx_chat_state.borrow();
 			if dx_state.animation_mode {
@@ -4043,53 +4043,52 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 				if current_anim == crate::state::AnimationType::Yazi {
 					drop(dx_state);
 					
-					// Handle Yazi navigation using REAL DX Folder methods
-					// Only handle Press and Repeat events
-					use crossterm::event::{KeyCode, KeyEventKind};
+					// Route to Yazi using REAL DX Router (no duplication!)
+					use crossterm::event::KeyEventKind;
 					if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-						if let Ok(mut dx_core) = self.dx_core.lock() {
-							use fb_widgets::Step;
+						// Special handling for Esc to exit Yazi mode
+						if key_event.code == crossterm::event::KeyCode::Esc {
+							tracing::info!("Yazi: Esc pressed, exiting Yazi mode");
+							let mut dx_state = self.dx_chat_state.borrow_mut();
+							dx_state.animation_mode = false;
+							self.frame_requester.schedule_frame();
+							return;
+						}
+						
+						// Route all other keys to DX Router
+						if let Ok(mut dx_core) = self.dx_core.try_lock() {
+							tracing::info!("Yazi: Routing key {:?} to DX Router", key_event);
+							use fb_config::keymap::Key;
+							use crate::file_browser::Router;
+							use crate::bridge::YaziChatBridge;
 							
-							let folder = &mut dx_core.mgr.tabs.items[0].current;
-							let handled = match key_event.code {
-								KeyCode::Up | KeyCode::Char('k') => {
-									// Move cursor up using REAL DX method
-									folder.arrow(Step::from(-1))
-								}
-								KeyCode::Down | KeyCode::Char('j') => {
-									// Move cursor down using REAL DX method
-									folder.arrow(Step::from(1))
-								}
-								KeyCode::Home | KeyCode::Char('g') => {
-									// Jump to top using REAL DX method
-									folder.arrow(Step::Top)
-								}
-								KeyCode::End | KeyCode::Char('G') => {
-									// Jump to bottom using REAL DX method
-									folder.arrow(Step::Bot)
-								}
-								KeyCode::PageUp => {
-									// Page up using REAL DX method
-									folder.arrow(Step::from(-10))
-								}
-								KeyCode::PageDown => {
-									// Page down using REAL DX method
-									folder.arrow(Step::from(10))
-								}
-								KeyCode::Esc | KeyCode::Char('q') => {
-									// Exit Yazi mode
-									drop(dx_core);
-									let mut dx_state = self.dx_chat_state.borrow_mut();
-									dx_state.animation_mode = false;
-									true
-								}
-								_ => false,
+							// Create temporary App-like structure for Router
+							// Router needs &mut App which has core and term
+							let mut temp_app = crate::file_browser::app::App {
+								core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
+								term: None, // Router doesn't actually use term for key routing
+								signals: crate::signals::Signals::start().unwrap_or_else(|_| unsafe { std::mem::zeroed() }),
+								bridge: YaziChatBridge::new(), // Temporary bridge for routing
 							};
 							
-							if handled {
-								self.frame_requester.schedule_frame();
-								return;
+							// Route the key using REAL DX Router
+							let key = Key::from(key_event);
+							if let Ok(handled) = Router::new(&mut temp_app).route(key) {
+								tracing::info!("Yazi: Router handled={}, cursor={}", handled, temp_app.core.mgr.tabs.items[0].current.cursor);
+								// Restore the core
+								*dx_core = temp_app.core;
+								
+								if handled {
+									self.frame_requester.schedule_frame();
+									return;
+								}
+							} else {
+								tracing::warn!("Yazi: Router returned error");
+								// Restore the core even on error
+								*dx_core = temp_app.core;
 							}
+						} else {
+							tracing::warn!("Yazi: Failed to lock dx_core");
 						}
 					}
 				}
@@ -9126,10 +9125,9 @@ impl Renderable for ChatWidget {
 			// Play animation sound for current animation
 			let all_animations = crate::state::AnimationType::all();
 			let current_anim = all_animations[dx_state.current_animation_index];
-			if let Some(sound_file) = current_anim.sound_file() {
-				if dx_state.current_animation_sound.as_deref() != Some(sound_file) {
-					dx_state.play_animation_sound();
-				}
+			if let Some(_sound_file) = current_anim.sound_file() {
+				// Call play_animation_sound() which handles checking if sound needs to restart
+				dx_state.play_animation_sound();
 			}
 			
 			// Update DX state (timer logic)
@@ -9231,13 +9229,12 @@ impl Renderable for ChatWidget {
 				// Render animation carousel in transcript area (keeping bottom pane visible)
 				let mut dx_state = self.dx_chat_state.borrow_mut();
 				
-				// Play animation sound for current animation
+				// Always ensure animation sound is playing for current animation
 				let all_animations = crate::state::AnimationType::all();
 				let current_anim = all_animations[dx_state.current_animation_index];
-				if let Some(sound_file) = current_anim.sound_file() {
-					if dx_state.current_animation_sound.as_deref() != Some(sound_file) {
-						dx_state.play_animation_sound();
-					}
+				if let Some(_sound_file) = current_anim.sound_file() {
+					// Call play_animation_sound() which handles checking if sound needs to restart
+					dx_state.play_animation_sound();
 				}
 				
 				// Update DX state (timer logic)

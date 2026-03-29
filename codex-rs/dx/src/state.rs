@@ -866,12 +866,18 @@ impl ChatState {
 		let all_animations = AnimationType::all();
 		if self.current_animation_index < all_animations.len() {
 			let current_anim = all_animations[self.current_animation_index];
+			
+			// Check if we just switched to a different animation
+			let animation_changed = self.current_animation_index != self.previous_animation_index;
 
 			// Reset animation-specific tracking when switching animations
-			if self.current_animation_index != self.previous_animation_index {
+			if animation_changed {
 				self.last_dvd_bounce_x = -999; // Reset to impossible value to trigger first sound
 				self.last_dvd_bounce_y = -999;
 				self.last_confetti_explosion_time = 0;
+				
+				// Stop any currently playing sound when switching animations
+				self.stop_animation_sound();
 			}
 
 			if let Some(sound_file) = current_anim.sound_file() {
@@ -886,7 +892,7 @@ impl ChatState {
 					AnimationType::Yazi => {
 						// Yazi plays sound only once when entering the screen
 						// Check if we just switched to Yazi
-						if self.current_animation_index != self.previous_animation_index {
+						if animation_changed {
 							if let Some(player) = &self.audio_player {
 								// Play once with 5% volume
 								let player: &crate::audio::AudioPlayer = player;
@@ -898,11 +904,13 @@ impl ChatState {
 						return;
 					}
 					_ => {
-						// Only play if it's a different sound than currently playing
-						if self.current_animation_sound.as_deref() != Some(sound_file) {
+						// Play if animation changed OR if no sound is currently playing
+						if animation_changed || self.current_animation_sound.is_none() {
 							if let Some(player) = &self.audio_player {
 								let player: &crate::audio::AudioPlayer = player;
-								// Silently try to play - don't show errors
+								// Stop any existing sound first
+								player.stop();
+								// Play the new sound
 								if player.play_looping(sound_file).is_ok() {
 									self.current_animation_sound = Some(sound_file.to_string());
 									player.set_volume(0.05); // Set volume to 5%

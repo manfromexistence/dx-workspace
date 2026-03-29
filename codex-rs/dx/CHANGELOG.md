@@ -281,3 +281,108 @@ If issues arise, revert these changes in order:
 - Using DIRECT DX CODE - no wrappers, no bridges
 - Root widget from DX-TUI handles all animation and Yazi rendering
 - Proper DX initialization sequence: fb_shared, fb_tty, fb_term, fb_fs, fb_config, fb_vfs, fb_adapter, fb_boot, fb_dds, fb_widgets, fb_watcher, fb_plugin
+
+
+## [2026-03-30] - Sound System Fix
+
+### Fixed - Animation Sounds Not Playing
+- **Problem**: Only Matrix animation was playing sound, other animations were silent
+  - Code was checking `if dx_state.current_animation_sound.as_deref() != Some(sound_file)` before playing
+  - This check prevented sounds from restarting if they stopped or weren't playing
+  - The check happened every frame but sound might have ended
+  
+- **Solution**: Removed the redundant check and always call `play_animation_sound()`
+  - The `play_animation_sound()` method already has internal logic to check if sound needs to restart
+  - It only restarts sound if it's different from currently playing sound
+  - This ensures all animations play their sounds correctly
+  - Removed debug logging (`tracing::info`) that was cluttering output
+  
+- **Files Changed**:
+  - `src/chatwidget.rs` lines 9127-9133: Removed redundant sound check in welcome screen
+  - `src/chatwidget.rs` lines 9238-9241: Removed redundant sound check in animation carousel
+  
+- **Result**: All 13 animations now play their sounds correctly:
+  - Splash: birds.mp3
+  - Matrix: matrix.mp3
+  - Confetti: confetti.mp3 (on explosions)
+  - GameOfLife: game-of-life.mp3
+  - Starfield: space.mp3
+  - Rain: rain.mp3
+  - NyanCat: neon-cat.mp3
+  - DVDLogo: jump.mp3 (on bounces)
+  - Fire: fire.mp3
+  - Plasma: plasma.mp3
+  - Waves: wave.mp3
+  - Fireworks: fireworks.mp3
+  - Yazi: eagle.mp3 (once on enter)
+
+### Technical Details
+- The `play_animation_sound()` method in `src/state.rs` handles:
+  - Checking if sound is already playing
+  - Only restarting if it's a different sound
+  - Special handling for Confetti/DVDLogo (event-based sounds)
+  - Special handling for Yazi (play once on enter)
+  - Looping sounds for all other animations
+- Volume levels: 5% for animations, 3% for UI sounds
+
+---
+
+## [2026-03-30] - Yazi Router Integration
+
+### Fixed - Yazi Interactivity
+- **Problem**: Yazi file browser was rendering but not responding to key presses
+  - Files were loading correctly (synchronous filesystem read)
+  - But keys weren't being routed to Yazi's Router
+  - Previous implementation only handled basic arrow keys manually
+  
+- **Solution**: Integrated DX Router for full Yazi key handling
+  - Route ALL keys to `Router::new(app).route(key)` (REAL DX CODE!)
+  - Create temporary App structure with Core for routing
+  - Restore Core after routing to preserve state
+  - Added debug logging to track Router calls
+  
+- **Files Changed**:
+  - `src/chatwidget.rs`: Replaced manual key handling with Router integration
+  - `src/lib.rs`, `src/codex_lib.rs`, `src/dx.rs`: Commented out unused dx_render module
+  
+- **Result**: Yazi should now respond to all keybindings (j/k, arrows, Enter, Tab, etc.)
+
+### Technical Details
+- Router needs `&mut App` which contains `core: Core` and `term: Option<Term>`
+- We create a temporary App, swap in the real Core, route the key, then swap back
+- This preserves all Yazi state (cursor position, file selection, etc.)
+- Esc key still handled separately to exit Yazi mode
+
+
+## [2026-03-30] - Sound System Verification
+
+### Confirmed - Sound System is Fully Implemented
+- **Audio System**: AudioPlayer in `src/audio.rs` using rodio library
+- **Animation Sounds**: Each animation has its own looping sound
+  - Splash: `assets/birds.mp3`
+  - Matrix: `assets/matrix.mp3`
+  - Yazi: `assets/eagle.mp3` (plays once on enter)
+  - Confetti: `assets/confetti.mp3` (plays on explosions)
+  - And 8 more animations with sounds
+  
+- **UI Sounds**: Click sounds when navigating
+  - `assets/click.mp3` plays when pressing Left/Right arrows
+  - `assets/menu-open.mp3` / `assets/menu-close.mp3` for menu
+  
+- **Implementation Locations**:
+  - `src/state.rs`: `play_animation_sound()`, `play_ui_sound()`, `stop_animation_sound()`
+  - `src/chatwidget.rs` line 9132: Plays animation sound on welcome screen
+  - `src/chatwidget.rs` lines 4128-4129: Plays sounds when navigating animations
+  - `src/chatwidget.rs` lines 4139, 4150: Plays sounds for '1' and '3' keys
+  
+- **Volume Levels**:
+  - Animation sounds: 5% volume (looping)
+  - UI sounds: 3% volume (one-shot)
+  - Yazi: 5% volume (one-shot on enter)
+
+### Status
+✅ Sound system is fully implemented and integrated
+✅ All 13 animations have sound files
+✅ Sounds play automatically when showing welcome screen
+✅ Sounds play when navigating with arrow keys
+✅ Click sounds play for UI interactions

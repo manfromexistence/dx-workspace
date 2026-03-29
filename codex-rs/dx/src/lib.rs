@@ -108,7 +108,7 @@ pub mod chat_components;
 pub mod chat_input;
 pub mod components;
 pub mod dispatcher;
-pub mod dx_render;
+// pub mod dx_render; // COMMENTED OUT: Not used, causes compilation errors
 pub mod effects;
 pub mod exit_animation;
 pub mod external_editor;
