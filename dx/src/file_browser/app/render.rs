@@ -33,7 +33,7 @@ impl App {
 			// Normal rendering path
 			_ = Lives::scope(&self.core, || {
 				runtime_scope!(LUA, "root", {
-        let _: () = f.render_widget(Root::new(&self.core, &mut self.bridge), f.area());
+        let _: () = f.render_widget(Root::new_from_bridge(&self.core, &mut self.bridge), f.area());
         Ok(())
     })
 			});

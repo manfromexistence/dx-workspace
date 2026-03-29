@@ -18,6 +18,12 @@ use crate::onboarding::onboarding_screen::KeyboardHandler;
 use crate::onboarding::onboarding_screen::StepStateProvider;
 use crate::tui::FrameRequester;
 
+// DX-TUI integration
+use crate::effects::RainbowEffect;
+use crate::splash;
+use crate::state::AnimationType;
+use crate::theme::{ChatTheme, ThemeVariant};
+
 use super::onboarding_screen::StepState;
 
 const MIN_ANIMATION_HEIGHT: u16 = 37;
@@ -28,6 +34,11 @@ pub(crate) struct WelcomeWidget {
 	animation: AsciiAnimation,
 	animations_enabled: bool,
 	layout_area: Cell<Option<Rect>>,
+	// DX-TUI state
+	dx_theme: ChatTheme,
+	current_animation_index: usize,
+	rainbow_effect: RainbowEffect,
+	splash_font_index: usize,
 }
 
 impl KeyboardHandler for WelcomeWidget {
@@ -41,6 +52,13 @@ impl KeyboardHandler for WelcomeWidget {
 		{
 			tracing::warn!("Welcome background to press '.'");
 			let _ = self.animation.pick_random_variant();
+			
+			// Cycle through DX splash fonts
+			self.splash_font_index = (self.splash_font_index + 1) % 10;
+			
+			// Also cycle through DX animations
+			let animations = AnimationType::all();
+			self.current_animation_index = (self.current_animation_index + 1) % animations.len();
 		}
 	}
 }
@@ -56,6 +74,10 @@ impl WelcomeWidget {
 			animation: AsciiAnimation::new(request_frame),
 			animations_enabled,
 			layout_area: Cell::new(None),
+			dx_theme: ChatTheme::new(ThemeVariant::Dark),
+			current_animation_index: 0,
+			rainbow_effect: RainbowEffect::new(),
+			splash_font_index: 0,
 		}
 	}
 
@@ -66,31 +88,44 @@ impl WelcomeWidget {
 
 impl WidgetRef for &WelcomeWidget {
 	fn render_ref(&self, area: Rect, buf: &mut Buffer) {
-		Clear.render(area, buf);
+		// Clear with DX theme background
+		for y in area.top()..area.bottom() {
+			for x in area.left()..area.right() {
+				buf[(x, y)].reset();
+				buf[(x, y)].set_bg(self.dx_theme.bg);
+			}
+		}
+		
+		// Always schedule next frame for rainbow animation
 		if self.animations_enabled {
 			self.animation.schedule_next_frame();
 		}
 
-		let layout_area = self.layout_area.get().unwrap_or(area);
-		// Skip the animation entirely when the viewport is too small so we don't clip frames.
-		let show_animation = self.animations_enabled
-			&& layout_area.height >= MIN_ANIMATION_HEIGHT
-			&& layout_area.width >= MIN_ANIMATION_WIDTH;
-
-		let mut lines: Vec<Line> = Vec::new();
-		if show_animation {
-			let frame = self.animation.current_frame();
-			lines.extend(frame.lines().map(Into::into));
-			lines.push("".into());
+		// Render DX-TUI splash screen instead of codex welcome
+		splash::render(area, buf, &self.dx_theme, self.splash_font_index, &self.rainbow_effect);
+		
+		// Add hint about DX features at the bottom
+		let hint_y = area.bottom().saturating_sub(2);
+		if hint_y > area.y {
+			let hint_area = Rect {
+				x: area.x,
+				y: hint_y,
+				width: area.width,
+				height: 2,
+			};
+			
+			let hint_lines = vec![
+				Line::from(vec![
+					"  Press ".fg(self.dx_theme.muted_fg).into(),
+					"Ctrl+.".fg(self.dx_theme.accent).bold(),
+					" to cycle splash fonts".fg(self.dx_theme.muted_fg).into(),
+				]),
+			];
+			
+			Paragraph::new(hint_lines)
+				.alignment(ratatui::layout::Alignment::Center)
+				.render(hint_area, buf);
 		}
-		lines.push(Line::from(vec![
-			"  ".into(),
-			"Welcome to ".into(),
-			"Codex".bold(),
-			", OpenAI's command-line coding agent".into(),
-		]));
-
-		Paragraph::new(lines).wrap(Wrap { trim: false }).render(area, buf);
 	}
 }
 

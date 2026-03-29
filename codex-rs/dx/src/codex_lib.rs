@@ -94,41 +94,8 @@ mod cwd_prompt;
 mod debug_config;
 mod diff_render;
 mod exec_cell;
-
-// File browser (yazi integration)
-pub mod file_browser;
-
-// DX-TUI modules (all available for codex-tui-dx)
-pub mod animations;
-pub mod audio;
-pub mod autocomplete;
-pub mod bridge;
-pub mod chat;
-pub mod chat_components;
-pub mod chat_input;
-pub mod components;
-pub mod dispatcher;
-// pub mod dx_render; // COMMENTED OUT: Not used, causes compilation errors
-pub mod effects;
-pub mod exit_animation;
-pub mod external_editor;
-pub mod font;
-pub mod input;
-pub mod llm;
-pub mod logs;
-pub mod menu;
-pub mod modal;
-pub mod model_manager;
-pub mod models;
-pub mod panic;
-pub mod perf;
-pub mod root;
-pub mod scrollbar;
-pub mod signals;
-pub mod splash;
-pub mod state;
-pub mod theme;
 mod exec_command;
+mod external_editor;
 mod file_search;
 mod frames;
 mod get_git_diff;
@@ -150,6 +117,7 @@ mod pager_overlay;
 pub mod public_widgets;
 pub mod render; // Codex render module (render/mod.rs)
 mod resume_picker;
+mod scrollbar;
 mod selection_list;
 mod session_log;
 mod shimmer;

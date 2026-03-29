@@ -1,4 +1,4 @@
-use crate::render::renderable::Renderable;
+use codex_tui_dx::render::renderable::Renderable;
 use ratatui::{
 	buffer::Buffer,
 	layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -502,9 +502,8 @@ impl ChatState {
 			return 3;
 		}
 
-		let mut line_count: usize = 0;
+		let mut line_count = 0;
 		for line in self.input.content.lines() {
-			let line: &str = line;
 			if line.is_empty() {
 				line_count += 1;
 			} else {
@@ -561,9 +560,8 @@ impl ChatState {
 			return;
 		}
 
-		let mut total_lines: usize = 0;
+		let mut total_lines = 0;
 		for line in self.input.content.lines() {
-			let line: &str = line;
 			if line.is_empty() {
 				total_lines += 1;
 			} else {
@@ -613,7 +611,6 @@ impl ChatState {
 
 		let mut wrapped_lines = Vec::new();
 		for line in self.input.content.lines() {
-			let line: &str = line;
 			if line.is_empty() {
 				wrapped_lines.push(String::new());
 			} else {
@@ -663,10 +660,9 @@ impl ChatState {
 
 		let mut wrapped_lines = Vec::new();
 		let mut char_positions = Vec::new(); // Track character index for each position
-		let mut char_idx: usize = 0;
+		let mut char_idx = 0;
 
 		for line in self.input.content.lines() {
-			let line: &str = line;
 			if line.is_empty() {
 				wrapped_lines.push(String::new());
 				char_positions.push(vec![char_idx]);
@@ -764,7 +760,6 @@ impl ChatState {
 				} else {
 					// Move past this line
 					current_pos += line_len + 1; // +1 for newline
-					let line: &str = line;
 					if line.is_empty() {
 						cursor_line += 1;
 					} else {

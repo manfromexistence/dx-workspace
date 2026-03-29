@@ -57,8 +57,6 @@ use crate::terminal_title::clear_terminal_title;
 use crate::terminal_title::set_terminal_title;
 use crate::text_formatting::proper_join;
 use crate::version::CODEX_CLI_VERSION;
-use fb_shared::url::AsUrl; // For UrlBuf.as_url() method
-use fb_boot::BOOT; // For bootstrap initialization
 use codex_app_server_protocol::AppSummary;
 use codex_app_server_protocol::ConfigLayerSource;
 use codex_backend_client::Client as BackendClient;
@@ -865,12 +863,6 @@ pub struct ChatWidget {
 	auto_scroll_enabled: std::cell::Cell<bool>,
 	// Welcome screen animation
 	welcome_animation: crate::ascii_animation::AsciiAnimation,
-	// DX-TUI ChatState for splash screen (reuse existing DX code!)
-	pub(crate) dx_chat_state: std::cell::RefCell<crate::state::ChatState>,
-	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
-	// Using Arc<Mutex> so we can share Core across threads for async file loading
-	pub(crate) dx_core: std::sync::Arc<std::sync::Mutex<fb_core::Core>>,
-	pub(crate) dx_bridge: std::cell::RefCell<crate::bridge::YaziChatBridge>,
 }
 
 /// Snapshot of active-cell state that affects transcript overlay rendering.
@@ -1119,53 +1111,6 @@ enum ReplayKind {
 }
 
 impl ChatWidget {
-	// Helper function to initialize DX Core (REAL DX CODE!)
-	fn make_dx_core() -> fb_core::Core {
-		let mut core = fb_core::Core::make();
-		// Initialize Yazi with current working directory and LOAD FILES SYNCHRONOUSLY
-		if let Ok(cwd) = std::env::current_dir() {
-			use fb_shared::url::UrlBuf;
-			use fb_fs::File;
-			use fb_fs::cha::Cha;
-			
-			let url = UrlBuf::from(cwd.clone());
-			let folder = &mut core.mgr.tabs.items[0].current;
-			folder.url = url.clone();
-			
-			// Load files synchronously (REAL DX CODE - direct filesystem read!)
-			let mut files = Vec::new();
-			if let Ok(entries) = std::fs::read_dir(&cwd) {
-				for entry in entries.flatten() {
-					if let Ok(meta) = entry.metadata() {
-						let file_url = UrlBuf::from(entry.path());
-						let name = entry.file_name();
-						let cha = Cha::new(name.to_string_lossy().as_ref(), meta);
-						files.push(File { url: file_url, cha, link_to: None });
-					}
-				}
-			}
-			
-			// Update folder with loaded files (REAL DX CODE!)
-			folder.files.update_full(files);
-			
-			// Set parent folder if possible
-			if let Some(parent_url) = url.as_url().parent() {
-				use fb_shared::url::AsUrl;
-				core.mgr.tabs.items[0].parent = Some(fb_core::tab::Folder::from(parent_url.to_owned()));
-			}
-		}
-		core
-	}
-
-	// Load files into DX Core asynchronously (REAL DX CODE!)
-	// NOTE: Currently disabled because Core is not Send and we'd need LocalSet
-	// Files will show as "Loading..." but Yazi UI renders correctly
-	pub fn load_dx_files(&self) {
-		// TODO: Implement file loading
-		// Would need to run DX actor system or use LocalSet for spawn_local
-		// For now, Yazi shows empty directory which is acceptable
-	}
-
 	fn realtime_conversation_enabled(&self) -> bool {
 		self.config.features.enabled(Feature::RealtimeConversation) && cfg!(not(target_os = "linux"))
 	}
@@ -3591,13 +3536,10 @@ impl ChatWidget {
 			scroll_position: std::cell::Cell::new(0),
 			content_height: std::cell::Cell::new(0),
 			viewport_height: std::cell::Cell::new(0),
-			scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
-			scrollbar_dragging: std::cell::Cell::new(false),
-			auto_scroll_enabled: std::cell::Cell::new(true),
-			welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-			dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
-			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
+scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
+scrollbar_dragging: std::cell::Cell::new(false),
+auto_scroll_enabled: std::cell::Cell::new(true),
+welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 };
 
 		widget.prefetch_rate_limits();
@@ -3627,9 +3569,6 @@ impl ChatWidget {
 		widget.bottom_pane.set_connectors_enabled(widget.connectors_enabled());
 
 		widget.refresh_terminal_title();
-		
-		// Load DX files asynchronously
-		widget.load_dx_files();
 
 		widget
 	}
@@ -3800,9 +3739,6 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
-dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -3997,9 +3933,6 @@ scrollbar_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
 scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
-dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
-dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
 		widget.prefetch_rate_limits();
@@ -4033,144 +3966,6 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// PRIORITY 1: If in Yazi mode, route keys to DX Router (REAL DX CODE!)
-		{
-			let dx_state = self.dx_chat_state.borrow();
-			if dx_state.animation_mode {
-				let all_animations = crate::state::AnimationType::all();
-				let current_anim = all_animations[dx_state.current_animation_index];
-				
-				if current_anim == crate::state::AnimationType::Yazi {
-					drop(dx_state);
-					
-					// Route to Yazi using REAL DX Router (no duplication!)
-					use crossterm::event::KeyEventKind;
-					if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
-						// Special handling for Esc to exit Yazi mode
-						if key_event.code == crossterm::event::KeyCode::Esc {
-							tracing::info!("Yazi: Esc pressed, exiting Yazi mode");
-							let mut dx_state = self.dx_chat_state.borrow_mut();
-							dx_state.animation_mode = false;
-							self.frame_requester.schedule_frame();
-							return;
-						}
-						
-						// Route all other keys to DX Router
-						if let Ok(mut dx_core) = self.dx_core.try_lock() {
-							tracing::info!("Yazi: Routing key {:?} to DX Router", key_event);
-							use fb_config::keymap::Key;
-							use crate::file_browser::Router;
-							use crate::bridge::YaziChatBridge;
-							
-							// Create temporary App-like structure for Router
-							// Router needs &mut App which has core and term
-							let mut temp_app = crate::file_browser::app::App {
-								core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
-								term: None, // Router doesn't actually use term for key routing
-								signals: crate::signals::Signals::start().unwrap_or_else(|_| unsafe { std::mem::zeroed() }),
-								bridge: YaziChatBridge::new(), // Temporary bridge for routing
-							};
-							
-							// Route the key using REAL DX Router
-							let key = Key::from(key_event);
-							if let Ok(handled) = Router::new(&mut temp_app).route(key) {
-								tracing::info!("Yazi: Router handled={}, cursor={}", handled, temp_app.core.mgr.tabs.items[0].current.cursor);
-								// Restore the core
-								*dx_core = temp_app.core;
-								
-								if handled {
-									self.frame_requester.schedule_frame();
-									return;
-								}
-							} else {
-								tracing::warn!("Yazi: Router returned error");
-								// Restore the core even on error
-								*dx_core = temp_app.core;
-							}
-						} else {
-							tracing::warn!("Yazi: Failed to lock dx_core");
-						}
-					}
-				}
-			}
-		}
-		
-		// Handle menu keys using ChatState method (REAL DX code in state.rs)
-		{
-			let mut dx_state = self.dx_chat_state.borrow_mut();
-			if dx_state.handle_menu_key(key_event) {
-				self.frame_requester.schedule_frame();
-				return;
-			}
-		}
-		
-		// Handle Left/Right arrow keys for animation navigation when showing welcome
-		// Only handle if input box is empty (no text typed)
-		if self.transcript_cells.is_empty() && self.bottom_pane.composer_is_empty() {
-			use crossterm::event::{KeyCode, KeyModifiers};
-			
-			if key_event.modifiers.is_empty() || key_event.modifiers == KeyModifiers::NONE {
-				match key_event.code {
-					KeyCode::Left => {
-						let mut dx_state = self.dx_chat_state.borrow_mut();
-						let all_animations = crate::state::AnimationType::all();
-						
-						// Navigate to previous animation
-						if dx_state.current_animation_index == 0 {
-							dx_state.current_animation_index = all_animations.len() - 1;
-						} else {
-							dx_state.current_animation_index -= 1;
-						}
-						
-						dx_state.animation_mode = true; // Ensure animation mode is on
-						dx_state.animation_start_time = Some(std::time::Instant::now());
-						dx_state.play_animation_sound();
-						dx_state.play_ui_sound("assets/click.mp3");
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					KeyCode::Right => {
-						let mut dx_state = self.dx_chat_state.borrow_mut();
-						let all_animations = crate::state::AnimationType::all();
-						
-						// Navigate to next animation
-						dx_state.current_animation_index = (dx_state.current_animation_index + 1) % all_animations.len();
-						
-						dx_state.animation_mode = true; // Ensure animation mode is on
-						dx_state.animation_start_time = Some(std::time::Instant::now());
-						dx_state.play_animation_sound();
-						dx_state.play_ui_sound("assets/click.mp3");
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					// HARDCODED: Press '1' to show animation carousel (Matrix)
-					KeyCode::Char('1') => {
-						let mut dx_state = self.dx_chat_state.borrow_mut();
-						dx_state.animation_mode = true; // Ensure animation mode is on
-						dx_state.current_animation_index = 1; // Matrix (first carousel animation)
-						dx_state.animation_start_time = Some(std::time::Instant::now());
-						dx_state.play_animation_sound();
-						dx_state.play_ui_sound("assets/click.mp3");
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					// HARDCODED: Press '3' to show Yazi file picker
-					KeyCode::Char('3') => {
-						let mut dx_state = self.dx_chat_state.borrow_mut();
-						let all_animations = crate::state::AnimationType::all();
-						dx_state.animation_mode = true; // Ensure animation mode is on
-						dx_state.current_animation_index = all_animations.len() - 1; // Yazi (last animation)
-						dx_state.animation_start_time = Some(std::time::Instant::now());
-						dx_state.play_animation_sound();
-						dx_state.play_ui_sound("assets/click.mp3");
-						self.frame_requester.schedule_frame();
-						return;
-					}
-					_ => {}
-				}
-			}
-		}
-		
 		match key_event {
 			// Scrollbar controls - PageUp/PageDown
 			KeyEvent {
@@ -9115,250 +8910,98 @@ impl Renderable for ChatWidget {
 		let show_welcome = self.transcript_cells.is_empty();
 		
 		if show_welcome {
-			// Use DX dispatcher bridge for timer updates
-			let mut dx_state = self.dx_chat_state.borrow_mut();
+			// Show animated welcome screen with ASCII art
+			self.welcome_animation.schedule_next_frame();
 			
-			// DON'T set animation_mode = true here!
-			// animation_mode should only be true when user explicitly enters animation carousel (pressing 1, 3, etc.)
-			// When showing welcome screen, we render splash directly in ChatWidget, not via Root widget
+			// Get current animation frame
+			let frame = self.welcome_animation.current_frame();
 			
-			// Play animation sound for current animation
-			let all_animations = crate::state::AnimationType::all();
-			let current_anim = all_animations[dx_state.current_animation_index];
-			if let Some(_sound_file) = current_anim.sound_file() {
-				// Call play_animation_sound() which handles checking if sound needs to restart
-				dx_state.play_animation_sound();
+			// Add animation frames
+			for line in frame.lines() {
+				all_lines.push(Line::from(line.to_string()));
 			}
 			
-			// Update DX state (timer logic)
-			dx_state.update();
+			// Add spacing
+			all_lines.push(Line::from(""));
 			
-			// Font cycling is handled in dispatcher.rs dispatch_timer() - no need to duplicate here
-			
-			// Update menu timing
-			let elapsed = dx_state.last_frame_instant.elapsed();
-			dx_state.menu.update(elapsed);
-			dx_state.last_frame_instant = std::time::Instant::now();
-			
-			// Render current animation based on current_animation_index
-			let all_animations = crate::state::AnimationType::all();
-			let current_anim = all_animations[dx_state.current_animation_index];
-			
-			match current_anim {
-				crate::state::AnimationType::Splash => {
-					// Call the actual DX splash render function
-					crate::splash::render(
-						transcript_area,
-						buf,
-						&dx_state.theme,
-						dx_state.splash_font_index,
-						&dx_state.rainbow_animation,
-					);
-				}
-				crate::state::AnimationType::Yazi => {
-					// Render Yazi using Root widget (REAL DX CODE!)
-					drop(dx_state); // Drop mutable borrow
-					
-					let dx_state = self.dx_chat_state.borrow();
-					// Try to lock Core (non-blocking since we're in render)
-					if let Ok(dx_core) = self.dx_core.try_lock() {
-						let mut dx_bridge = self.dx_bridge.borrow_mut();
-						
-						// Render Root widget with proper Lua context (REAL DX CODE!)
-						use fb_actor::lives::Lives;
-						use fb_binding::runtime_scope;
-						use fb_plugin::LUA;
-						use ratatui::widgets::Widget;
-						
-						let _ = Lives::scope(&dx_core, || {
-							runtime_scope!(LUA, "root", {
-								let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-								root.render(transcript_area, buf);
-								Ok(())
-							})
-						});
-					}
-				}
-				crate::state::AnimationType::Matrix => {
-					dx_state.render_matrix_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Confetti => {
-					dx_state.render_confetti_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::GameOfLife => {
-					dx_state.render_gameoflife_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Starfield => {
-					dx_state.render_starfield_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Rain => {
-					dx_state.render_rain_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::NyanCat => {
-					dx_state.render_nyancat_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::DVDLogo => {
-					dx_state.render_dvdlogo_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Fire => {
-					dx_state.render_fire_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Plasma => {
-					dx_state.render_plasma_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Waves => {
-					dx_state.render_waves_animation_in_area(transcript_area, buf);
-				}
-				crate::state::AnimationType::Fireworks => {
-					dx_state.render_fireworks_animation_in_area(transcript_area, buf);
-				}
-			}
-			
-			// Schedule next frame for animations
-			self.frame_requester.schedule_frame();
-			
-			// Skip the rest of the rendering since we've already rendered the animation
-			// Don't add any lines to all_lines
+			// Welcome message
+			use ratatui::style::{Modifier, Style};
+			use ratatui::text::Span;
+			all_lines.push(Line::from(vec![
+				Span::raw("  "),
+				Span::raw("Welcome to "),
+				Span::styled("Codex", Style::default().add_modifier(Modifier::BOLD)),
+				Span::raw(", OpenAI's command-line coding agent"),
+			]));
 		} else {
-			// Check if we're in animation carousel mode (user pressed 1, 3, etc.)
-			let dx_state = self.dx_chat_state.borrow();
-			let in_animation_carousel = dx_state.animation_mode;
-			drop(dx_state);
+			// Add lines from all history cells
+			for cell in &self.transcript_cells {
+				let cell_lines = cell.display_lines(content_area.width);
+				if !cell_lines.is_empty() {
+					all_lines.extend(cell_lines);
+				}
+			}
 			
-			if in_animation_carousel {
-				// Render animation carousel in transcript area (keeping bottom pane visible)
-				let mut dx_state = self.dx_chat_state.borrow_mut();
-				
-				// Always ensure animation sound is playing for current animation
-				let all_animations = crate::state::AnimationType::all();
-				let current_anim = all_animations[dx_state.current_animation_index];
-				if let Some(_sound_file) = current_anim.sound_file() {
-					// Call play_animation_sound() which handles checking if sound needs to restart
-					dx_state.play_animation_sound();
-				}
-				
-				// Update DX state (timer logic)
-				dx_state.update();
-				
-				// Update menu timing
-				let elapsed = dx_state.last_frame_instant.elapsed();
-				dx_state.menu.update(elapsed);
-				dx_state.last_frame_instant = std::time::Instant::now();
-				
-				// Render animation using Root widget in transcript area only
-				drop(dx_state); // Drop mutable borrow before borrowing for Root
-				
-				let dx_state = self.dx_chat_state.borrow();
-				// Try to lock Core (non-blocking since we're in render)
-				if let Ok(dx_core) = self.dx_core.try_lock() {
-					let mut dx_bridge = self.dx_bridge.borrow_mut();
-					
-					// Render Root widget with proper Lua context (REAL DX CODE!)
-					use fb_actor::lives::Lives;
-					use fb_binding::runtime_scope;
-					use fb_plugin::LUA;
-					use ratatui::widgets::Widget;
-					
-					let _ = Lives::scope(&dx_core, || {
-						runtime_scope!(LUA, "root", {
-							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-							root.render(transcript_area, buf);
-							Ok(())
-						})
-					});
-				}
-				
-				// Schedule next frame for animations
-				self.frame_requester.schedule_frame();
-				
-				// Skip normal chat rendering
-			} else {
-				// Normal chat mode - render transcript cells
-				let mut dx_state = self.dx_chat_state.borrow_mut();
-				dx_state.stop_animation_sound();
-				drop(dx_state);
-				
-				// Add lines from all history cells
-				for cell in &self.transcript_cells {
-					let cell_lines = cell.display_lines(content_area.width);
-					if !cell_lines.is_empty() {
-						all_lines.extend(cell_lines);
-					}
-				}
-				
-				// Add lines from active cell if present
-				if let Some(cell) = &self.active_cell {
-					let cell_lines = cell.display_lines(content_area.width);
-					if !cell_lines.is_empty() {
-						all_lines.extend(cell_lines);
-					}
+			// Add lines from active cell if present
+			if let Some(cell) = &self.active_cell {
+				let cell_lines = cell.display_lines(content_area.width);
+				if !cell_lines.is_empty() {
+					all_lines.extend(cell_lines);
 				}
 			}
 		}
 		
-		// Only render transcript paragraph when NOT showing welcome screen AND NOT in animation carousel
-		let dx_state = self.dx_chat_state.borrow();
-		let skip_transcript_render = show_welcome || dx_state.animation_mode;
-		drop(dx_state);
+		// Create a paragraph from all lines
+		use ratatui::widgets::{Paragraph, Wrap};
+		use ratatui::text::Text;
+		let transcript_paragraph = Paragraph::new(Text::from(all_lines))
+			.wrap(Wrap { trim: false });
 		
-		let transcript_content_height = if !skip_transcript_render {
-			// Create a paragraph from all lines
-			use ratatui::widgets::{Paragraph, Wrap};
-			use ratatui::text::Text;
-			let transcript_paragraph = Paragraph::new(Text::from(all_lines))
-				.wrap(Wrap { trim: false });
+		let transcript_content_height = transcript_paragraph.line_count(content_area.width) as u16;
+
+		// Store dimensions for scrolling
+		self.viewport_height.set(transcript_viewport_height as usize);
+		self.content_height.set(transcript_content_height as usize);
+
+		// Reset scroll position to 0 if content fits in viewport
+		if transcript_content_height <= transcript_viewport_height {
+			self.scroll_position.set(0);
+		}
+
+		if transcript_content_height > transcript_viewport_height {
+			// Content doesn't fit, need to scroll
+			let scroll_offset = self.scroll_position.get().min(
+				transcript_content_height.saturating_sub(transcript_viewport_height) as usize,
+			);
 			
-			let content_height = transcript_paragraph.line_count(content_area.width) as u16;
+			// Render paragraph with scrolling
+			use ratatui::widgets::Widget;
+			let scrolled_paragraph = transcript_paragraph.scroll((scroll_offset as u16, 0));
+			scrolled_paragraph.render(transcript_area, buf);
 
-			// Store dimensions for scrolling
-			self.viewport_height.set(transcript_viewport_height as usize);
-			self.content_height.set(content_height as usize);
-
-			// Reset scroll position to 0 if content fits in viewport
-			if content_height <= transcript_viewport_height {
-				self.scroll_position.set(0);
-			}
-
-			if content_height > transcript_viewport_height {
-				// Content doesn't fit, need to scroll
-				let scroll_offset = self.scroll_position.get().min(
-					content_height.saturating_sub(transcript_viewport_height) as usize,
-				);
-				
-				// Render paragraph with scrolling
-				use ratatui::widgets::Widget;
-				let scrolled_paragraph = transcript_paragraph.scroll((scroll_offset as u16, 0));
-				scrolled_paragraph.render(transcript_area, buf);
-
-				// Add scroll indicator in the bottom-right corner of transcript area
-				let scroll_percent = if content_height > transcript_viewport_height {
-					(scroll_offset * 100)
-						/ (content_height.saturating_sub(transcript_viewport_height) as usize)
-				} else {
-					0
-				};
-				let indicator = format!(" {}% ", scroll_percent);
-				let indicator_x = transcript_area.x + transcript_area.width.saturating_sub(indicator.len() as u16 + 1);
-				let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
-
-				use ratatui::style::{Color, Style};
-				buf.set_string(
-					indicator_x,
-					indicator_y,
-					&indicator,
-					Style::default().fg(Color::Black).bg(Color::Cyan),
-				);
+			// Add scroll indicator in the bottom-right corner of transcript area
+			let scroll_percent = if transcript_content_height > transcript_viewport_height {
+				(scroll_offset * 100)
+					/ (transcript_content_height.saturating_sub(transcript_viewport_height) as usize)
 			} else {
-				// Content fits in viewport, render directly
-				use ratatui::widgets::Widget;
-				transcript_paragraph.render(transcript_area, buf);
-			}
-			
-			content_height
+				0
+			};
+			let indicator = format!(" {}% ", scroll_percent);
+			let indicator_x = transcript_area.x + transcript_area.width.saturating_sub(indicator.len() as u16 + 1);
+			let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
+
+			use ratatui::style::{Color, Style};
+			buf.set_string(
+				indicator_x,
+				indicator_y,
+				&indicator,
+				Style::default().fg(Color::Black).bg(Color::Cyan),
+			);
 		} else {
-			// When showing welcome screen, set content height to 0
-			0
-		};
+			// Content fits in viewport, render directly
+			use ratatui::widgets::Widget;
+			transcript_paragraph.render(transcript_area, buf);
+		}
 
 		bottom_pane_renderable.render(bp_area, buf);
 
@@ -9388,15 +9031,6 @@ impl Renderable for ChatWidget {
 		}
 
 		self.last_rendered_width.set(Some(area.width as usize));
-		
-		// Render menu overlay if visible (on top of everything)
-		let dx_state = self.dx_chat_state.borrow();
-		if dx_state.show_tachyon_menu || dx_state.menu_is_closing {
-			drop(dx_state); // Drop borrow before mutable borrow
-			let mut dx_state = self.dx_chat_state.borrow_mut();
-			// Use render_menu_in_area which handles animations!
-			dx_state.render_menu_in_area(area, buf);
-		}
 	}
 
 	fn desired_height(&self, _width: u16) -> u16 {
@@ -9407,11 +9041,6 @@ impl Renderable for ChatWidget {
 	}
 
 	fn cursor_pos(&self, area: Rect) -> Option<(u16, u16)> {
-		// Hide cursor when showing welcome screen (no transcript cells)
-		if self.transcript_cells.is_empty() {
-			return None;
-		}
-		
 		let content_area =
 			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
 
@@ -9672,13 +9301,3 @@ pub(crate) fn show_review_commit_picker_with_entries(
 
 #[cfg(test)]
 pub(crate) mod tests;
-
-
-
-
-
-
-
-
-
-

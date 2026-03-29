@@ -2646,6 +2646,8 @@ impl App {
 					// Pass transcript cells to ChatWidget before rendering
 					self.chat_widget.set_transcript_cells(self.transcript_cells.clone());
 
+					// ALWAYS render ChatWidget (it handles bottom pane + transcript area)
+					// ChatWidget will internally check animation_mode and render animations if needed
 					tui.draw(viewport_height, |frame| {
 						self.chat_widget.render(frame.area(), frame.buffer);
 						if let Some((x, y)) = self.chat_widget.cursor_pos(frame.area()) {

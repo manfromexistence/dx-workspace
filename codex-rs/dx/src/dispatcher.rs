@@ -13,12 +13,7 @@ use fb_shared::{
 use fb_widgets::input::InputMode;
 use tracing::warn;
 
-use crate::bridge::AppMode;
 use crate::file_browser::{Executor, Router, app::App};
-use crate::input::InputAction;
-use crate::menu::MenuAction;
-use crate::root::Root;
-use crate::state::AnimationType;
 
 // Helper function to format key events into readable shortcut strings
 fn format_key_event(key: &KeyEvent) -> String {
@@ -132,6 +127,10 @@ impl<'a> Dispatcher<'a> {
 
 	#[inline]
 	fn dispatch_key(&mut self, key: KeyEvent) -> Result<Data> {
+		use crate::input::InputAction;
+		use crate::menu::MenuAction;
+		use crossterm::event::KeyCode;
+
 		// COMMENTED OUT: Codex TUI integration
 		// PRIORITY 0: If Codex TUI is active, forward ALL keys to it (except Ctrl+C for exit and Ctrl+B for toggle)
 		// if self.app.bridge.chat_state.show_codex_tui {
@@ -374,7 +373,7 @@ impl<'a> Dispatcher<'a> {
 
 		// PRIORITY 2: If in animation mode, handle navigation keys but allow typing
 		if self.app.bridge.chat_state.animation_mode {
-			let all_animations = AnimationType::all();
+			let all_animations = crate::AnimationType::all();
 			let current_anim = all_animations[self.app.bridge.chat_state.current_animation_index];
 
 			// Handle Ctrl+E for external editor (works in animation mode too)
@@ -390,19 +389,19 @@ impl<'a> Dispatcher<'a> {
 					// Play navigation click sound
 					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
 					
-					if current_anim == AnimationType::Splash {
+					if current_anim == crate::AnimationType::Splash {
 						// From Splash → Go to first carousel animation (Matrix)
-						let carousel = AnimationType::carousel_animations();
+						let carousel = crate::AnimationType::carousel_animations();
 						// Find Matrix in all_animations
 						if let Some(matrix_idx) = all_animations.iter().position(|a| *a == carousel[0]) {
 							self.app.bridge.chat_state.current_animation_index = matrix_idx;
 						}
-					} else if current_anim == AnimationType::Yazi {
+					} else if current_anim == crate::AnimationType::Yazi {
 						// From Yazi → Go back to Splash
 						self.app.bridge.chat_state.current_animation_index = 0;
 					} else {
 						// In carousel → Navigate to previous carousel animation
-						let carousel = AnimationType::carousel_animations();
+						let carousel = crate::AnimationType::carousel_animations();
 						if let Some(current_carousel_idx) = carousel.iter().position(|a| *a == current_anim) {
 							let prev_carousel_idx = if current_carousel_idx == 0 {
 								carousel.len() - 1
@@ -425,14 +424,14 @@ impl<'a> Dispatcher<'a> {
 					// Play navigation click sound
 					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
 					
-					if current_anim == AnimationType::Splash {
+					if current_anim == crate::AnimationType::Splash {
 						// From Splash → Go to Yazi (file browser)
 						if let Some(yazi_idx) =
-							all_animations.iter().position(|a| *a == AnimationType::Yazi)
+							all_animations.iter().position(|a| *a == crate::AnimationType::Yazi)
 						{
 							self.app.bridge.chat_state.current_animation_index = yazi_idx;
 						}
-					} else if current_anim == AnimationType::Yazi {
+					} else if current_anim == crate::AnimationType::Yazi {
 						// From Yazi → Go back to Splash
 						self.app.bridge.chat_state.current_animation_index = 0;
 					} else {
@@ -446,8 +445,8 @@ impl<'a> Dispatcher<'a> {
 				}
 				KeyCode::Up => {
 					// Set current animation as intro animation (only in carousel)
-					if current_anim != AnimationType::Splash
-						&& current_anim != AnimationType::Yazi
+					if current_anim != crate::AnimationType::Splash
+						&& current_anim != crate::AnimationType::Yazi
 					{
 						self.app.bridge.chat_state.intro_animation = current_anim;
 						let anim_name = current_anim.name();
@@ -458,8 +457,8 @@ impl<'a> Dispatcher<'a> {
 				}
 				KeyCode::Down => {
 					// Set current animation as outro animation (only in carousel)
-					if current_anim != AnimationType::Splash
-						&& current_anim != AnimationType::Yazi
+					if current_anim != crate::AnimationType::Splash
+						&& current_anim != crate::AnimationType::Yazi
 					{
 						self.app.bridge.chat_state.outro_animation = current_anim;
 						let anim_name = current_anim.name();
@@ -512,7 +511,7 @@ impl<'a> Dispatcher<'a> {
 
 			// Handle shortcuts with "or" (e.g., "0 or Ctrl+P")
 			let matches = if shortcut.contains(" or ") {
-				shortcut.split(" or ").any(|s: &str| s.trim() == pressed_key)
+				shortcut.split(" or ").any(|s| s.trim() == pressed_key)
 			} else {
 				shortcut == pressed_key
 			};
@@ -585,8 +584,8 @@ impl<'a> Dispatcher<'a> {
 		}
 
 		// Handle chat input when in Chat mode or FilePicker mode (chat input is visible)
-		if self.app.bridge.mode == AppMode::Chat
-			|| self.app.bridge.mode == AppMode::FilePicker
+		if self.app.bridge.mode == crate::AppMode::Chat
+			|| self.app.bridge.mode == crate::AppMode::FilePicker
 		{
 			// CRITICAL: Handle Ctrl+C to return to splash or exit
 			// If we have messages (in chat mode), play outro animation to return to splash
@@ -614,8 +613,8 @@ impl<'a> Dispatcher<'a> {
 						// Left arrow: Go to animation carousel
 						self.app.bridge.chat_state.animation_mode = true;
 						// Start at first carousel animation (Matrix)
-						let carousel = AnimationType::carousel_animations();
-						let all_animations = AnimationType::all();
+						let carousel = crate::AnimationType::carousel_animations();
+						let all_animations = crate::AnimationType::all();
 						if let Some(matrix_idx) = all_animations.iter().position(|a| *a == carousel[0]) {
 							self.app.bridge.chat_state.current_animation_index = matrix_idx;
 						}
@@ -785,10 +784,6 @@ impl<'a> Dispatcher<'a> {
 					_ => {}
 				}
 			}
-			
-			// DX INPUT HANDLING COMMENTED OUT - Using codex-tui bottom pane instead
-			// TODO: Re-enable when integrating dx input with codex bottom pane
-			/*
 			// Route key to DX chat input
 			let action = self.app.bridge.chat_state.input.handle_key(key);
 
@@ -864,7 +859,6 @@ impl<'a> Dispatcher<'a> {
 					succ!()
 				}
 			}
-			*/
 		}
 		// Route to yazi's normal key handling
 		Router::new(self.app).route(Key::from(key))?;
@@ -1062,7 +1056,6 @@ impl<'a> Dispatcher<'a> {
 							// Actually paste the text into the input
 							if let Some(ref text) = self.app.bridge.chat_state.clipboard_buffer.clone() {
 								// Sanitize: replace newlines with spaces to prevent auto-submit
-								let text: &String = text;
 								let sanitized = text.replace('\n', " ").replace('\r', "");
 
 								// Insert at cursor position
@@ -1273,9 +1266,8 @@ impl<'a> Dispatcher<'a> {
 						// Calculate max scroll
 						let text_width = input_area.width.saturating_sub(4) as usize;
 						if text_width > 0 {
-							let mut total_lines: usize = 0;
+							let mut total_lines = 0;
 							for line in self.app.bridge.chat_state.input.content.lines() {
-								let line: &str = line;
 								if line.is_empty() {
 									total_lines += 1;
 								} else {
@@ -1349,7 +1341,7 @@ impl<'a> Dispatcher<'a> {
 	#[inline]
 	fn dispatch_resize(&mut self) -> Result<Data> {
 		let cx = &mut Ctx::active(&mut self.app.core, &mut self.app.term);
-		act!(app:resize, cx, Root::reflow as fn(_) -> _)
+		act!(app:resize, cx, crate::Root::reflow as fn(_) -> _)
 	}
 
 	#[inline]
@@ -1390,8 +1382,8 @@ impl<'a> Dispatcher<'a> {
 			));
 
 		// Handle paste for DX chat input (when in Chat or FilePicker mode)
-		if self.app.bridge.mode == AppMode::Chat
-			|| self.app.bridge.mode == AppMode::FilePicker
+		if self.app.bridge.mode == crate::AppMode::Chat
+			|| self.app.bridge.mode == crate::AppMode::FilePicker
 		{
 			if is_file_path {
 				// Parse file paths from the pasted content
@@ -1568,12 +1560,11 @@ impl<'a> Dispatcher<'a> {
 		let content = &self.app.bridge.chat_state.input.content;
 		let cursor_pos = self.app.bridge.chat_state.input.cursor_position;
 
-		let mut total_lines: usize = 0;
-		let mut cursor_line: usize = 0;
-		let mut char_count: usize = 0;
+		let mut total_lines = 0;
+		let mut cursor_line = 0;
+		let mut char_count = 0;
 
 		for line in content.lines() {
-			let line: &str = line;
 			if line.is_empty() {
 				if char_count <= cursor_pos && cursor_pos <= char_count + 1 {
 					cursor_line = total_lines;
@@ -1608,7 +1599,7 @@ impl<'a> Dispatcher<'a> {
 		} else if cursor_line >= current_offset + viewport_height {
 			// Cursor is below visible area, scroll down
 			self.app.bridge.chat_state.input_scroll_offset =
-				cursor_line.saturating_sub(viewport_height.saturating_sub(1));
+				cursor_line.saturating_sub(viewport_height - 1);
 		}
 	}
 
@@ -1624,9 +1615,9 @@ impl<'a> Dispatcher<'a> {
 		// Cycle fonts when in animation mode on Splash screen OR when showing splash in chat mode
 		if self.app.bridge.chat_state.last_font_change.elapsed() >= Duration::from_secs(5) {
 			let should_cycle = if self.app.bridge.chat_state.animation_mode {
-				let animations = AnimationType::all();
+				let animations = crate::AnimationType::all();
 				let current_anim = animations[self.app.bridge.chat_state.current_animation_index];
-				current_anim == AnimationType::Splash
+				current_anim == crate::AnimationType::Splash
 			} else {
 				// In normal chat mode, cycle if showing splash (no messages)
 				self.app.bridge.chat_state.messages.is_empty()

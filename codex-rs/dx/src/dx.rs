@@ -27,7 +27,7 @@ mod chat_input;
 // mod codex_integration;
 mod components;
 mod dispatcher;
-// mod dx_render; // COMMENTED OUT: Not used, causes compilation errors
+mod dx_render;
 mod effects;
 mod exit_animation;
 mod external_editor;

@@ -324,8 +324,8 @@ impl ChatState {
 			cursor_visible: true,
 			splash_font_index: 0,
 			last_font_change: Instant::now(),
-			animation_mode: false,
-			current_animation_index: 0,
+			animation_mode: true, // Start in animation carousel mode (showing Matrix by default)
+			current_animation_index: 1, // Matrix animation (index 1 in the carousel)
 			animation_start_time: Some(Instant::now()),
 			llm: Arc::new(LocalLlm::new()),
 			llm_tx,
@@ -830,6 +830,7 @@ impl ChatState {
 		use crate::models::ModelProvider;
 
 		if let Some(model) = crate::models::get_model_by_id(model_id) {
+			let model: crate::models::ModelInfo = model;
 			self.current_model = model.clone();
 			self.show_model_picker = false;
 
@@ -865,12 +866,18 @@ impl ChatState {
 		let all_animations = AnimationType::all();
 		if self.current_animation_index < all_animations.len() {
 			let current_anim = all_animations[self.current_animation_index];
+			
+			// Check if we just switched to a different animation
+			let animation_changed = self.current_animation_index != self.previous_animation_index;
 
 			// Reset animation-specific tracking when switching animations
-			if self.current_animation_index != self.previous_animation_index {
+			if animation_changed {
 				self.last_dvd_bounce_x = -999; // Reset to impossible value to trigger first sound
 				self.last_dvd_bounce_y = -999;
 				self.last_confetti_explosion_time = 0;
+				
+				// Stop any currently playing sound when switching animations
+				self.stop_animation_sound();
 			}
 
 			if let Some(sound_file) = current_anim.sound_file() {
@@ -885,9 +892,10 @@ impl ChatState {
 					AnimationType::Yazi => {
 						// Yazi plays sound only once when entering the screen
 						// Check if we just switched to Yazi
-						if self.current_animation_index != self.previous_animation_index {
+						if animation_changed {
 							if let Some(player) = &self.audio_player {
 								// Play once with 5% volume
+								let player: &crate::audio::AudioPlayer = player;
 								player.set_volume(0.05);
 								let _ = player.play_once(sound_file);
 							}
@@ -896,10 +904,13 @@ impl ChatState {
 						return;
 					}
 					_ => {
-						// Only play if it's a different sound than currently playing
-						if self.current_animation_sound.as_deref() != Some(sound_file) {
+						// Play if animation changed OR if no sound is currently playing
+						if animation_changed || self.current_animation_sound.is_none() {
 							if let Some(player) = &self.audio_player {
-								// Silently try to play - don't show errors
+								let player: &crate::audio::AudioPlayer = player;
+								// Stop any existing sound first
+								player.stop();
+								// Play the new sound
 								if player.play_looping(sound_file).is_ok() {
 									self.current_animation_sound = Some(sound_file.to_string());
 									player.set_volume(0.05); // Set volume to 5%
@@ -921,6 +932,7 @@ impl ChatState {
 	/// Stop the currently playing animation sound
 	pub fn stop_animation_sound(&mut self) {
 		if let Some(player) = &self.audio_player {
+			let player: &crate::audio::AudioPlayer = player;
 			player.stop();
 		}
 		self.current_animation_sound = None;
@@ -929,6 +941,7 @@ impl ChatState {
 	/// Play a sound effect once (not looping)
 	pub fn play_sound_once(&self, sound_file: &str) {
 		if let Some(player) = &self.audio_player {
+			let player: &crate::audio::AudioPlayer = player;
 			// Set volume to 5% before playing
 			player.set_volume(0.05);
 			// Silently try to play - don't show errors
@@ -939,6 +952,7 @@ impl ChatState {
 	/// Play a UI interaction sound at lower volume
 	pub fn play_ui_sound(&self, sound_file: &str) {
 		if let Some(player) = &self.audio_player {
+			let player: &crate::audio::AudioPlayer = player;
 			// Set volume to 3% for UI sounds (more subtle)
 			player.set_volume(0.03);
 			// Silently try to play - don't show errors
@@ -1023,5 +1037,80 @@ impl ChatState {
 				// Other animations use looping sounds, handled in play_animation_sound
 			}
 		}
+	}
+	
+	/// Handle menu key events - called by both DX dispatcher and ChatWidget
+	/// This is the SINGLE SOURCE OF TRUTH for menu navigation
+	pub fn handle_menu_key(&mut self, key: crossterm::event::KeyEvent) -> bool {
+		use crossterm::event::KeyCode;
+		
+		// Handle '0' key to toggle menu
+		if key.code == KeyCode::Char('0') {
+			if self.show_tachyon_menu || self.menu_is_closing {
+				// Close menu
+				self.menu_is_closing = true;
+				self.show_tachyon_menu = false;
+				self.menu.pick_closing_effect();
+				self.play_ui_sound("assets/menu-close.mp3");
+			} else {
+				// Open menu
+				self.menu_is_closing = false;
+				self.show_tachyon_menu = true;
+				self.menu.pick_opening_effect();
+				self.play_ui_sound("assets/menu-open.mp3");
+			}
+			return true;
+		}
+		
+		// Handle menu navigation when menu is visible
+		if self.show_tachyon_menu {
+			match key.code {
+				KeyCode::Up | KeyCode::Char('k') => {
+					self.play_ui_sound("assets/click.mp3");
+					self.menu.select_prev_menu_item();
+					return true;
+				}
+				KeyCode::Down | KeyCode::Char('j') => {
+					self.play_ui_sound("assets/click.mp3");
+					self.menu.select_next_menu_item();
+					return true;
+				}
+				KeyCode::PageUp => {
+					self.menu.page_up(10);
+					return true;
+				}
+				KeyCode::PageDown => {
+					self.menu.page_down(10);
+					return true;
+				}
+				KeyCode::Home | KeyCode::Char('g') => {
+					self.menu.jump_to_top();
+					return true;
+				}
+				KeyCode::End | KeyCode::Char('G') => {
+					self.menu.jump_to_bottom();
+					return true;
+				}
+				KeyCode::Enter => {
+					self.play_ui_sound("assets/click.mp3");
+					let _should_close = !self.menu.select_current_item();
+					self.menu_is_closing = true;
+					self.menu.pick_closing_effect();
+					return true;
+				}
+				KeyCode::Esc => {
+					if self.menu.current_submenu.is_some() {
+						self.menu.go_back_to_main();
+					} else {
+						self.menu_is_closing = true;
+						self.menu.pick_closing_effect();
+					}
+					return true;
+				}
+				_ => {}
+			}
+		}
+		
+		false // Key not handled
 	}
 }

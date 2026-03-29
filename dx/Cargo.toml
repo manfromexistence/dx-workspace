@@ -8,7 +8,7 @@ authors = ["DX Contributors"]
 repository = "https://github.com/sxyazi/yazi"
 homepage = "https://github.com/sxyazi/yazi"
 description = "Terminal UI for Codex CLI - AI-powered coding agent"
-default-run = "dx"
+default-run = "codex-tui-dx"
 
 [[bin]]
 name = "dx"
@@ -16,12 +16,15 @@ path = "src/dx.rs"
 
 [[bin]]
 name = "codex-tui-dx"
-path = "src/codex.rs"
+path = "src/main.rs"
 
 [lib]
 name = "codex_tui_dx"
-path = "src/codex_lib.rs"
+path = "src/lib.rs"
 
+# [[bin]]
+# name = "dx"
+# path = "src/dx.rs"
 [features]
 default = ["vendored-lua", "llm", "voice-input"]
 vendored-lua = ["mlua/vendored"]
