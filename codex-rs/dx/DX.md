@@ -88,3 +88,7 @@ no the important part use dx-tui code directly and edit it directly to be render
 update the code use real dx codex - import them, edit them to be renderable on codex-tui correctly instead of using sloppy ai code!!!
 
 now this is a rust project and currently the yazi screen is not loading correctly in codex-tui-dx binary then dx binary is tui and we are trying to integrate the dx tui inside the codext-tui-dx binary so please load the yazi file browser screen using the directly imports of dx binary yazi screen correctly
+
+No, that is a sloppy version of the dx-tui and maybe that's another way in the codex widget. We are rendering the dx-tui actually so use that and also show the codex tui bottom pane because currently we are not showing it. 
+
+ts a tui you can't verify it - trust me just don't render the welcome dx-tui for now comment it out toggle it off
