@@ -1,5 +1,5 @@
 // Audio playback module for DX animations
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 
@@ -29,6 +29,7 @@ const SPECIAL_KEY_SOUND: &[u8] = include_bytes!("../assets/special-key-trigger.m
 
 pub struct AudioPlayer {
 	_stream: OutputStream,
+	stream_handle: OutputStreamHandle,
 	sink: Arc<Mutex<Option<Sink>>>,
 }
 
@@ -37,7 +38,11 @@ impl AudioPlayer {
 		let (stream, stream_handle) = OutputStream::try_default()?;
 		let sink = Sink::try_new(&stream_handle)?;
 
-		Ok(Self { _stream: stream, sink: Arc::new(Mutex::new(Some(sink))) })
+		Ok(Self {
+			_stream: stream,
+			stream_handle,
+			sink: Arc::new(Mutex::new(Some(sink))),
+		})
 	}
 
 	/// Get embedded audio data by path
@@ -81,12 +86,12 @@ impl AudioPlayer {
 		let cursor = Cursor::new(audio_data);
 		let source = Decoder::new(cursor)?;
 
-		// Create a new sink and play
-		if let Ok(sink_guard) = self.sink.lock() {
-			if let Some(sink) = sink_guard.as_ref() {
-				sink.append(source.repeat_infinite());
-				sink.play();
-			}
+		let sink = Sink::try_new(&self.stream_handle)?;
+		sink.append(source.repeat_infinite());
+		sink.play();
+
+		if let Ok(mut sink_guard) = self.sink.lock() {
+			*sink_guard = Some(sink);
 		}
 
 		Ok(())
@@ -104,12 +109,12 @@ impl AudioPlayer {
 		let cursor = Cursor::new(audio_data);
 		let source = Decoder::new(cursor)?;
 
-		// Create a new sink and play
-		if let Ok(sink_guard) = self.sink.lock() {
-			if let Some(sink) = sink_guard.as_ref() {
-				sink.append(source);
-				sink.play();
-			}
+		let sink = Sink::try_new(&self.stream_handle)?;
+		sink.append(source);
+		sink.play();
+
+		if let Ok(mut sink_guard) = self.sink.lock() {
+			*sink_guard = Some(sink);
 		}
 
 		Ok(())
@@ -138,8 +143,8 @@ impl Default for AudioPlayer {
 	fn default() -> Self {
 		Self::new().unwrap_or_else(|_| {
 			// Fallback: create a dummy player if audio initialization fails
-			let (stream, _) = OutputStream::try_default().unwrap();
-			Self { _stream: stream, sink: Arc::new(Mutex::new(None)) }
+			let (stream, stream_handle) = OutputStream::try_default().unwrap();
+			Self { _stream: stream, stream_handle, sink: Arc::new(Mutex::new(None)) }
 		})
 	}
 }

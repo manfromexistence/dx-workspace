@@ -870,6 +870,9 @@ pub struct ChatWidget {
 	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
 	// Using Arc<Mutex> so we can share Core across threads for async file loading
 	pub(crate) dx_core: std::sync::Arc<std::sync::Mutex<fb_core::Core>>,
+	pub(crate) dx_signals: crate::signals::Signals,
+	pub(crate) dx_event_rx:
+		std::cell::RefCell<tokio::sync::mpsc::UnboundedReceiver<fb_shared::event::Event>>,
 	pub(crate) dx_bridge: std::cell::RefCell<crate::bridge::YaziChatBridge>,
 }
 
@@ -3599,6 +3602,8 @@ impl ChatWidget {
 			welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 			dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+			dx_signals: crate::signals::Signals::start().expect("failed to initialize DX signals"),
+			dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3804,6 +3809,8 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+dx_signals: crate::signals::Signals::start().expect("failed to initialize DX signals"),
+dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -4001,6 +4008,8 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+dx_signals: crate::signals::Signals::start().expect("failed to initialize DX signals"),
+dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -4035,7 +4044,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// PRIORITY 1: If in Yazi mode, route keys to DX Router (REAL DX CODE!)
+		// PRIORITY 1: If in Yazi mode, route keys through the real DX dispatcher.
 		{
 			let dx_state = self.dx_chat_state.borrow();
 			if dx_state.animation_mode {
@@ -4045,7 +4054,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 				if current_anim == crate::state::AnimationType::Yazi {
 					drop(dx_state);
 					
-					// Route to Yazi using REAL DX Router (no duplication!)
+					// Route to Yazi through the real DX dispatcher.
 					use crossterm::event::KeyEventKind;
 					if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
 						// Special handling for Esc to exit Yazi mode
@@ -4057,50 +4066,42 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 							return;
 						}
 						
-						// Route all other keys to DX Router
-						if let Ok(mut dx_core) = self.dx_core.try_lock() {
-							tracing::info!("Yazi: Routing key {:?} to DX Router", key_event);
-							use fb_config::keymap::Key;
-							use crate::file_browser::Router;
-							use crate::bridge::YaziChatBridge;
-							
-							// Create temporary App-like structure for Router
-							// Router needs &mut App which has core and term
-							let mut temp_app = crate::file_browser::app::App {
-								core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
-								term: None, // Router doesn't actually use term for key routing
-								signals: crate::signals::Signals::start().unwrap_or_else(|_| unsafe { std::mem::zeroed() }),
-								bridge: YaziChatBridge::new(), // Temporary bridge for routing
-							};
-							
-							// Route the key using REAL DX Router
-							let key = Key::from(key_event);
-							if let Ok(handled) = Router::new(&mut temp_app).route(key) {
-								tracing::info!("Yazi: Router handled={}, cursor={}", handled, temp_app.core.mgr.tabs.items[0].current.cursor);
-								// Restore the core
-								*dx_core = temp_app.core;
-								
-								if handled {
-									self.frame_requester.schedule_frame();
-									return;
-								}
-							} else {
-								tracing::warn!("Yazi: Router returned error");
-								// Restore the core even on error
-								*dx_core = temp_app.core;
-							}
-						} else {
-							tracing::warn!("Yazi: Failed to lock dx_core");
-						}
+						self.dispatch_real_dx_key(key_event);
+						self.frame_requester.schedule_frame();
+						return;
 					}
 				}
 			}
 		}
 		
-		// Handle menu keys using ChatState method (REAL DX code in state.rs)
+		// PRIORITY 2: Let the real DX dispatcher own menu toggles/navigation.
+		if key_event.code == crossterm::event::KeyCode::Char('0')
+			|| self.dx_chat_state.borrow().show_tachyon_menu
 		{
-			let mut dx_state = self.dx_chat_state.borrow_mut();
-			if dx_state.handle_menu_key(key_event) {
+			self.dispatch_real_dx_key(key_event);
+			self.frame_requester.schedule_frame();
+			return;
+		}
+
+		// PRIORITY 3: Let the real DX dispatcher own animation navigation.
+		{
+			use crossterm::event::KeyCode;
+			let dx_state = self.dx_chat_state.borrow();
+			let use_dx_animation_dispatch =
+				(self.transcript_cells.is_empty() && self.bottom_pane.composer_is_empty())
+					&& matches!(key_event.code, KeyCode::Left | KeyCode::Right)
+				|| (dx_state.animation_mode
+					&& !matches!(
+						crate::state::AnimationType::all()[dx_state.current_animation_index],
+						crate::state::AnimationType::Yazi
+					)
+					&& matches!(
+						key_event.code,
+						KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down
+					));
+			drop(dx_state);
+			if use_dx_animation_dispatch {
+				self.dispatch_real_dx_key(key_event);
 				self.frame_requester.schedule_frame();
 				return;
 			}
@@ -8975,9 +8976,94 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		self.scroll_position.get() < content.saturating_sub(viewport)
 	}
 
+	fn dispatch_real_dx_key(&mut self, key_event: KeyEvent) {
+		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
+		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
+		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
+
+		let signals = std::mem::replace(
+			&mut self.dx_signals,
+			crate::signals::Signals::start().expect("failed to refresh DX signals"),
+		);
+
+		let mut temp_app = crate::file_browser::app::App {
+			core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
+			term: None,
+			signals,
+			bridge,
+		};
+
+		if let Err(err) =
+			crate::dispatcher::Dispatcher::new(&mut temp_app).dispatch(fb_shared::event::Event::Key(key_event))
+		{
+			tracing::warn!("DX dispatcher key handling failed: {err}");
+		}
+
+		let mut dx_event_rx = self.dx_event_rx.borrow_mut();
+		while let Ok(event) = dx_event_rx.try_recv() {
+			if let Err(err) = crate::dispatcher::Dispatcher::new(&mut temp_app).dispatch(event) {
+				tracing::warn!("DX dispatcher follow-up event failed: {err}");
+				break;
+			}
+		}
+
+		*dx_core = temp_app.core;
+		self.dx_signals = temp_app.signals;
+		std::mem::swap(&mut temp_app.bridge.chat_state, self.dx_chat_state.get_mut());
+		*self.dx_bridge.get_mut() = temp_app.bridge;
+	}
+
+	fn dispatch_real_dx_mouse(&mut self, mouse: crossterm::event::MouseEvent) {
+		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
+		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
+		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
+
+		let signals = std::mem::replace(
+			&mut self.dx_signals,
+			crate::signals::Signals::start().expect("failed to refresh DX signals"),
+		);
+
+		let mut temp_app = crate::file_browser::app::App {
+			core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
+			term: None,
+			signals,
+			bridge,
+		};
+
+		if let Err(err) =
+			crate::dispatcher::Dispatcher::new(&mut temp_app).dispatch(fb_shared::event::Event::Mouse(mouse))
+		{
+			tracing::warn!("DX dispatcher mouse handling failed: {err}");
+		}
+
+		let mut dx_event_rx = self.dx_event_rx.borrow_mut();
+		while let Ok(event) = dx_event_rx.try_recv() {
+			if let Err(err) = crate::dispatcher::Dispatcher::new(&mut temp_app).dispatch(event) {
+				tracing::warn!("DX dispatcher follow-up mouse event failed: {err}");
+				break;
+			}
+		}
+
+		*dx_core = temp_app.core;
+		self.dx_signals = temp_app.signals;
+		std::mem::swap(&mut temp_app.bridge.chat_state, self.dx_chat_state.get_mut());
+		*self.dx_bridge.get_mut() = temp_app.bridge;
+	}
+
 	/// Handle mouse event for scrollbar interaction
-	pub fn handle_mouse_event(&self, mouse: crossterm::event::MouseEvent) {
+	pub fn handle_mouse_event(&mut self, mouse: crossterm::event::MouseEvent) {
 		use crossterm::event::{MouseButton, MouseEventKind};
+
+		let route_to_dx = {
+			let dx_state = self.dx_chat_state.borrow();
+			let current_anim = crate::state::AnimationType::all()[dx_state.current_animation_index];
+			dx_state.show_tachyon_menu || current_anim == crate::state::AnimationType::Yazi
+		};
+		if route_to_dx {
+			self.dispatch_real_dx_mouse(mouse);
+			self.frame_requester.schedule_frame();
+			return;
+		}
 
 		match mouse.kind {
 			MouseEventKind::Down(MouseButton::Left) => {
@@ -9201,24 +9287,22 @@ impl Renderable for ChatWidget {
 					drop(dx_state); // Drop mutable borrow
 					
 					let dx_state = self.dx_chat_state.borrow();
-					// Try to lock Core (non-blocking since we're in render)
-					if let Ok(dx_core) = self.dx_core.try_lock() {
-						let mut dx_bridge = self.dx_bridge.borrow_mut();
-						
-						// Render Root widget with proper Lua context (REAL DX CODE!)
-						use fb_actor::lives::Lives;
-						use fb_binding::runtime_scope;
-						use fb_plugin::LUA;
-						use ratatui::widgets::Widget;
-						
-						let _ = Lives::scope(&dx_core, || {
-							runtime_scope!(LUA, "root", {
-								let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-								root.render(transcript_area, buf);
-								Ok(())
-							})
-						});
-					}
+					let dx_core = self.dx_core.lock().expect("failed to lock DX core for render");
+					let mut dx_bridge = self.dx_bridge.borrow_mut();
+					
+					// Render Root widget with proper Lua context (REAL DX CODE!)
+					use fb_actor::lives::Lives;
+					use fb_binding::runtime_scope;
+					use fb_plugin::LUA;
+					use ratatui::widgets::Widget;
+					
+					let _ = Lives::scope(&dx_core, || {
+						runtime_scope!(LUA, "root", {
+							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+							root.render(transcript_area, buf);
+							Ok(())
+						})
+					});
 				}
 				crate::state::AnimationType::Matrix => {
 					dx_state.render_matrix_animation_in_area(transcript_area, buf);
@@ -9290,27 +9374,25 @@ impl Renderable for ChatWidget {
 				drop(dx_state); // Drop mutable borrow before borrowing for Root
 				
 				let dx_state = self.dx_chat_state.borrow();
-				// Try to lock Core (non-blocking since we're in render)
-				if let Ok(dx_core) = self.dx_core.try_lock() {
-					let mut dx_bridge = self.dx_bridge.borrow_mut();
-					
-					// Render Root widget with proper Lua context (REAL DX CODE!)
-					use fb_actor::lives::Lives;
-					use fb_binding::runtime_scope;
-					use fb_plugin::LUA;
-					use ratatui::widgets::Widget;
-					
-					let _ = Lives::scope(&dx_core, || {
-						runtime_scope!(LUA, "root", {
-							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-							root.render(transcript_area, buf);
-							Ok(())
-						})
-					});
-				}
+				let dx_core = self.dx_core.lock().expect("failed to lock DX core for render");
+				let mut dx_bridge = self.dx_bridge.borrow_mut();
+				
+				// Render Root widget with proper Lua context (REAL DX CODE!)
+				use fb_actor::lives::Lives;
+				use fb_binding::runtime_scope;
+				use fb_plugin::LUA;
+				use ratatui::widgets::Widget;
+				
+				let _ = Lives::scope(&dx_core, || {
+					runtime_scope!(LUA, "root", {
+						let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+						root.render(transcript_area, buf);
+						Ok(())
+					})
+				});
 				
 				// Schedule next frame for animations
-				self.frame_requester.schedule_frame();
+				self.frame_requester.schedule_frame_in(std::time::Duration::from_millis(50));
 				
 				// Skip normal chat rendering
 			} else {

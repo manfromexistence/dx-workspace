@@ -61,12 +61,12 @@
 
 ## 🚀 IN PROGRESS
 
-### Current Task: Fix Yazi File Browser Rendering
+### Current Task: Route DX input through the real dispatcher
 - [x] ~~Fixed Core initialization (removed async file loading)~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Created helper function make_dx_core()~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Compiled successfully~~ ✅ (completed: 2026-03-29 16:00)
-- [ ] Test with `cargo run` - press '3' to show Yazi
-- [ ] Debug Lua Root component if blank screen persists
+- [ ] Test with `cargo run` - DX mouse paths use DX dispatcher for menu/Yazi
+- [ ] Verify Yazi/menu/animation transitions all share the same DX state
 
 ---
 

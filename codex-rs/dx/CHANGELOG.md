@@ -2,6 +2,44 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-30 05:00] - Menu Submenu Transition Fix
+
+### Fixed - Submenus were immediately taking the closing path
+- **Problem**: Entering a submenu from the DX menu triggered the closing animation instead of an opening transition that remained visible.
+- **Cause**: Menu selection handlers treated every `Enter`/click as a close event, even when `select_current_item()` had just navigated deeper into the menu tree.
+- **Solution**:
+  - `src/state.rs`: keep the menu open and trigger `pick_opening_effect()` when selection enters a submenu.
+  - `src/dispatcher.rs`: align keyboard, mouse, and direct-shortcut submenu entry paths with the same open/close semantics.
+- **Result**: submenu transitions now use the opening effect and stay on screen until explicitly closed.
+
+## [2026-03-30 05:10] - Real DX Yazi Event Routing
+
+### Changed - Embedded Yazi now uses DX router + dispatcher flow
+- **Problem**: the embedded Yazi key path had started executing duplicated sync routing logic instead of the actual DX event flow.
+- **Solution**:
+  - `src/chatwidget.rs`: route Yazi keys through the real DX `Router`, then drain emitted DX events through the real `Dispatcher`.
+  - `src/dispatcher.rs`: expose `Dispatcher` within the crate so the embedded chat widget can call the existing DX dispatcher directly.
+  - `src/file_browser/router.rs`: remove the duplicated sync routing helpers and keep the original DX router behavior.
+- **Result**: embedded Yazi key handling now follows the actual DX path rather than a copied implementation.
+
+## [2026-03-30 05:20] - Real DX Key Dispatch in ChatWidget
+
+### Changed - ChatWidget now routes DX-owned keys through the real dispatcher
+- **Problem**: `ChatWidget` still duplicated DX menu and animation key logic locally, so Codex-side behavior could drift from actual DX behavior.
+- **Solution**:
+  - `src/chatwidget.rs`: add a local integration helper that swaps in the live DX `ChatState`, dispatches `Event::Key` through the real DX `Dispatcher`, drains follow-up DX events, then restores the merged state.
+  - Use that path for Yazi interaction, menu toggles/navigation, and animation navigation keys.
+- **Result**: DX-owned key handling now runs through the real dispatcher against the merged DX/Codex state instead of local duplicate logic.
+
+## [2026-03-30 05:30] - Real DX Mouse Dispatch for Menu and Yazi
+
+### Changed - DX-owned mouse paths now use the real dispatcher
+- **Problem**: menu and embedded Yazi mouse interactions were still bypassing the DX dispatcher from `ChatWidget`.
+- **Solution**:
+  - `src/chatwidget.rs`: add a mouse variant of the integrated DX dispatch helper.
+  - Route menu-visible and Yazi-screen mouse events through DX before falling back to Codex transcript scrollbar handling.
+- **Result**: DX-owned mouse behavior now uses the same real dispatcher path as DX-owned key handling.
+
 ## [2026-03-29 16:00] - Core Initialization Fix
 
 ### Fixed - Yazi Core Initialization

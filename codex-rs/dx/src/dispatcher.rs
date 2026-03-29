@@ -73,18 +73,18 @@ fn format_key_event(key: &KeyEvent) -> String {
 	parts.join("+")
 }
 
-pub(super) struct Dispatcher<'a> {
+pub(crate) struct Dispatcher<'a> {
 	app: &'a mut App,
 }
 
 impl<'a> Dispatcher<'a> {
 	#[inline]
-	pub(super) fn new(app: &'a mut App) -> Self {
+	pub(crate) fn new(app: &'a mut App) -> Self {
 		Self { app }
 	}
 
 	#[inline]
-	pub(super) fn dispatch(&mut self, event: Event) -> Result<()> {
+	pub(crate) fn dispatch(&mut self, event: Event) -> Result<()> {
 		let result = match event {
 			Event::Call(action) => self.dispatch_call(action),
 			Event::Seq(actions) => self.dispatch_seq(actions),
@@ -335,12 +335,21 @@ impl<'a> Dispatcher<'a> {
 					self.app.bridge.chat_state.play_ui_sound("assets/click.mp3");
 
 					// Select current menu item (enter submenu or execute action)
-					let _should_close = !self.app.bridge.chat_state.menu.select_current_item();
+					let should_stay_open = self.app.bridge.chat_state.menu.select_current_item();
 
 					// If we were in theme submenu and selected a theme, just close the menu
 					// (theme is already applied from navigation/hover)
 					if theme_name.is_some() {
 						self.app.bridge.chat_state.menu_is_closing = true;
+						self.app.bridge.chat_state.show_tachyon_menu = false;
+						self.app.bridge.chat_state.menu.pick_closing_effect();
+					} else if should_stay_open {
+						self.app.bridge.chat_state.menu_is_closing = false;
+						self.app.bridge.chat_state.show_tachyon_menu = true;
+						self.app.bridge.chat_state.menu.pick_opening_effect();
+					} else {
+						self.app.bridge.chat_state.menu_is_closing = true;
+						self.app.bridge.chat_state.show_tachyon_menu = false;
 						self.app.bridge.chat_state.menu.pick_closing_effect();
 					}
 
@@ -561,6 +570,7 @@ impl<'a> Dispatcher<'a> {
 				if is_same_submenu {
 					// Toggle off - close the menu
 					self.app.bridge.chat_state.menu_is_closing = true;
+					self.app.bridge.chat_state.show_tachyon_menu = false;
 					self.app.bridge.chat_state.menu.pick_closing_effect();
 				} else {
 					// Open menu if not already open
@@ -577,6 +587,9 @@ impl<'a> Dispatcher<'a> {
 						// ContextControlPanel - go to main menu
 						self.app.bridge.chat_state.menu.go_back_to_main();
 					}
+					self.app.bridge.chat_state.menu_is_closing = false;
+					self.app.bridge.chat_state.show_tachyon_menu = true;
+					self.app.bridge.chat_state.menu.pick_opening_effect();
 				}
 
 				NEED_RENDER.store(1, Ordering::Relaxed);
@@ -957,12 +970,21 @@ impl<'a> Dispatcher<'a> {
 						let theme_name = self.app.bridge.chat_state.menu.get_selected_theme_name();
 
 						// Item was clicked - now select it (enter submenu or execute)
-						let _should_close = !self.app.bridge.chat_state.menu.select_current_item();
+						let should_stay_open = self.app.bridge.chat_state.menu.select_current_item();
 
 						// If we were in theme submenu and clicked a theme, just close the menu
 						// (theme is already applied from hover)
 						if theme_name.is_some() {
 							self.app.bridge.chat_state.menu_is_closing = true;
+							self.app.bridge.chat_state.show_tachyon_menu = false;
+							self.app.bridge.chat_state.menu.pick_closing_effect();
+						} else if should_stay_open {
+							self.app.bridge.chat_state.menu_is_closing = false;
+							self.app.bridge.chat_state.show_tachyon_menu = true;
+							self.app.bridge.chat_state.menu.pick_opening_effect();
+						} else {
+							self.app.bridge.chat_state.menu_is_closing = true;
+							self.app.bridge.chat_state.show_tachyon_menu = false;
 							self.app.bridge.chat_state.menu.pick_closing_effect();
 						}
 

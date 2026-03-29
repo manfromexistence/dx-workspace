@@ -50,7 +50,7 @@ impl<'a> Router<'a> {
 				let cx = &mut Ctx::active(&mut self.app.core, &mut self.app.term);
 				act!(which:activate, cx, (layer, key)).ok();
 			} else {
-				emit!(Seq(ChordCow::from(chord).into_seq()));
+				fb_macro::emit!(Seq(ChordCow::from(chord).into_seq()));
 			}
 			return true;
 		}

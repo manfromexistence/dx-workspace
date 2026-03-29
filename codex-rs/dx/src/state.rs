@@ -1093,9 +1093,16 @@ impl ChatState {
 				}
 				KeyCode::Enter => {
 					self.play_ui_sound("assets/click.mp3");
-					let _should_close = !self.menu.select_current_item();
-					self.menu_is_closing = true;
-					self.menu.pick_closing_effect();
+					let should_stay_open = self.menu.select_current_item();
+					if should_stay_open {
+						self.menu_is_closing = false;
+						self.show_tachyon_menu = true;
+						self.menu.pick_opening_effect();
+					} else {
+						self.menu_is_closing = true;
+						self.show_tachyon_menu = false;
+						self.menu.pick_closing_effect();
+					}
 					return true;
 				}
 				KeyCode::Esc => {
