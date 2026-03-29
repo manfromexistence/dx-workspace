@@ -57,6 +57,7 @@ use crate::terminal_title::clear_terminal_title;
 use crate::terminal_title::set_terminal_title;
 use crate::text_formatting::proper_join;
 use crate::version::CODEX_CLI_VERSION;
+use fb_shared::url::AsUrl; // For UrlBuf.as_url() method
 use codex_app_server_protocol::AppSummary;
 use codex_app_server_protocol::ConfigLayerSource;
 use codex_backend_client::Client as BackendClient;
@@ -3546,7 +3547,16 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new(fb_core::Core::make()),
+dx_core: std::cell::RefCell::new({
+let mut core = fb_core::Core::make();
+// Initialize Yazi with current working directory
+if let Ok(cwd) = std::env::current_dir() {
+let url = fb_shared::url::UrlBuf::from(cwd);
+core.mgr.tabs.items[0].current = fb_core::tab::Folder::from(url.to_owned());
+core.mgr.tabs.items[0].parent = url.as_url().parent().map(|p| fb_core::tab::Folder::from(p.to_owned()));
+}
+core
+}),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3748,7 +3758,16 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new(fb_core::Core::make()),
+dx_core: std::cell::RefCell::new({
+let mut core = fb_core::Core::make();
+// Initialize Yazi with current working directory
+if let Ok(cwd) = std::env::current_dir() {
+let url = fb_shared::url::UrlBuf::from(cwd);
+core.mgr.tabs.items[0].current = fb_core::tab::Folder::from(url.to_owned());
+core.mgr.tabs.items[0].parent = url.as_url().parent().map(|p| fb_core::tab::Folder::from(p.to_owned()));
+}
+core
+}),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3945,7 +3964,16 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new(fb_core::Core::make()),
+dx_core: std::cell::RefCell::new({
+let mut core = fb_core::Core::make();
+// Initialize Yazi with current working directory
+if let Ok(cwd) = std::env::current_dir() {
+let url = fb_shared::url::UrlBuf::from(cwd);
+core.mgr.tabs.items[0].current = fb_core::tab::Folder::from(url.to_owned());
+core.mgr.tabs.items[0].parent = url.as_url().parent().map(|p| fb_core::tab::Folder::from(p.to_owned()));
+}
+core
+}),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -9007,9 +9035,13 @@ impl Renderable for ChatWidget {
 			// animation_mode should only be true when user explicitly enters animation carousel (pressing 1, 3, etc.)
 			// When showing welcome screen, we render splash directly in ChatWidget, not via Root widget
 			
-			// Play splash sound if not already playing
-			if dx_state.current_animation_sound.as_deref() != Some("assets/birds.mp3") {
-				dx_state.play_animation_sound();
+			// Play animation sound for current animation
+			let all_animations = crate::state::AnimationType::all();
+			let current_anim = all_animations[dx_state.current_animation_index];
+			if let Some(sound_file) = current_anim.sound_file() {
+				if dx_state.current_animation_sound.as_deref() != Some(sound_file) {
+					dx_state.play_animation_sound();
+				}
 			}
 			
 			// Update DX state (timer logic)
@@ -9040,6 +9072,17 @@ impl Renderable for ChatWidget {
 						dx_state.splash_font_index,
 						&dx_state.rainbow_animation,
 					);
+				}
+				crate::state::AnimationType::Yazi => {
+					// Render Yazi using Root widget (REAL DX CODE!)
+					drop(dx_state); // Drop mutable borrow
+					
+					let dx_state = self.dx_chat_state.borrow();
+					let mut dx_core = self.dx_core.borrow_mut();
+					let mut dx_bridge = self.dx_bridge.borrow_mut();
+					let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+					use ratatui::widgets::Widget;
+					root.render(transcript_area, buf);
 				}
 				crate::state::AnimationType::Matrix => {
 					dx_state.render_matrix_animation_in_area(transcript_area, buf);
@@ -9074,23 +9117,6 @@ impl Renderable for ChatWidget {
 				crate::state::AnimationType::Fireworks => {
 					dx_state.render_fireworks_animation_in_area(transcript_area, buf);
 				}
-				crate::state::AnimationType::Yazi => {
-					// Yazi is rendered by Root widget in app.rs, not here
-					// This case should not be reached when Root is rendering
-					use ratatui::text::{Line, Span};
-					use ratatui::widgets::Paragraph;
-					use ratatui::style::{Style, Color};
-					
-					let text = vec![
-						Line::from(""),
-						Line::from(Span::styled(
-							"Yazi rendering handled by Root widget",
-							Style::default().fg(Color::Yellow),
-						)),
-					];
-					
-					Paragraph::new(text).centered().render(transcript_area, buf);
-				}
 			}
 			
 			// Schedule next frame for animations
@@ -9107,6 +9133,15 @@ impl Renderable for ChatWidget {
 			if in_animation_carousel {
 				// Render animation carousel in transcript area (keeping bottom pane visible)
 				let mut dx_state = self.dx_chat_state.borrow_mut();
+				
+				// Play animation sound for current animation
+				let all_animations = crate::state::AnimationType::all();
+				let current_anim = all_animations[dx_state.current_animation_index];
+				if let Some(sound_file) = current_anim.sound_file() {
+					if dx_state.current_animation_sound.as_deref() != Some(sound_file) {
+						dx_state.play_animation_sound();
+					}
+				}
 				
 				// Update DX state (timer logic)
 				dx_state.update();
@@ -9530,3 +9565,8 @@ pub(crate) fn show_review_commit_picker_with_entries(
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+
+
+
+
