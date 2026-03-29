@@ -283,6 +283,63 @@ If issues arise, revert these changes in order:
 - Proper DX initialization sequence: fb_shared, fb_tty, fb_term, fb_fs, fb_config, fb_vfs, fb_adapter, fb_boot, fb_dds, fb_widgets, fb_watcher, fb_plugin
 
 
+## [2026-03-30] - Created HELP.md for Critical Issues
+
+### Created - Comprehensive Help File
+- **Created**: `HELP.md` documenting all critical issues that need expert help
+  
+**Issues Documented:**
+
+1. **Yazi File Browser Not Interactive**
+   - Renders correctly and shows files
+   - But keys don't work (j/k, arrows, Enter, Tab)
+   - User can see files but cannot navigate or interact
+   - Router integration attempted but not working
+   - DX-TUI binary works perfectly, need to learn from it
+
+2. **Animation Sounds Not Playing (Except Splash)**
+   - Splash sound works (birds.mp3)
+   - Other animations silent (Matrix, Rain, Fire, etc.)
+   - All 13 animations should have looping sounds
+   - Sound system code looks correct but doesn't work
+
+3. **UI Lag and Navigation Key Lag**
+   - Animations stutter and lag
+   - Navigation keys require 2-3 presses to work
+   - First key press often ignored
+   - Overall unresponsive feel
+   - DX-TUI binary is smooth and instant
+
+**Architecture Comparison:**
+- DX-TUI: Async runtime, event loop, actor system, 50ms timer
+- Codex-TUI-DX: Sync rendering, no event loop, no actor system
+- Need to bridge these architectures correctly
+
+**What Can Be Changed:**
+- ALL CODE is owned by us
+- Can make private fields public
+- Can refactor architecture
+- Can modify DX-TUI code
+- Can modify Codex-TUI code
+- Goal: Same UX as DX-TUI binary
+
+**Files to Check:**
+- `src/chatwidget.rs` - Main integration
+- `src/file_browser/app/app.rs` - DX binary event loop
+- `src/dispatcher.rs` - Event routing
+- `src/state.rs` - Sound system
+- `src/audio.rs` - AudioPlayer
+
+**Next Steps:**
+- More capable AI or human developer should read HELP.md
+- Understand both architectures
+- Implement proper integration
+- Make Yazi interactive
+- Fix sound system
+- Optimize performance
+
+---
+
 ## [2026-03-30] - Default Screen and Sound Fixes
 
 ### Fixed - Splash Screen Not Default
