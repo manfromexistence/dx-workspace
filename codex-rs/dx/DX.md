@@ -101,6 +101,8 @@ And Yazi screen files are showing. The structure is showing but not loading corr
 
 And currently the matrix screen is the default screen in the Codex-TUI-DX but please make the splash screen the default screen in our Codex-TUI-DX. In all other screens the sound is not playing; only in the matrix screen the sound is playing so please fix this problem. 
 
+While you do think, keep that in mind: in the DXUI the az file browser was loading curriculum and the DXUI binary and Codex-TUI binary are in the same place. You have all the necessary files; you own all the code so if something is not public then make it public. Do that change; you own everything. Make sure to implement into Codex-TUI all the features, all the terminal user experience, good-looking UI. That's our goal. 
+
 ONLY run cargo run - NEVER cargo check/build/test
 Use REAL DX code - Call actual DX functions, NEVER duplicate logic
 NO AI SLOP - Don't create wrapper files or copy-paste code

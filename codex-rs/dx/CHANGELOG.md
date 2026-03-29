@@ -283,6 +283,26 @@ If issues arise, revert these changes in order:
 - Proper DX initialization sequence: fb_shared, fb_tty, fb_term, fb_fs, fb_config, fb_vfs, fb_adapter, fb_boot, fb_dds, fb_widgets, fb_watcher, fb_plugin
 
 
+## [2026-03-30] - Yazi File Loading (In Progress)
+
+### Working On - Yazi Files Not Showing
+- **Problem**: Yazi structure renders but files don't show (shows "Loading..." or empty)
+  - Files are being loaded synchronously using `std::fs::read_dir()`
+  - `folder.files.update_full(files)` is called
+  - But files might not be sorted or displayed correctly
+  
+- **Current Status**: Files are loaded into Core, investigating display issue
+  - Synchronous file loading works (no async needed)
+  - Files are added to folder.files
+  - Need to verify Root widget is rendering files correctly
+  
+- **Next Steps**:
+  - Test with `cargo run` to see if files now appear
+  - Check if Root widget needs additional setup
+  - Verify file sorting and filtering
+
+---
+
 ## [2026-03-30] - Font Auto-Cycling Fix
 
 ### Fixed - Splash Screen Font Not Auto-Cycling
