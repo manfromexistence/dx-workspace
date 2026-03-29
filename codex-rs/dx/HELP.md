@@ -10,6 +10,12 @@
 
 ## Critical Issues
 
+### Status Update (2026-03-30)
+
+- Yazi key routing now uses a synchronous DX router path against the live `Core`, instead of a throwaway temporary bridge/app state.
+- Animation audio playback now recreates the `rodio::Sink` for each track change, which fixes the "only splash sound works" failure mode.
+- Animation scheduling now follows DX's 50ms cadence, and DX render/key paths no longer depend on opportunistic `try_lock()` success.
+
 ### 1. Yazi File Browser Not Interactive ❌
 
 **Problem:**

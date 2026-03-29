@@ -110,3 +110,12 @@ Test IMMEDIATELY after every change with cargo run
 Update TODO.md and CHANGELOG.md after every task
 Currently the TUI screens are not getting the available full weight height. The Codex TUI input box and dx screen have a gap so make sure that, except for the Codex TUI input box bottom pane, we should get all the space of the height. Also kindly only show the screen until the plasma screen but there is more strain. Also in other innovation correctional screens no sound is playing so please play the sounds correctly.
 Learn from the dx to dy directly; use the import and use the dxdy code directly. The whole point of the dx dy was to be used by Codex TUI so instead of creating sloppy AI code, use them directly and wire them up with Codex TUI. If Codex TUI and dx dy are different in something then update the dx dy to be renderable in Codex TUI. 
+
+(Now, as you can see in the DX DUI, there is a local GUF message list. Right now, forget about the message list. Learn from the local model, running local model downloading logic. About the local model downloading, please create a UI to download models from Hugging Face, and Hugging Face has 45 million GUF, so our local model running can run all those models now in ) - Codex folder not dx folder
+
+ONLY run cargo run - NEVER cargo check/build/test
+Use REAL DX code - Call actual DX functions, NEVER duplicate logic
+NO AI SLOP - Don't create wrapper files or copy-paste code
+Test IMMEDIATELY after every change with cargo run
+Update TODO.md and CHANGELOG.md after every task
+Now our dx-tui has a menu theme keyboard trigger handler and applyer and other submenus(learn from the root TODO.md file about all dx-tui features)Currently, even though the sub-menus are showing, they are only showing the closing animation of the menus instead of showing the opening animation and staying there. Please fix this bug too. Please merge these two codex-dx so they can work correctly with each other, because the whole point of codex-tui-dx was to be merged with codex-dx. Now you can literally update all the code, as all the codes are right there, and implement them directly instead of creating any other sloppy code so that codex-dx gets all the UI and TOI from dx/tui. 
