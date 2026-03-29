@@ -72,3 +72,5 @@ then use that in our codex-tui-dx too as the code is there and the dx binary was
 
 you can just directly use them - bro use direct dx codex and edit them to fit in the codx-tui
 bro directly use them
+
+Now in our codex-tui the dx animation carousel is taking over the full height. It's not rendering the codex-tui so play even in the animation carousel, render the codex-tui correctly. Also they are not animating so maybe we need to animate them specially. Also not seeing the Yazi file picker so by default may be just show the Yazi file picker for now. 

@@ -9099,31 +9099,67 @@ impl Renderable for ChatWidget {
 			// Skip the rest of the rendering since we've already rendered the animation
 			// Don't add any lines to all_lines
 		} else {
-			// Stop splash sound when leaving welcome screen
-			let mut dx_state = self.dx_chat_state.borrow_mut();
-			if dx_state.animation_mode {
-				dx_state.stop_animation_sound();
-				dx_state.animation_mode = false;
-			}
-			// Add lines from all history cells
-			for cell in &self.transcript_cells {
-				let cell_lines = cell.display_lines(content_area.width);
-				if !cell_lines.is_empty() {
-					all_lines.extend(cell_lines);
-				}
-			}
+			// Check if we're in animation carousel mode (user pressed 1, 3, etc.)
+			let dx_state = self.dx_chat_state.borrow();
+			let in_animation_carousel = dx_state.animation_mode;
+			drop(dx_state);
 			
-			// Add lines from active cell if present
-			if let Some(cell) = &self.active_cell {
-				let cell_lines = cell.display_lines(content_area.width);
-				if !cell_lines.is_empty() {
-					all_lines.extend(cell_lines);
+			if in_animation_carousel {
+				// Render animation carousel in transcript area (keeping bottom pane visible)
+				let mut dx_state = self.dx_chat_state.borrow_mut();
+				
+				// Update DX state (timer logic)
+				dx_state.update();
+				
+				// Update menu timing
+				let elapsed = dx_state.last_frame_instant.elapsed();
+				dx_state.menu.update(elapsed);
+				dx_state.last_frame_instant = std::time::Instant::now();
+				
+				// Render animation using Root widget in transcript area only
+				drop(dx_state); // Drop mutable borrow before borrowing for Root
+				
+				let dx_state = self.dx_chat_state.borrow();
+				let mut dx_core = self.dx_core.borrow_mut();
+				let mut dx_bridge = self.dx_bridge.borrow_mut();
+				let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+				use ratatui::widgets::Widget;
+				root.render(transcript_area, buf); // Render in transcript area only!
+				
+				// Schedule next frame for animations
+				self.frame_requester.schedule_frame();
+				
+				// Skip normal chat rendering
+			} else {
+				// Normal chat mode - render transcript cells
+				let mut dx_state = self.dx_chat_state.borrow_mut();
+				dx_state.stop_animation_sound();
+				drop(dx_state);
+				
+				// Add lines from all history cells
+				for cell in &self.transcript_cells {
+					let cell_lines = cell.display_lines(content_area.width);
+					if !cell_lines.is_empty() {
+						all_lines.extend(cell_lines);
+					}
+				}
+				
+				// Add lines from active cell if present
+				if let Some(cell) = &self.active_cell {
+					let cell_lines = cell.display_lines(content_area.width);
+					if !cell_lines.is_empty() {
+						all_lines.extend(cell_lines);
+					}
 				}
 			}
 		}
 		
-		// Only render transcript paragraph when NOT showing welcome screen
-		let transcript_content_height = if !show_welcome {
+		// Only render transcript paragraph when NOT showing welcome screen AND NOT in animation carousel
+		let dx_state = self.dx_chat_state.borrow();
+		let skip_transcript_render = show_welcome || dx_state.animation_mode;
+		drop(dx_state);
+		
+		let transcript_content_height = if !skip_transcript_render {
 			// Create a paragraph from all lines
 			use ratatui::widgets::{Paragraph, Wrap};
 			use ratatui::text::Text;
