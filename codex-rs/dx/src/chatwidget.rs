@@ -1118,6 +1118,32 @@ enum ReplayKind {
 }
 
 impl ChatWidget {
+	// Helper function to initialize DX Core with loaded files (REAL DX CODE!)
+	fn make_dx_core() -> fb_core::Core {
+		let mut core = fb_core::Core::make();
+		// Initialize Yazi with current working directory and LOAD FILES
+		if let Ok(cwd) = std::env::current_dir() {
+			use fb_shared::url::{UrlLike, AsUrl};
+			use fb_core::files::{Files, FilesOp};
+
+			let url = fb_shared::url::UrlBuf::from(cwd.clone());
+			let folder = &mut core.mgr.tabs.items[0].current;
+			folder.url = url.clone();
+			folder.cwd = url.clone();
+
+			// Load files from directory (REAL DX CODE!)
+			if let Ok(files) = Files::from_dir_bulk(&url) {
+				folder.update(FilesOp::Full(files));
+			}
+
+			// Set parent folder
+			if let Some(parent_url) = url.as_url().parent() {
+				core.mgr.tabs.items[0].parent = Some(fb_core::tab::Folder::from(parent_url.to_owned()));
+			}
+		}
+		core
+	}
+
 	fn realtime_conversation_enabled(&self) -> bool {
 		self.config.features.enabled(Feature::RealtimeConversation) && cfg!(not(target_os = "linux"))
 	}
@@ -3548,16 +3574,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new({
-let mut core = fb_core::Core::make();
-// Initialize Yazi with current working directory
-if let Ok(cwd) = std::env::current_dir() {
-let url = fb_shared::url::UrlBuf::from(cwd);
-core.mgr.tabs.items[0].current = fb_core::tab::Folder::from(url.to_owned());
-core.mgr.tabs.items[0].parent = url.as_url().parent().map(|p| fb_core::tab::Folder::from(p.to_owned()));
-}
-core
-}),
+dx_core: std::cell::RefCell::new(Self::make_dx_core()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3759,16 +3776,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new({
-let mut core = fb_core::Core::make();
-// Initialize Yazi with current working directory
-if let Ok(cwd) = std::env::current_dir() {
-let url = fb_shared::url::UrlBuf::from(cwd);
-core.mgr.tabs.items[0].current = fb_core::tab::Folder::from(url.to_owned());
-core.mgr.tabs.items[0].parent = url.as_url().parent().map(|p| fb_core::tab::Folder::from(p.to_owned()));
-}
-core
-}),
+dx_core: std::cell::RefCell::new(Self::make_dx_core()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3965,16 +3973,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new({
-let mut core = fb_core::Core::make();
-// Initialize Yazi with current working directory
-if let Ok(cwd) = std::env::current_dir() {
-let url = fb_shared::url::UrlBuf::from(cwd);
-core.mgr.tabs.items[0].current = fb_core::tab::Folder::from(url.to_owned());
-core.mgr.tabs.items[0].parent = url.as_url().parent().map(|p| fb_core::tab::Folder::from(p.to_owned()));
-}
-core
-}),
+dx_core: std::cell::RefCell::new(Self::make_dx_core()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -9566,6 +9565,7 @@ pub(crate) fn show_review_commit_picker_with_entries(
 
 #[cfg(test)]
 pub(crate) mod tests;
+
 
 
 
