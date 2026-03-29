@@ -485,7 +485,9 @@ impl<'a> Dispatcher<'a> {
 		}
 
 		// Global '0' key handler - toggle menu overlay on ANY screen
-		if key.code == KeyCode::Char('0') {
+		if key.code == KeyCode::Char('0')
+			&& matches!(key.kind, crossterm::event::KeyEventKind::Press)
+		{
 			if self.app.bridge.chat_state.show_tachyon_menu {
 				// Closing menu - pick random closing animation
 				self.app.bridge.chat_state.menu_is_closing = true;
@@ -526,7 +528,7 @@ impl<'a> Dispatcher<'a> {
 				shortcut == pressed_key
 			};
 
-			if matches {
+			if matches && matches!(key.kind, crossterm::event::KeyEventKind::Press) {
 				let submenu_index = match action {
 					MenuAction::ContextControlPanel => None, // Special case - just toggle menu
 					MenuAction::Theme => Some(0),

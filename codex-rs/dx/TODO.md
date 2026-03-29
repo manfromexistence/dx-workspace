@@ -65,8 +65,8 @@
 - [x] ~~Fixed Core initialization (removed async file loading)~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Created helper function make_dx_core()~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Compiled successfully~~ ✅ (completed: 2026-03-29 16:00)
-- [ ] Test with `cargo run` - DX global menu shortcuts route through dispatcher
-- [ ] Verify splash/animation timing stays smooth at DX cadence
+- [ ] Test with `cargo run` - no DX lag from per-event signal task creation
+- [ ] Verify embedded Yazi uses real DX bootstrap/file loading
 
 ---
 

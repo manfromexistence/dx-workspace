@@ -119,3 +119,9 @@ NO AI SLOP - Don't create wrapper files or copy-paste code
 Test IMMEDIATELY after every change with cargo run
 Update TODO.md and CHANGELOG.md after every task
 Now our dx-tui has a menu theme keyboard trigger handler and applyer and other submenus(learn from the root TODO.md file about all dx-tui features)Currently, even though the sub-menus are showing, they are only showing the closing animation of the menus instead of showing the opening animation and staying there. Please fix this bug too. Please merge these two codex-dx so they can work correctly with each other, because the whole point of codex-tui-dx was to be merged with codex-dx. Now you can literally update all the code, as all the codes are right there, and implement them directly instead of creating any other sloppy code so that codex-dx gets all the UI and TOI from dx/tui. 
+
+Now I personally check the dx dui and really have to say that you did a really good job. All the sounds are working really fine now. We only have these problems:
+1. DX screens are very laggy, so please find out why they are so laggy. Navigation feels so time-consuming and laggy.
+2. The menu is still just closing instead of showing, opening, and staying there. They will only close when we press toggle again.
+3. The yazi screen is just showing a dummy stack touch UI but not loading the files and being interactive.
+Please fix these three problems.

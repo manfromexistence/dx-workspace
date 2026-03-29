@@ -59,6 +59,17 @@ All notable changes to the dx-tui integration will be documented in this file.
 - `src/chatwidget.rs`: change the welcome/splash redraw schedule from immediate requeueing to DX's 50ms cadence.
 - **Result**: less redraw thrash on the splash/animation screens, which should reduce visible lag and bring timing closer to standalone DX.
 
+## [2026-03-30 06:00] - DX Signal Reuse, Press-Only Menu Toggle, and Bootstrap
+
+### Fixed - Per-event DX signal task creation caused lag
+- `src/chatwidget.rs`: keep the embedded DX `Signals` instance and move it in/out without recreating it for every key or mouse event.
+
+### Fixed - Menu toggles/shortcuts could react more than once per press
+- `src/dispatcher.rs`: restrict the global `0` toggle and global DX shortcut activation to key press events.
+
+### Changed - Embedded Yazi core initialization now prefers real DX bootstrap
+- `src/chatwidget.rs`: call the real DX `app:bootstrap` actor during embedded core initialization before falling back to manual synchronous seeding.
+
 ## [2026-03-29 16:00] - Core Initialization Fix
 
 ### Fixed - Yazi Core Initialization

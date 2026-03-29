@@ -57,6 +57,7 @@ use crate::terminal_title::clear_terminal_title;
 use crate::terminal_title::set_terminal_title;
 use crate::text_formatting::proper_join;
 use crate::version::CODEX_CLI_VERSION;
+use fb_macro::act;
 use fb_shared::url::AsUrl; // For UrlBuf.as_url() method
 use fb_boot::BOOT; // For bootstrap initialization
 use codex_app_server_protocol::AppSummary;
@@ -870,7 +871,7 @@ pub struct ChatWidget {
 	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
 	// Using Arc<Mutex> so we can share Core across threads for async file loading
 	pub(crate) dx_core: std::sync::Arc<std::sync::Mutex<fb_core::Core>>,
-	pub(crate) dx_signals: crate::signals::Signals,
+	pub(crate) dx_signals: Option<crate::signals::Signals>,
 	pub(crate) dx_event_rx:
 		std::cell::RefCell<tokio::sync::mpsc::UnboundedReceiver<fb_shared::event::Event>>,
 	pub(crate) dx_bridge: std::cell::RefCell<crate::bridge::YaziChatBridge>,
@@ -1125,6 +1126,15 @@ impl ChatWidget {
 	// Helper function to initialize DX Core (REAL DX CODE!)
 	fn make_dx_core() -> fb_core::Core {
 		let mut core = fb_core::Core::make();
+
+		// Prefer the real DX bootstrap path first.
+		{
+			let mut term = None;
+			let cx = &mut fb_actor::Ctx::active(&mut core, &mut term);
+			if fb_macro::act!(app:bootstrap, cx).is_ok() {
+				return core;
+			}
+		}
 		
 		// Initialize Yazi with current working directory and LOAD FILES SYNCHRONOUSLY
 		if let Ok(cwd) = std::env::current_dir() {
@@ -3602,7 +3612,7 @@ impl ChatWidget {
 			welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 			dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
-			dx_signals: crate::signals::Signals::start().expect("failed to initialize DX signals"),
+			dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 			dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
@@ -3809,7 +3819,7 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
-dx_signals: crate::signals::Signals::start().expect("failed to initialize DX signals"),
+dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
@@ -4008,7 +4018,7 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
-dx_signals: crate::signals::Signals::start().expect("failed to initialize DX signals"),
+dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
@@ -9002,10 +9012,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
 		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
 
-		let signals = std::mem::replace(
-			&mut self.dx_signals,
-			crate::signals::Signals::start().expect("failed to refresh DX signals"),
-		);
+		let signals = self.dx_signals.take().expect("missing DX signals");
 
 		let mut temp_app = crate::file_browser::app::App {
 			core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
@@ -9029,7 +9036,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		}
 
 		*dx_core = temp_app.core;
-		self.dx_signals = temp_app.signals;
+		self.dx_signals = Some(temp_app.signals);
 		std::mem::swap(&mut temp_app.bridge.chat_state, self.dx_chat_state.get_mut());
 		*self.dx_bridge.get_mut() = temp_app.bridge;
 	}
@@ -9039,10 +9046,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
 		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
 
-		let signals = std::mem::replace(
-			&mut self.dx_signals,
-			crate::signals::Signals::start().expect("failed to refresh DX signals"),
-		);
+		let signals = self.dx_signals.take().expect("missing DX signals");
 
 		let mut temp_app = crate::file_browser::app::App {
 			core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
@@ -9066,7 +9070,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		}
 
 		*dx_core = temp_app.core;
-		self.dx_signals = temp_app.signals;
+		self.dx_signals = Some(temp_app.signals);
 		std::mem::swap(&mut temp_app.bridge.chat_state, self.dx_chat_state.get_mut());
 		*self.dx_bridge.get_mut() = temp_app.bridge;
 	}
