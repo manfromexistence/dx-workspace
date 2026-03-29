@@ -1,0 +1,1 @@
+now the splash screen will show but in the bottom the codex-tui bottom pane will show with the left and right arrow to navigate screen and the font cycle will have asfter 5s automatically at codex-tui-dx binary

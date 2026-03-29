@@ -9135,11 +9135,7 @@ impl Renderable for ChatWidget {
 			// Update DX state (timer logic)
 			dx_state.update();
 			
-			// Update splash font cycling (every 5 seconds)
-			if dx_state.last_font_change.elapsed() >= std::time::Duration::from_secs(5) {
-				dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113;
-				dx_state.last_font_change = std::time::Instant::now();
-			}
+			// Font cycling is handled in dispatcher.rs dispatch_timer() - no need to duplicate here
 			
 			// Update menu timing
 			let elapsed = dx_state.last_frame_instant.elapsed();
