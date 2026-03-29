@@ -40,6 +40,25 @@ All notable changes to the dx-tui integration will be documented in this file.
   - Route menu-visible and Yazi-screen mouse events through DX before falling back to Codex transcript scrollbar handling.
 - **Result**: DX-owned mouse behavior now uses the same real dispatcher path as DX-owned key handling.
 
+## [2026-03-30 05:40] - Remove Transcript-to-Bottom-Pane Gap
+
+### Fixed - DX viewport left a blank row above the bottom pane
+- **Problem**: the DX transcript/animation area did not fully extend down to the top edge of the bottom pane, leaving a visible empty gap.
+- **Cause**: `ChatWidget` still wrapped the bottom pane renderable in a top inset of one row when computing layout and cursor position.
+- **Solution**:
+  - `src/chatwidget.rs`: remove the extra top inset from bottom-pane layout and cursor calculations.
+- **Result**: the DX viewport now uses the full available height right up to the bottom pane.
+
+## [2026-03-30 05:50] - DX Shortcut Routing and Splash Timing
+
+### Changed - Global DX menu shortcuts now dispatch through DX
+- `src/dispatcher.rs`: expose DX shortcut formatting within the crate.
+- `src/chatwidget.rs`: detect configured DX menu shortcuts and route them through the real DX dispatcher before Codex input handling.
+
+### Fixed - Splash/welcome animation redraw cadence
+- `src/chatwidget.rs`: change the welcome/splash redraw schedule from immediate requeueing to DX's 50ms cadence.
+- **Result**: less redraw thrash on the splash/animation screens, which should reduce visible lag and bring timing closer to standalone DX.
+
 ## [2026-03-29 16:00] - Core Initialization Fix
 
 ### Fixed - Yazi Core Initialization

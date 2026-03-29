@@ -21,7 +21,7 @@ use crate::root::Root;
 use crate::state::AnimationType;
 
 // Helper function to format key events into readable shortcut strings
-fn format_key_event(key: &KeyEvent) -> String {
+pub(crate) fn format_key_event(key: &KeyEvent) -> String {
 	let mut parts = Vec::new();
 
 	// For Char keys, check if Shift is needed (uppercase letters need Shift)

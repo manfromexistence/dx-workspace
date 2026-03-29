@@ -4083,7 +4083,28 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 			return;
 		}
 
-		// PRIORITY 3: Let the real DX dispatcher own animation navigation.
+		// PRIORITY 3: Let global DX menu shortcuts use the real DX dispatcher.
+		{
+			let pressed_key = crate::dispatcher::format_key_event(&key_event);
+			let dx_state = self.dx_chat_state.borrow();
+			let mappings = &dx_state.menu.keyboard_mappings;
+			let matches_dx_shortcut = crate::menu::MenuAction::all_actions().into_iter().any(|action| {
+				let shortcut = mappings.get(action);
+				if shortcut.contains(" or ") {
+					shortcut.split(" or ").any(|candidate| candidate.trim() == pressed_key)
+				} else {
+					shortcut == pressed_key
+				}
+			});
+			drop(dx_state);
+			if matches_dx_shortcut {
+				self.dispatch_real_dx_key(key_event);
+				self.frame_requester.schedule_frame();
+				return;
+			}
+		}
+		
+		// PRIORITY 4: Let the real DX dispatcher own animation navigation.
 		{
 			use crossterm::event::KeyCode;
 			let dx_state = self.dx_chat_state.borrow();
@@ -9209,8 +9230,7 @@ impl Renderable for ChatWidget {
 		let content_area =
 			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
 
-		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane)
-			.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0));
+		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane);
 		let bp_height = bottom_pane_renderable.desired_height(content_area.width);
 		let display_bp_height = bp_height.min(area.height);
 		let transcript_viewport_height = area.height.saturating_sub(display_bp_height);
@@ -9339,8 +9359,8 @@ impl Renderable for ChatWidget {
 				}
 			}
 			
-			// Schedule next frame for animations
-			self.frame_requester.schedule_frame();
+			// Schedule next frame for animations at DX cadence
+			self.frame_requester.schedule_frame_in(std::time::Duration::from_millis(50));
 			
 			// Skip the rest of the rendering since we've already rendered the animation
 			// Don't add any lines to all_lines
@@ -9538,8 +9558,7 @@ impl Renderable for ChatWidget {
 		let content_area =
 			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
 
-		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane)
-			.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0));
+		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane);
 		let bp_height = bottom_pane_renderable.desired_height(content_area.width);
 		let display_bp_height = bp_height.min(area.height);
 		let transcript_viewport_height = area.height.saturating_sub(display_bp_height);

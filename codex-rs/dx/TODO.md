@@ -65,8 +65,8 @@
 - [x] ~~Fixed Core initialization (removed async file loading)~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Created helper function make_dx_core()~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Compiled successfully~~ ✅ (completed: 2026-03-29 16:00)
-- [ ] Test with `cargo run` - DX mouse paths use DX dispatcher for menu/Yazi
-- [ ] Verify Yazi/menu/animation transitions all share the same DX state
+- [ ] Test with `cargo run` - DX global menu shortcuts route through dispatcher
+- [ ] Verify splash/animation timing stays smooth at DX cadence
 
 ---
 
