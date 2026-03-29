@@ -82,3 +82,5 @@ Like the splash screen, the other screen also has its own sound so please implem
 why - what are your problems - render it ecacty how dx-tui does - just import dx-tui code and change them to be renderable on codex-tui and fix these
 
 use cargo run not cargo check/build/test or with any subcommand - just pure cago run and fix these errors:
+
+no the important part use dx-tui code directly and edit it directly to be rendered correctly in the codex-tui cause the whole point of dx-tui was to be merged with codex-tui

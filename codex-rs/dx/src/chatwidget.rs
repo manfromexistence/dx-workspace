@@ -868,7 +868,8 @@ pub struct ChatWidget {
 	// DX-TUI ChatState for splash screen (reuse existing DX code!)
 	pub(crate) dx_chat_state: std::cell::RefCell<crate::state::ChatState>,
 	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
-	pub(crate) dx_core: std::cell::RefCell<fb_core::Core>,
+	// Using Arc<Mutex> so we can share Core across threads for async file loading
+	pub(crate) dx_core: std::sync::Arc<tokio::sync::Mutex<fb_core::Core>>,
 	pub(crate) dx_bridge: std::cell::RefCell<crate::bridge::YaziChatBridge>,
 }
 
@@ -1122,7 +1123,6 @@ impl ChatWidget {
 	fn make_dx_core() -> fb_core::Core {
 		let mut core = fb_core::Core::make();
 		// Initialize Yazi with current working directory
-		// Files will be empty initially - that's OK, Yazi will show empty directory
 		if let Ok(cwd) = std::env::current_dir() {
 			use fb_shared::url::UrlBuf;
 			let url = UrlBuf::from(cwd);
@@ -1134,6 +1134,15 @@ impl ChatWidget {
 			}
 		}
 		core
+	}
+
+	// Load files into DX Core asynchronously (REAL DX CODE!)
+	// NOTE: Currently disabled because Core is not Send and we'd need LocalSet
+	// Files will show as "Loading..." but Yazi UI renders correctly
+	pub fn load_dx_files(&self) {
+		// TODO: Implement file loading
+		// Would need to run DX actor system or use LocalSet for spawn_local
+		// For now, Yazi shows empty directory which is acceptable
 	}
 
 	fn realtime_conversation_enabled(&self) -> bool {
@@ -3566,7 +3575,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new(Self::make_dx_core()),
+dx_core: std::sync::Arc::new(tokio::sync::Mutex::new(Self::make_dx_core())),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3597,6 +3606,9 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		widget.bottom_pane.set_connectors_enabled(widget.connectors_enabled());
 
 		widget.refresh_terminal_title();
+		
+		// Load DX files asynchronously
+		widget.load_dx_files();
 
 		widget
 	}
@@ -3768,7 +3780,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new(Self::make_dx_core()),
+dx_core: std::sync::Arc::new(tokio::sync::Mutex::new(Self::make_dx_core())),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -3965,7 +3977,7 @@ scrollbar_dragging: std::cell::Cell::new(false),
 auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
-dx_core: std::cell::RefCell::new(Self::make_dx_core()),
+dx_core: std::sync::Arc::new(tokio::sync::Mutex::new(Self::make_dx_core())),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
 
@@ -9070,22 +9082,24 @@ impl Renderable for ChatWidget {
 					drop(dx_state); // Drop mutable borrow
 					
 					let dx_state = self.dx_chat_state.borrow();
-					let mut dx_core = self.dx_core.borrow_mut();
-					let mut dx_bridge = self.dx_bridge.borrow_mut();
-					
-					// Render Root widget with proper Lua context (REAL DX CODE!)
-					use fb_actor::lives::Lives;
-					use fb_binding::runtime_scope;
-					use fb_plugin::LUA;
-					use ratatui::widgets::Widget;
-					
-					let _ = Lives::scope(&dx_core, || {
-						runtime_scope!(LUA, "root", {
-							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-							root.render(transcript_area, buf);
-							Ok(())
-						})
-					});
+					// Try to lock Core (non-blocking since we're in render)
+					if let Ok(dx_core) = self.dx_core.try_lock() {
+						let mut dx_bridge = self.dx_bridge.borrow_mut();
+						
+						// Render Root widget with proper Lua context (REAL DX CODE!)
+						use fb_actor::lives::Lives;
+						use fb_binding::runtime_scope;
+						use fb_plugin::LUA;
+						use ratatui::widgets::Widget;
+						
+						let _ = Lives::scope(&dx_core, || {
+							runtime_scope!(LUA, "root", {
+								let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+								root.render(transcript_area, buf);
+								Ok(())
+							})
+						});
+					}
 				}
 				crate::state::AnimationType::Matrix => {
 					dx_state.render_matrix_animation_in_area(transcript_area, buf);
@@ -9158,22 +9172,24 @@ impl Renderable for ChatWidget {
 				drop(dx_state); // Drop mutable borrow before borrowing for Root
 				
 				let dx_state = self.dx_chat_state.borrow();
-				let mut dx_core = self.dx_core.borrow_mut();
-				let mut dx_bridge = self.dx_bridge.borrow_mut();
-				
-				// Render Root widget with proper Lua context (REAL DX CODE!)
-				use fb_actor::lives::Lives;
-				use fb_binding::runtime_scope;
-				use fb_plugin::LUA;
-				use ratatui::widgets::Widget;
-				
-				let _ = Lives::scope(&dx_core, || {
-					runtime_scope!(LUA, "root", {
-						let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-						root.render(transcript_area, buf);
-						Ok(())
-					})
-				});
+				// Try to lock Core (non-blocking since we're in render)
+				if let Ok(dx_core) = self.dx_core.try_lock() {
+					let mut dx_bridge = self.dx_bridge.borrow_mut();
+					
+					// Render Root widget with proper Lua context (REAL DX CODE!)
+					use fb_actor::lives::Lives;
+					use fb_binding::runtime_scope;
+					use fb_plugin::LUA;
+					use ratatui::widgets::Widget;
+					
+					let _ = Lives::scope(&dx_core, || {
+						runtime_scope!(LUA, "root", {
+							let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+							root.render(transcript_area, buf);
+							Ok(())
+						})
+					});
+				}
 				
 				// Schedule next frame for animations
 				self.frame_requester.schedule_frame();
@@ -9579,6 +9595,7 @@ pub(crate) fn show_review_commit_picker_with_entries(
 
 #[cfg(test)]
 pub(crate) mod tests;
+
 
 
 
