@@ -131,3 +131,10 @@ Bro, great, you are truly amazing. Now we only have three problems:
 2. Currently, in the Yazi file browser screen, the files and folders are loading correctly, but the only problem is that the file browser is actually not interactive. The clicking and scrolling are not working, so please fix those problems.
 3. DX tui has a train close animation, so when we close the Codex device, please run the train animation correctly. Please learn from the DX tui, because this is very specific stuff, and just implement the train exactly using the DX code. Also, please make all the sound to just be 5% of the volume.
 
+ON yazi file browser screen, the file browser is still not interactive, nothing is responding "one—left click, wheel scroll, drag, Enter, or arrow key" no nothing So please fix this problem. In the DX DOI input box, you can see a rainbow animated cursor. In our Codex DOI bottom pane input box, please implement that rainbow animated cursor with all the features that DX DOI has. You don't have to use the DX input box in this case; you just update the Codex DOI bottom pane input box to be like that, to have the rainbow animated cursor and other stuff.
+Also, when I am opening our Codex tui, it is taking too much time to load the splash screen for the first time and also has some lagging problem. Please fix that too. 
+
+metasearch-tui
+forge-tui
+tools-tui
+image, audio, video, 3d rendering tui

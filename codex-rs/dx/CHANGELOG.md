@@ -2,6 +2,18 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-30 06:20] - File Picker Input Routing and Animation Render De-Lag
+
+### Fixed - Embedded file browser input ownership
+- `src/chatwidget.rs`: treat `AppMode::FilePicker` the same as the Yazi animation screen for embedded input routing.
+- Mouse events now route to DX when the bridge is in file-picker mode, not only when the animation index is Yazi.
+- Keyboard events in file-picker mode now go through the real DX dispatcher as well, with `Esc` returning the bridge to chat mode.
+
+### Changed - Non-Yazi animation frames no longer use the heavy Root/Lua render path
+- `src/chatwidget.rs`: render the animation carousel directly with the existing DX animation functions for splash, matrix, confetti, game of life, starfield, rain, nyan cat, DVD, fire, plasma, waves, and fireworks.
+- Keep the real Root/Lua render path only for the embedded Yazi screen where it is actually needed.
+- **Result**: less per-frame overhead on DX animation screens and smoother embedded animation playback.
+
 ## [2026-03-30 06:10] - DX Theme Bridge, Yazi Mouse Fix, and Train Exit
 
 ### Changed - Codex bottom-pane surfaces now follow the live DX theme

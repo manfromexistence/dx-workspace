@@ -4054,14 +4054,15 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	pub fn handle_key_event(&mut self, key_event: KeyEvent) {
-		// PRIORITY 1: If in Yazi mode, route keys through the real DX dispatcher.
+		// PRIORITY 1: If in embedded Yazi/file-picker mode, route keys through the real DX dispatcher.
 		{
 			let dx_state = self.dx_chat_state.borrow();
-			if dx_state.animation_mode {
+			let in_file_picker = self.dx_bridge.borrow().mode == crate::bridge::AppMode::FilePicker;
+			if in_file_picker || dx_state.animation_mode {
 				let all_animations = crate::state::AnimationType::all();
 				let current_anim = all_animations[dx_state.current_animation_index];
 				
-				if current_anim == crate::state::AnimationType::Yazi {
+				if in_file_picker || current_anim == crate::state::AnimationType::Yazi {
 					drop(dx_state);
 					
 					// Route to Yazi through the real DX dispatcher.
@@ -4072,6 +4073,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 							tracing::info!("Yazi: Esc pressed, exiting Yazi mode");
 							let mut dx_state = self.dx_chat_state.borrow_mut();
 							dx_state.animation_mode = false;
+							self.dx_bridge.borrow_mut().mode = crate::bridge::AppMode::Chat;
 							self.frame_requester.schedule_frame();
 							return;
 						}
@@ -9086,7 +9088,9 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		let route_to_dx = {
 			let dx_state = self.dx_chat_state.borrow();
 			let current_anim = crate::state::AnimationType::all()[dx_state.current_animation_index];
-			dx_state.show_tachyon_menu || current_anim == crate::state::AnimationType::Yazi
+			dx_state.show_tachyon_menu
+				|| self.dx_bridge.borrow().mode == crate::bridge::AppMode::FilePicker
+				|| current_anim == crate::state::AnimationType::Yazi
 		};
 		if route_to_dx {
 			self.dispatch_real_dx_mouse(mouse);
@@ -9387,7 +9391,6 @@ impl Renderable for ChatWidget {
 				let all_animations = crate::state::AnimationType::all();
 				let current_anim = all_animations[dx_state.current_animation_index];
 				if let Some(_sound_file) = current_anim.sound_file() {
-					// Call play_animation_sound() which handles checking if sound needs to restart
 					dx_state.play_animation_sound();
 				}
 				
@@ -9398,32 +9401,74 @@ impl Renderable for ChatWidget {
 				let elapsed = dx_state.last_frame_instant.elapsed();
 				dx_state.menu.update(elapsed);
 				dx_state.last_frame_instant = std::time::Instant::now();
-				
-				// Render animation using Root widget in transcript area only
-				drop(dx_state); // Drop mutable borrow before borrowing for Root
-				
-				let dx_state = self.dx_chat_state.borrow();
-				let dx_core = self.dx_core.lock().expect("failed to lock DX core for render");
-				let mut dx_bridge = self.dx_bridge.borrow_mut();
-				
-				// Render Root widget with proper Lua context (REAL DX CODE!)
-				use fb_actor::lives::Lives;
-				use fb_binding::runtime_scope;
-				use fb_plugin::LUA;
-				use ratatui::widgets::Widget;
-				
-				let _ = Lives::scope(&dx_core, || {
-					runtime_scope!(LUA, "root", {
-						let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
-						root.render(transcript_area, buf);
-						Ok(())
-					})
-				});
-				
-				// Schedule next frame for animations
+				crate::style::set_dx_theme_override(Some(dx_state.theme.clone()));
+
+				match current_anim {
+					crate::state::AnimationType::Splash => {
+						crate::splash::render(
+							transcript_area,
+							buf,
+							&dx_state.theme,
+							dx_state.splash_font_index,
+							&dx_state.rainbow_animation,
+						);
+					}
+					crate::state::AnimationType::Yazi => {
+						drop(dx_state);
+
+						let dx_state = self.dx_chat_state.borrow();
+						let dx_core = self.dx_core.lock().expect("failed to lock DX core for render");
+						let mut dx_bridge = self.dx_bridge.borrow_mut();
+
+						use fb_actor::lives::Lives;
+						use fb_binding::runtime_scope;
+						use fb_plugin::LUA;
+						use ratatui::widgets::Widget;
+
+						let _ = Lives::scope(&dx_core, || {
+							runtime_scope!(LUA, "root", {
+								let root = crate::root::Root::new(&dx_core, &mut dx_bridge, &dx_state);
+								root.render(transcript_area, buf);
+								Ok(())
+							})
+						});
+					}
+					crate::state::AnimationType::Matrix => {
+						dx_state.render_matrix_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Confetti => {
+						dx_state.render_confetti_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::GameOfLife => {
+						dx_state.render_gameoflife_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Starfield => {
+						dx_state.render_starfield_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Rain => {
+						dx_state.render_rain_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::NyanCat => {
+						dx_state.render_nyancat_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::DVDLogo => {
+						dx_state.render_dvdlogo_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Fire => {
+						dx_state.render_fire_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Plasma => {
+						dx_state.render_plasma_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Waves => {
+						dx_state.render_waves_animation_in_area(transcript_area, buf);
+					}
+					crate::state::AnimationType::Fireworks => {
+						dx_state.render_fireworks_animation_in_area(transcript_area, buf);
+					}
+				}
+
 				self.frame_requester.schedule_frame_in(std::time::Duration::from_millis(50));
-				
-				// Skip normal chat rendering
 			} else {
 				// Normal chat mode - render transcript cells
 				let mut dx_state = self.dx_chat_state.borrow_mut();
