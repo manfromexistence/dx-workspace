@@ -895,6 +895,17 @@ impl<'a> Dispatcher<'a> {
 			self.app.bridge.chat_state.mouse_in_window = true;
 		}
 
+		let current_anim = crate::state::AnimationType::all()
+			[self.app.bridge.chat_state.current_animation_index];
+		let yazi_owns_mouse = !self.app.bridge.chat_state.show_tachyon_menu
+			&& (self.app.bridge.mode == AppMode::FilePicker
+				|| (self.app.bridge.chat_state.animation_mode
+					&& current_anim == AnimationType::Yazi));
+		if yazi_owns_mouse {
+			let cx = &mut Ctx::active(&mut self.app.core, &mut self.app.term);
+			return act!(app:mouse, cx, mouse);
+		}
+
 		// Handle menu mouse events globally when menu is visible
 		if self.app.bridge.chat_state.show_tachyon_menu {
 			match mouse.kind {

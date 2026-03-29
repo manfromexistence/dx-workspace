@@ -7716,6 +7716,10 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	/// Set the syntax theme override in the widget's config copy.
 	pub(crate) fn set_tui_theme(&mut self, theme: Option<String>) {
 		self.config.tui_theme = theme;
+		let dx_state = self.dx_chat_state.borrow();
+		let theme = crate::theme::ChatTheme::by_name(&dx_state.current_theme_name, dx_state.theme_mode)
+			.unwrap_or_else(|| dx_state.theme.clone());
+		crate::style::set_dx_theme_override(Some(theme));
 	}
 
 	/// Set the model in the widget's config copy and stored collaboration mode.
@@ -9290,6 +9294,7 @@ impl Renderable for ChatWidget {
 			let elapsed = dx_state.last_frame_instant.elapsed();
 			dx_state.menu.update(elapsed);
 			dx_state.last_frame_instant = std::time::Instant::now();
+			crate::style::set_dx_theme_override(Some(dx_state.theme.clone()));
 			
 			// Render current animation based on current_animation_index
 			let all_animations = crate::state::AnimationType::all();

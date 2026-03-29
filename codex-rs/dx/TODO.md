@@ -158,19 +158,19 @@
 
 ## 🎯 NEXT IMMEDIATE TASK
 
-**Integrate Animation Carousel**
-1. Handle Left/Right arrow keys in ChatWidget
-2. Render animations in transcript area (Matrix, Confetti, GameOfLife, etc.)
-3. Play animation sounds (looping)
-4. Test with `cargo run --bin codex-tui-dx`
+**Finish DX Theme + Yazi Interaction Polish**
+1. Verify DX theme colors propagate through remaining Codex transcript/status surfaces
+2. Validate Yazi click + scroll interactivity in the embedded screen
+3. Confirm shutdown-first and immediate exit both run the DX train animation
+4. Test with `cargo run -j 1 --bin codex-tui-dx -- --help`
 
 ---
 
 ## 📊 Progress Summary
 
 - **Completed**: 14 steps (Splash, rainbow, fonts, audio, menu, animations)
-- **In Progress**: File browser
-- **Remaining**: File browser, voice mode, chat features
+- **In Progress**: Theme + Yazi polish
+- **Remaining**: Theme propagation polish, Yazi interaction verification, voice mode, chat features
 - **Estimated Completion**: ~5-8 more integration tasks
 
 

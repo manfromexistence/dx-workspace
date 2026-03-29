@@ -17,7 +17,7 @@ use crate::key_hint::KeyBinding;
 use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
 use crate::render::Insets;
 use crate::render::RectExt as _;
-use crate::style::user_message_style;
+use crate::style::{dx_accent_color, user_message_style};
 
 use super::scroll_state::ScrollState;
 
@@ -274,7 +274,7 @@ fn apply_row_state_style(lines: &mut [Line<'static>], selected: bool, is_disable
 	if selected {
 		for line in lines.iter_mut() {
 			line.spans.iter_mut().for_each(|span| {
-				span.style = Style::default().fg(Color::Cyan).bold();
+				span.style = Style::default().fg(dx_accent_color()).bold();
 			});
 		}
 	}
@@ -659,7 +659,7 @@ pub(crate) fn render_rows_single_line(
 		let mut full_line = build_full_line(row, desc_col);
 		if Some(i) == state.selected_idx && !row.is_disabled {
 			full_line.spans.iter_mut().for_each(|span| {
-				span.style = Style::default().fg(Color::Cyan).bold();
+				span.style = Style::default().fg(dx_accent_color()).bold();
 			});
 		}
 		if row.is_disabled {

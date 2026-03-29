@@ -953,8 +953,7 @@ impl ChatState {
 	pub fn play_ui_sound(&self, sound_file: &str) {
 		if let Some(player) = &self.audio_player {
 			let player: &crate::audio::AudioPlayer = player;
-			// Set volume to 3% for UI sounds (more subtle)
-			player.set_volume(0.03);
+			player.set_volume(0.05);
 			// Silently try to play - don't show errors
 			let _ = player.play_once(sound_file);
 		}

@@ -2,6 +2,22 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-30 06:10] - DX Theme Bridge, Yazi Mouse Fix, and Train Exit
+
+### Changed - Codex bottom-pane surfaces now follow the live DX theme
+- `src/style.rs`: add a central DX theme override cache and use DX card colors for Codex bottom-pane surfaces when a live DX theme is available.
+- `src/chatwidget.rs`: refresh the shared style override from the embedded DX `ChatState` during render and when syncing the TUI theme selection.
+- `src/bottom_pane/selection_popup_common.rs` and `src/bottom_pane/textarea.rs`: use the live DX accent color instead of hard-coded cyan for selected rows and textarea accent rendering.
+
+### Fixed - Embedded Yazi mouse events were being consumed by chat-mode handlers
+- `src/dispatcher.rs`: when the live DX screen is Yazi or the bridge is in `FilePicker` mode, route mouse directly to the real DX `app:mouse` actor before any Codex chat scroll/click handling.
+- **Result**: embedded Yazi click and scroll events now reach the actual DX/Yazi mouse stack instead of stopping in Codex-side handlers.
+
+### Fixed - App exit now runs the real DX train animation and all sounds use 5% volume
+- `src/app.rs`: run `show_train_farewell()` on immediate exit and on shutdown-first fallback exit.
+- `src/state.rs`: raise UI interaction sounds to the requested 5% level.
+- `src/exit_animation.rs`: lower train animation audio to 5% as well.
+
 ## [2026-03-30 05:00] - Menu Submenu Transition Fix
 
 ### Fixed - Submenus were immediately taking the closing path

@@ -125,3 +125,9 @@ Now I personally check the dx dui and really have to say that you did a really g
 2. The menu is still just closing instead of showing, opening, and staying there. They will only close when we press toggle again.
 3. The yazi screen is just showing a dummy stack touch UI but not loading the files and being interactive.
 Please fix these three problems.
+
+Bro, great, you are truly amazing. Now we only have three problems:
+1. Please also make the Codex tui use our DX tui theme colors so that when we change the theme (DX tui bottom pane and other stuff) can also change based on the tui of the DX tui.
+2. Currently, in the Yazi file browser screen, the files and folders are loading correctly, but the only problem is that the file browser is actually not interactive. The clicking and scrolling are not working, so please fix those problems.
+3. DX tui has a train close animation, so when we close the Codex device, please run the train animation correctly. Please learn from the DX tui, because this is very specific stuff, and just implement the train exactly using the DX code. Also, please make all the sound to just be 5% of the volume.
+
