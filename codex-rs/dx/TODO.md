@@ -13,15 +13,15 @@
 - [x] 113 figlet fonts with auto-cycling (every 5 seconds)
 - [x] Rainbow animation effect
 - [x] Theme system (DX theme loaded)
-- [ ] Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)
-- [ ] File browser (Yazi integration)
-- [ ] Menu system (25 submenus)
-- [ ] Model picker UI
-- [ ] Theme picker with live preview
+- [x] ~~Animation carousel (11 animations: Matrix, Confetti, GameOfLife, etc.)~~ ✅ (completed: 2026-03-30)
+- [x] ~~File browser (Yazi integration)~~ ✅ (completed: 2026-03-30)
+- [x] ~~Menu system (25 submenus)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Model picker UI~~ ✅ (completed: 2026-03-29)
+- [x] ~~Theme picker with live preview~~ ✅ (completed: 2026-03-29)
 
 #### 2. Audio Features
 - [x] ~~Splash screen sound (`assets/birds.mp3`)~~ ✅ (completed: 2026-03-29)
-- [x] ~~Animation sounds (looping for each animation)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Animation sounds (looping for each animation)~~ ✅ (completed: 2026-03-30 - FIXED)
 - [x] ~~UI sounds (click, typing, scroll, menu open/close)~~ ✅ (completed: 2026-03-29)
 - [ ] Exit animation sounds (train)
 
@@ -36,7 +36,7 @@
 #### 4. Interaction Features
 - [ ] Keyboard shortcuts (customizable)
 - [ ] Mouse support (clicks, scrollbar, hover)
-- [x] ~~Screen navigation (Left/Right arrows)~~ ✅ (completed: 2026-03-29)
+- [x] ~~Screen navigation (Left/Right arrows)~~ ✅ (completed: 2026-03-30 - FIXED carousel wrapping)
 - [x] ~~Menu navigation (j/k, arrows, PageUp/Down)~~ ✅ (completed: 2026-03-29)
 
 #### 5. Animation Features

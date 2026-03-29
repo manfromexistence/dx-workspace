@@ -4112,17 +4112,38 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 			if key_event.modifiers.is_empty() || key_event.modifiers == KeyModifiers::NONE {
 				match key_event.code {
 					KeyCode::Left => {
+						// Use REAL DX navigation logic from dispatcher.rs
 						let mut dx_state = self.dx_chat_state.borrow_mut();
 						let all_animations = crate::state::AnimationType::all();
+						let current_anim = all_animations[dx_state.current_animation_index];
 						
-						// Navigate to previous animation
-						if dx_state.current_animation_index == 0 {
-							dx_state.current_animation_index = all_animations.len() - 1;
+						if current_anim == crate::state::AnimationType::Splash {
+							// From Splash → Go to first carousel animation (Matrix)
+							let carousel = crate::state::AnimationType::carousel_animations();
+							if let Some(matrix_idx) = all_animations.iter().position(|a| *a == carousel[0]) {
+								dx_state.current_animation_index = matrix_idx;
+							}
+						} else if current_anim == crate::state::AnimationType::Yazi {
+							// From Yazi → Go back to Splash
+							dx_state.current_animation_index = 0;
 						} else {
-							dx_state.current_animation_index -= 1;
+							// In carousel → Navigate to previous carousel animation
+							let carousel = crate::state::AnimationType::carousel_animations();
+							if let Some(current_carousel_idx) = carousel.iter().position(|a| *a == current_anim) {
+								let prev_carousel_idx = if current_carousel_idx == 0 {
+									carousel.len() - 1
+								} else {
+									current_carousel_idx - 1
+								};
+								let prev_anim = carousel[prev_carousel_idx];
+								// Find this animation in all_animations
+								if let Some(idx) = all_animations.iter().position(|a| *a == prev_anim) {
+									dx_state.current_animation_index = idx;
+								}
+							}
 						}
 						
-						dx_state.animation_mode = true; // Ensure animation mode is on
+						dx_state.animation_mode = true;
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
 						dx_state.play_ui_sound("assets/click.mp3");
@@ -4130,13 +4151,25 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 						return;
 					}
 					KeyCode::Right => {
+						// Use REAL DX navigation logic from dispatcher.rs
 						let mut dx_state = self.dx_chat_state.borrow_mut();
 						let all_animations = crate::state::AnimationType::all();
+						let current_anim = all_animations[dx_state.current_animation_index];
 						
-						// Navigate to next animation
-						dx_state.current_animation_index = (dx_state.current_animation_index + 1) % all_animations.len();
+						if current_anim == crate::state::AnimationType::Splash {
+							// From Splash → Go to Yazi (file browser)
+							if let Some(yazi_idx) = all_animations.iter().position(|a| *a == crate::state::AnimationType::Yazi) {
+								dx_state.current_animation_index = yazi_idx;
+							}
+						} else if current_anim == crate::state::AnimationType::Yazi {
+							// From Yazi → Go back to Splash
+							dx_state.current_animation_index = 0;
+						} else {
+							// In carousel → Go back to Splash
+							dx_state.current_animation_index = 0;
+						}
 						
-						dx_state.animation_mode = true; // Ensure animation mode is on
+						dx_state.animation_mode = true;
 						dx_state.animation_start_time = Some(std::time::Instant::now());
 						dx_state.play_animation_sound();
 						dx_state.play_ui_sound("assets/click.mp3");
@@ -9133,7 +9166,13 @@ impl Renderable for ChatWidget {
 			// Update DX state (timer logic)
 			dx_state.update();
 			
-			// Font cycling is handled in dispatcher.rs dispatch_timer() - no need to duplicate here
+			// Font cycling: Auto-cycle every 3 seconds when showing Splash
+			if dx_state.current_animation_index == 0 {  // Splash screen
+				if dx_state.last_font_change.elapsed() >= std::time::Duration::from_secs(3) {
+					dx_state.splash_font_index = (dx_state.splash_font_index + 1) % 113; // 113 valid fonts
+					dx_state.last_font_change = std::time::Instant::now();
+				}
+			}
 			
 			// Update menu timing
 			let elapsed = dx_state.last_frame_instant.elapsed();

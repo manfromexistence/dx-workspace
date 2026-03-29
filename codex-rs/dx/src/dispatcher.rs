@@ -1620,9 +1620,9 @@ impl<'a> Dispatcher<'a> {
 		// Update chat state (process LLM responses)
 		self.app.bridge.chat_state.update();
 
-		// Update splash font cycling (every 5 seconds)
+		// Update splash font cycling (every 3 seconds)
 		// Cycle fonts when in animation mode on Splash screen OR when showing splash in chat mode
-		if self.app.bridge.chat_state.last_font_change.elapsed() >= Duration::from_secs(5) {
+		if self.app.bridge.chat_state.last_font_change.elapsed() >= Duration::from_secs(3) {
 			let should_cycle = if self.app.bridge.chat_state.animation_mode {
 				let animations = AnimationType::all();
 				let current_anim = animations[self.app.bridge.chat_state.current_animation_index];

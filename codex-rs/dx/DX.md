@@ -92,3 +92,17 @@ now this is a rust project and currently the yazi screen is not loading correctl
 No, that is a sloppy version of the dx-tui and maybe that's another way in the codex widget. We are rendering the dx-tui actually so use that and also show the codex tui bottom pane because currently we are not showing it. 
 
 ts a tui you can't verify it - trust me just don't render the welcome dx-tui for now comment it out toggle it off
+
+then use the dispathcer code and merge them with codex-tui as dispathcer was made to merged with codex-tui
+
+Didn't I specifically tell you not to create any branch? Just update the code so that it can merge with Codex-TUI correctly. 
+
+And Yazi screen files are showing. The structure is showing but not loading correctly. Like the DX-TUI, please render the Yasi screen fully on our Codex-TUI correctly. 
+
+ONLY run cargo run - NEVER cargo check/build/test
+Use REAL DX code - Call actual DX functions, NEVER duplicate logic
+NO AI SLOP - Don't create wrapper files or copy-paste code
+Test IMMEDIATELY after every change with cargo run
+Update TODO.md and CHANGELOG.md after every task
+Currently the TUI screens are not getting the available full weight height. The Codex TUI input box and dx screen have a gap so make sure that, except for the Codex TUI input box bottom pane, we should get all the space of the height. Also kindly only show the screen until the plasma screen but there is more strain. Also in other innovation correctional screens no sound is playing so please play the sounds correctly.
+Learn from the dx to dy directly; use the import and use the dxdy code directly. The whole point of the dx dy was to be used by Codex TUI so instead of creating sloppy AI code, use them directly and wire them up with Codex TUI. If Codex TUI and dx dy are different in something then update the dx dy to be renderable in Codex TUI. 

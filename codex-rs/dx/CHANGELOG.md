@@ -283,6 +283,76 @@ If issues arise, revert these changes in order:
 - Proper DX initialization sequence: fb_shared, fb_tty, fb_term, fb_fs, fb_config, fb_vfs, fb_adapter, fb_boot, fb_dds, fb_widgets, fb_watcher, fb_plugin
 
 
+## [2026-03-30] - Font Auto-Cycling Fix
+
+### Fixed - Splash Screen Font Not Auto-Cycling
+- **Problem**: Fonts were not auto-cycling on the DX splash screen
+  - Comment said "Font cycling is handled in dispatcher.rs" but dispatcher wasn't being called
+  - ChatWidget doesn't use dispatcher for rendering
+  - Font stayed on index 0 forever
+  
+- **Solution**: Added font cycling logic directly in ChatWidget render method
+  - Check if 3 seconds elapsed since last font change
+  - Cycle through 113 fonts: `(splash_font_index + 1) % 113`
+  - Update `last_font_change` timestamp
+  - Only cycle when showing Splash screen (index 0)
+  
+- **Files Changed**:
+  - `src/chatwidget.rs` lines 9165-9171: Added font cycling logic
+  - `src/dispatcher.rs` line 1625: Changed from 5 seconds to 3 seconds
+  
+- **Result**: Fonts now auto-cycle every 3 seconds on splash screen
+
+---
+
+## [2026-03-30] - Navigation Fix and Sound System
+
+### Fixed - Plasma Screen Freezing
+- **Problem**: When navigating to Plasma animation, Left/Right keys stopped working (screen froze)
+  - ChatWidget had simple linear navigation: just cycling through all animations
+  - Didn't understand carousel concept (Splash → Carousel → Yazi)
+  - Simple `current_index + 1` or `current_index - 1` logic broke at boundaries
+  
+- **Solution**: Merged REAL DX navigation logic from dispatcher.rs into chatwidget.rs
+  - Left arrow in carousel: Navigate to previous carousel animation (wraps around)
+  - Right arrow in carousel: Go back to Splash
+  - Left arrow on Splash: Go to first carousel animation (Matrix)
+  - Right arrow on Splash: Go to Yazi file browser
+  - Proper carousel wrapping: Fireworks → Matrix (not freeze)
+  
+- **Files Changed**:
+  - `src/chatwidget.rs` lines 4113-4180: Replaced simple navigation with DX carousel logic
+  
+- **Result**: All animations now navigate correctly without freezing
+
+### Fixed - Animation Sounds Not Playing
+- **Problem**: Only Matrix animation was playing sound, other animations were silent
+  - `play_animation_sound()` was checking if sound was already playing
+  - But the check was wrong: `current_animation_sound != sound_file` would fail
+  - Sounds wouldn't restart when switching animations
+  
+- **Solution**: Fixed sound switching logic in `play_animation_sound()`
+  - Check if animation changed BEFORE checking sound file
+  - Stop current sound when switching animations
+  - Play new sound if animation changed OR no sound is playing
+  - Explicitly call `player.stop()` before playing new sound
+  
+- **Files Changed**:
+  - `src/state.rs` lines 865-920: Fixed play_animation_sound() logic
+  - `src/chatwidget.rs` lines 9127-9133, 9238-9241: Removed redundant sound checks
+  
+- **Result**: All animations now play their sounds correctly when navigating
+
+### Technical Details
+- Navigation follows DX carousel pattern:
+  - Splash (index 0)
+  - Carousel animations (Matrix, Confetti, GameOfLife, Starfield, Rain, NyanCat, DVDLogo, Fire, Plasma, Waves, Fireworks)
+  - Yazi (last index)
+- Sound system properly stops old sound before playing new one
+- Volume: 5% for animations, 3% for UI sounds
+
+---
+
 ## [2026-03-30] - Sound System Fix
 
 ### Fixed - Animation Sounds Not Playing
