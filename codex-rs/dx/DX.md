@@ -74,3 +74,11 @@ you can just directly use them - bro use direct dx codex and edit them to fit in
 bro directly use them
 
 Now in our codex-tui the dx animation carousel is taking over the full height. It's not rendering the codex-tui so play even in the animation carousel, render the codex-tui correctly. Also they are not animating so maybe we need to animate them specially. Also not seeing the Yazi file picker so by default may be just show the Yazi file picker for now. 
+
+Still the same, nothing is showing. Directly edit the dx-tui-dx code as maybe the codex-tui-dx render is different; so render the dx-tui-dx in codex-tui-dx by modifying the dx-tui-dx to be renderable on the codex-tui-dx directly 
+
+Like the splash screen, the other screen also has its own sound so please implement those sounds like the dx tui in our codex-tui correctly. 
+
+why - what are your problems - render it ecacty how dx-tui does - just import dx-tui code and change them to be renderable on codex-tui and fix these
+
+use cargo run not cargo check/build/test or with any subcommand - just pure cago run and fix these errors:

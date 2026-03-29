@@ -58,6 +58,7 @@ use crate::terminal_title::set_terminal_title;
 use crate::text_formatting::proper_join;
 use crate::version::CODEX_CLI_VERSION;
 use fb_shared::url::AsUrl; // For UrlBuf.as_url() method
+use fb_boot::BOOT; // For bootstrap initialization
 use codex_app_server_protocol::AppSummary;
 use codex_app_server_protocol::ConfigLayerSource;
 use codex_backend_client::Client as BackendClient;
@@ -9565,6 +9566,8 @@ pub(crate) fn show_review_commit_picker_with_entries(
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+
 
 
 

@@ -4,6 +4,7 @@ use fb_plugin::LUA;
 use mlua::{ObjectLike, Table};
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 use tracing::error;
+use fb_shared::url::AsUrl; // For as_url() method
 
 use crate::file_browser::{cmp, confirm, help, input, mgr, pick, spot, tasks, which};
 use crate::{
@@ -70,7 +71,8 @@ impl Widget for Root<'_> {
 				// Show Yazi file picker FULLSCREEN (no chat input - codex bottom pane handles that)
 				let yazi_area = area;
 
-				// Render yazi fullscreen
+				// Try to render yazi fullscreen using Lua
+				let mut lua_rendered = false;
 				let mut f = || {
 					let area = fb_binding::elements::Rect::from(yazi_area);
 					let root = LUA.globals().raw_get::<Table>("Root")?.call_method::<Table>("new", area)?;
@@ -80,8 +82,11 @@ impl Widget for Root<'_> {
 				};
 				if let Err(e) = f() {
 					error!("Failed to redraw the `Root` component:\n{e}");
+				} else {
+					lua_rendered = true;
 				}
 
+				// Render other Yazi components
 				mgr::Preview::new(self.core).render(yazi_area, buf);
 				mgr::Modal::new(self.core).render(yazi_area, buf);
 
@@ -116,6 +121,53 @@ impl Widget for Root<'_> {
 
 				if self.core.which.active {
 					which::Which::new(self.core).render(yazi_area, buf);
+				}
+				
+				// FALLBACK: If Lua didn't render, show a simple file list
+				if !lua_rendered {
+					use ratatui::text::{Line, Span};
+					use ratatui::widgets::Paragraph;
+					use ratatui::style::{Style, Color};
+					
+					let folder = &self.core.active().current;
+					let mut lines = vec![
+						Line::from(Span::styled(
+							format!("Directory: {:?}", folder.url),
+							Style::default().fg(Color::Cyan),
+						)),
+						Line::from(""),
+					];
+					
+					// Show folder stage
+					lines.push(Line::from(Span::styled(
+						format!("Stage: {:?}", folder.stage),
+						Style::default().fg(Color::Yellow),
+					)));
+					lines.push(Line::from(""));
+					
+					// Show files
+					let files = folder.files.iter().take(20);
+					for (i, file) in files.enumerate() {
+						let name = file.name().map(|s| format!("{:?}", s)).unwrap_or_else(|| "<unknown>".to_string());
+						let style = if file.is_dir() {
+							Style::default().fg(Color::Blue)
+						} else {
+							Style::default().fg(Color::White)
+						};
+						lines.push(Line::from(Span::styled(
+							format!("  {} {}", if i == folder.cursor { ">" } else { " " }, name),
+							style,
+						)));
+					}
+					
+					if lines.len() == 4 {
+						lines.push(Line::from(Span::styled(
+							"  (no files loaded)",
+							Style::default().fg(Color::Red),
+						)));
+					}
+					
+					Paragraph::new(lines).render(yazi_area, buf);
 				}
 
 				// COMMENTED OUT: DX chat rendering (codex bottom pane handles input)
