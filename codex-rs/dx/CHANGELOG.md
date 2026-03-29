@@ -283,6 +283,38 @@ If issues arise, revert these changes in order:
 - Proper DX initialization sequence: fb_shared, fb_tty, fb_term, fb_fs, fb_config, fb_vfs, fb_adapter, fb_boot, fb_dds, fb_widgets, fb_watcher, fb_plugin
 
 
+## [2026-03-30] - Default Screen and Sound Fixes
+
+### Fixed - Splash Screen Not Default
+- **Problem**: Matrix animation was the default screen instead of Splash
+  - `current_animation_index` was initialized to 1 (Matrix)
+  - Should start at 0 (Splash screen)
+  
+- **Solution**: Changed default animation index to 0
+  - `src/state.rs` line 328: Changed from `current_animation_index: 1` to `current_animation_index: 0`
+  
+- **Result**: Splash screen is now the default when starting codex-tui-dx
+
+### Fixed - Sounds Not Playing on Other Animations
+- **Problem**: Only Matrix animation played sound, other animations were silent
+  - `previous_animation_index` was initialized to 0
+  - `current_animation_index` also starts at 0 (Splash)
+  - So `animation_changed` was FALSE on first call (0 == 0)
+  - Sound wouldn't play because it thought animation hadn't changed
+  
+- **Solution**: Initialize `previous_animation_index` to `usize::MAX` (invalid index)
+  - `src/state.rs` line 422: Changed from `previous_animation_index: 0` to `previous_animation_index: usize::MAX`
+  - Now first call to `play_animation_sound()` will detect animation change
+  - Sound will play immediately on startup
+  
+- **Files Changed**:
+  - `src/state.rs` line 328: Default animation index
+  - `src/state.rs` line 422: Previous animation index initialization
+  
+- **Result**: All animations now play their sounds correctly from the start
+
+---
+
 ## [2026-03-30] - Yazi File Loading (In Progress)
 
 ### Working On - Yazi Files Not Showing

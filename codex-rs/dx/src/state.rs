@@ -324,8 +324,8 @@ impl ChatState {
 			cursor_visible: true,
 			splash_font_index: 0,
 			last_font_change: Instant::now(),
-			animation_mode: true, // Start in animation carousel mode (showing Matrix by default)
-			current_animation_index: 1, // Matrix animation (index 1 in the carousel)
+			animation_mode: true, // Start showing splash screen
+			current_animation_index: 0, // Splash screen (index 0)
 			animation_start_time: Some(Instant::now()),
 			llm: Arc::new(LocalLlm::new()),
 			llm_tx,
@@ -418,7 +418,7 @@ impl ChatState {
 			last_dvd_bounce_x: 0, // Initialize DVD bounce tracking
 			last_dvd_bounce_y: 0,
 			last_confetti_explosion_time: 0, // Initialize confetti explosion tracking
-			previous_animation_index: 0, // Initialize previous animation tracking
+			previous_animation_index: usize::MAX, // Initialize to invalid index to trigger first sound
 			last_animation_area_width: 0,
 			last_animation_area_height: 0,
 			// CODEX INTEGRATION COMMENTED OUT
