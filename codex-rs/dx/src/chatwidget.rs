@@ -4044,49 +4044,52 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 					drop(dx_state);
 					
 					// Handle Yazi navigation using REAL DX Folder methods
-					if let Ok(mut dx_core) = self.dx_core.lock() {
-						use crossterm::event::KeyCode;
-						use fb_widgets::Step;
-						
-						let folder = &mut dx_core.mgr.tabs.items[0].current;
-						let handled = match key_event.code {
-							KeyCode::Up | KeyCode::Char('k') => {
-								// Move cursor up using REAL DX method
-								folder.arrow(Step::from(-1))
+					// Only handle Press and Repeat events
+					use crossterm::event::{KeyCode, KeyEventKind};
+					if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+						if let Ok(mut dx_core) = self.dx_core.lock() {
+							use fb_widgets::Step;
+							
+							let folder = &mut dx_core.mgr.tabs.items[0].current;
+							let handled = match key_event.code {
+								KeyCode::Up | KeyCode::Char('k') => {
+									// Move cursor up using REAL DX method
+									folder.arrow(Step::from(-1))
+								}
+								KeyCode::Down | KeyCode::Char('j') => {
+									// Move cursor down using REAL DX method
+									folder.arrow(Step::from(1))
+								}
+								KeyCode::Home | KeyCode::Char('g') => {
+									// Jump to top using REAL DX method
+									folder.arrow(Step::Top)
+								}
+								KeyCode::End | KeyCode::Char('G') => {
+									// Jump to bottom using REAL DX method
+									folder.arrow(Step::Bot)
+								}
+								KeyCode::PageUp => {
+									// Page up using REAL DX method
+									folder.arrow(Step::from(-10))
+								}
+								KeyCode::PageDown => {
+									// Page down using REAL DX method
+									folder.arrow(Step::from(10))
+								}
+								KeyCode::Esc | KeyCode::Char('q') => {
+									// Exit Yazi mode
+									drop(dx_core);
+									let mut dx_state = self.dx_chat_state.borrow_mut();
+									dx_state.animation_mode = false;
+									true
+								}
+								_ => false,
+							};
+							
+							if handled {
+								self.frame_requester.schedule_frame();
+								return;
 							}
-							KeyCode::Down | KeyCode::Char('j') => {
-								// Move cursor down using REAL DX method
-								folder.arrow(Step::from(1))
-							}
-							KeyCode::Home | KeyCode::Char('g') => {
-								// Jump to top using REAL DX method
-								folder.arrow(Step::Top)
-							}
-							KeyCode::End | KeyCode::Char('G') => {
-								// Jump to bottom using REAL DX method
-								folder.arrow(Step::Bot)
-							}
-							KeyCode::PageUp => {
-								// Page up using REAL DX method
-								folder.arrow(Step::from(-10))
-							}
-							KeyCode::PageDown => {
-								// Page down using REAL DX method
-								folder.arrow(Step::from(10))
-							}
-							KeyCode::Esc | KeyCode::Char('q') => {
-								// Exit Yazi mode
-								drop(dx_core);
-								let mut dx_state = self.dx_chat_state.borrow_mut();
-								dx_state.animation_mode = false;
-								true
-							}
-							_ => false,
-						};
-						
-						if handled {
-							self.frame_requester.schedule_frame();
-							return;
 						}
 					}
 				}

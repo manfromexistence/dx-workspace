@@ -37,7 +37,22 @@ impl<'a> Root<'a> {
 		let root = LUA.globals().raw_get::<Table>("Root")?.call_method::<Table>("new", area)?;
 		root.call_method("reflow", ())
 	}
+
+	fn render_yazi(&self, area: Rect, buf: &mut Buffer) {
+		let mut f = || {
+			let area = fb_binding::elements::Rect::from(area);
+			let root = LUA.globals().raw_get::<Table>("Root")?.call_method::<Table>("new", area)?;
+			render_once(root.call_method("redraw", ())?, buf, |p| self.core.mgr.area(p));
+			Ok::<_, mlua::Error>(())
+		};
+
+		if let Err(e) = f() {
+			error!("Failed to render Yazi: {e}");
+		}
+	}
 }
+
+use crate::bridge::AppMode;
 
 impl Widget for Root<'_> {
 	fn render(self, area: Rect, buf: &mut Buffer) {
@@ -48,6 +63,14 @@ impl Widget for Root<'_> {
 				buf[(x, y)].reset();
 				buf[(x, y)].set_bg(bg_color);
 			}
+		}
+
+		// PRIORITY 0: Check if we're in FilePicker mode (Right Arrow pressed)
+		// This is the main way to access Yazi file browser from the chat UI
+		if self.bridge.mode == AppMode::FilePicker {
+			// Render Yazi fullscreen
+			self.render_yazi(area, buf);
+			return;
 		}
 
 		// PRIORITY 1: Check if we're in animation mode (splash/animations carousel)
@@ -68,52 +91,7 @@ impl Widget for Root<'_> {
 
 			// Special case: Yazi screen in animation carousel
 			if current_anim == AnimationType::Yazi {
-				// Show Yazi file picker FULLSCREEN (no chat input - codex bottom pane handles that)
-				let yazi_area = area;
-
-				// Render yazi fullscreen using REAL DX CODE
-				let mut f = || {
-					let area = fb_binding::elements::Rect::from(yazi_area);
-					let root = LUA.globals().raw_get::<Table>("Root")?.call_method::<Table>("new", area)?;
-
-					render_once(root.call_method("redraw", ())?, buf, |p| self.core.mgr.area(p));
-					Ok::<_, mlua::Error>(())
-				};
-				if let Err(e) = f() {
-					error!("Failed to redraw the `Root` component:\n{e}");
-				}
-
-				mgr::Preview::new(self.core).render(yazi_area, buf);
-				mgr::Modal::new(self.core).render(yazi_area, buf);
-
-				if self.core.tasks.visible {
-					tasks::Tasks::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.active().spot.visible() {
-					spot::Spot::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.pick.visible {
-					pick::Pick::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.confirm.visible {
-					confirm::Confirm::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.help.visible {
-					help::Help::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.cmp.visible {
-					cmp::Cmp::new(self.core).render(yazi_area, buf);
-				}
-
-				if self.core.which.active {
-					which::Which::new(self.core).render(yazi_area, buf);
-				}
-
+				self.render_yazi(area, buf);
 				return;
 			}
 

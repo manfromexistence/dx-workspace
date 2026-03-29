@@ -86,3 +86,5 @@ use cargo run not cargo check/build/test or with any subcommand - just pure cago
 no the important part use dx-tui code directly and edit it directly to be rendered correctly in the codex-tui cause the whole point of dx-tui was to be merged with codex-tui
 
 update the code use real dx codex - import them, edit them to be renderable on codex-tui correctly instead of using sloppy ai code!!!
+
+now this is a rust project and currently the yazi screen is not loading correctly in codex-tui-dx binary then dx binary is tui and we are trying to integrate the dx tui inside the codext-tui-dx binary so please load the yazi file browser screen using the directly imports of dx binary yazi screen correctly
