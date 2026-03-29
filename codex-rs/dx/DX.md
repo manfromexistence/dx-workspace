@@ -99,6 +99,8 @@ Didn't I specifically tell you not to create any branch? Just update the code so
 
 And Yazi screen files are showing. The structure is showing but not loading correctly. Like the DX-TUI, please render the Yasi screen fully on our Codex-TUI correctly. 
 
+And currently the matrix screen is the default screen in the Codex-TUI-DX but please make the splash screen the default screen in our Codex-TUI-DX. In all other screens the sound is not playing; only in the matrix screen the sound is playing so please fix this problem. 
+
 ONLY run cargo run - NEVER cargo check/build/test
 Use REAL DX code - Call actual DX functions, NEVER duplicate logic
 NO AI SLOP - Don't create wrapper files or copy-paste code
