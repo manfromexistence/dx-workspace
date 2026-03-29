@@ -132,9 +132,15 @@ Bro, great, you are truly amazing. Now we only have three problems:
 3. DX tui has a train close animation, so when we close the Codex device, please run the train animation correctly. Please learn from the DX tui, because this is very specific stuff, and just implement the train exactly using the DX code. Also, please make all the sound to just be 5% of the volume.
 
 ON yazi file browser screen, the file browser is still not interactive, nothing is responding "one—left click, wheel scroll, drag, Enter, or arrow key" no nothing So please fix this problem. In the DX DOI input box, you can see a rainbow animated cursor. In our Codex DOI bottom pane input box, please implement that rainbow animated cursor with all the features that DX DOI has. You don't have to use the DX input box in this case; you just update the Codex DOI bottom pane input box to be like that, to have the rainbow animated cursor and other stuff.
-Also, when I am opening our Codex tui, it is taking too much time to load the splash screen for the first time and also has some lagging problem. Please fix that too. 
 
+When we open the codex DIY, nothing is showing, but when we are pressing right-click, it's showing the yazi file browser screen. In the yazi file browser screen, the parent and center pane are showing, but the right output pane is not showing correctly. Please show that correctly too, and also please fix this problem so that when we open it, our tui instantly loads the tui splash screen correctly. And also, for some reason now the app exit train animation is not working. 
+Also, when I am opening our Codex tui, it is taking too much time to load the splash screen for the first time and also has some lagging problem. Please fix that too. 
+cursor flicering in the status line and input box - please fix that too. and make status like like th dx-tui input box bottom keep the left side of the current status line same and just introduce new center and rigth side and in the center show the files/image attact pasted text with just [pasted text] In the DX DUI, there is a file atas menu related to port. Learn from it and use it in our codex DUI.  and in the right side show the current time and date like "12:30 PM, 25 March 2026" and also show the current theme name in the right side of the status line. Also, please make sure to implement the cursor flickering issue in both the input box and status line. and show rainbow animation spinner when the model is thinking in the status line. and update the codex-tui message list scrollbar to be like teh dx-tui scrollbar butt the dx-tui scrollbar diamon symbols are bad so please change them to refect the message so that by default we use outline diamond symbol and when at the position of a message list or chose then make the diamon to be filled diamon symbol and update the symbol to be more stratigicly spawn as when there are 3 message then on the right next to the scrollbar track there will be 3 message but not top 3 but they will be grouped top, center and bottom of the scrollbar and other will be added via the logic and also remove the scroll progress indidcator
+
+fork-codex!!!
 metasearch-tui
 forge-tui
 tools-tui
 image, audio, video, 3d rendering tui
+lsp
+providers

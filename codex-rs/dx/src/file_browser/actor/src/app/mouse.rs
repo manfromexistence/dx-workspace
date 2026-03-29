@@ -22,7 +22,18 @@ impl Actor for Mouse {
 	fn act(cx: &mut Ctx, opt: Self::Options) -> Result<Data> {
 		let event = fb_binding::MouseEvent::from(opt.event);
 
-		let Some(size) = cx.term.as_ref().and_then(|t| t.size().ok()) else { succ!() };
+		let Some(size) = cx
+			.term
+			.as_ref()
+			.and_then(|t| t.size().ok())
+			.or_else(|| {
+				crossterm::terminal::size()
+					.ok()
+					.map(|(width, height)| ratatui::layout::Size::new(width, height))
+			})
+		else {
+			succ!()
+		};
 		let area = fb_binding::elements::Rect::from(size);
 
 		let result = Lives::scope(cx.core, move || {

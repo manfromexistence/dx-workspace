@@ -159,9 +159,9 @@
 ## 🎯 NEXT IMMEDIATE TASK
 
 **Finish DX Interaction Polish**
-1. Verify embedded Yazi click, scroll, and keyboard interaction in live terminal use
-2. Check remaining Codex transcript/status surfaces for any theme drift from DX colors
-3. Measure remaining animation hot spots if any DX screens still feel heavy
+1. Verify the full embedded Yazi interaction stack in live terminal use after the DX router/mouse fallback fix
+2. Tune bottom-pane rainbow cursor cadence if it feels too fast or too expensive
+3. Check remaining Codex transcript/status surfaces for any theme drift from DX colors
 4. Test with `cargo run -j 1 --bin codex-tui-dx -- --help`
 
 ---
@@ -170,7 +170,7 @@
 
 - **Completed**: 14 steps (Splash, rainbow, fonts, audio, menu, animations)
 - **In Progress**: DX interaction polish
-- **Remaining**: Live Yazi verification, residual animation polish, voice mode, chat features
+- **Remaining**: Live Yazi verification, cursor polish, residual animation polish, voice mode, chat features
 - **Estimated Completion**: ~5-8 more integration tasks
 
 

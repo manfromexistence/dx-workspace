@@ -2,6 +2,21 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-30 06:30] - Embedded Yazi Router Fix, Lazy DX Bootstrap, and Bottom-Pane Rainbow Cursor
+
+### Fixed - Embedded Yazi input was still non-interactive
+- `src/dispatcher.rs`: when Yazi owns input, route keys directly to the real DX `Router` before any chat/file-picker text handling can intercept them.
+- `src/file_browser/actor/src/app/mouse.rs`: fall back to terminal size from `crossterm` when the embedded DX app has no live `Term`, so `app:mouse` no longer no-ops in embedded mode.
+- **Result**: embedded Yazi key, click, scroll, and drag events now go through the actual DX/Yazi input stack instead of being dropped.
+
+### Changed - First splash no longer waits on eager DX bootstrap
+- `src/chatwidget.rs`: make DX core bootstrap lazy and trigger it only when Yazi/DX core interaction is actually needed.
+- **Result**: the first splash frame can render without waiting for embedded DX core bootstrap work.
+
+### Changed - Codex bottom pane now paints a DX-style rainbow cursor
+- `src/bottom_pane/chat_composer.rs`: render a rainbow animated cursor directly over the existing textarea cursor position using DX rainbow colors.
+- `src/chatwidget.rs`: schedule a lightweight redraw cadence while the composer cursor is visible so the rainbow cursor animates continuously.
+
 ## [2026-03-30 06:20] - File Picker Input Routing and Animation Render De-Lag
 
 ### Fixed - Embedded file browser input ownership

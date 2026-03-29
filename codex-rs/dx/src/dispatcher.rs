@@ -484,6 +484,15 @@ impl<'a> Dispatcher<'a> {
 			}
 		}
 
+		let current_anim =
+			AnimationType::all()[self.app.bridge.chat_state.current_animation_index];
+		let yazi_owns_input = self.app.bridge.mode == AppMode::FilePicker
+			|| (self.app.bridge.chat_state.animation_mode && current_anim == AnimationType::Yazi);
+		if yazi_owns_input {
+			Router::new(self.app).route(Key::from(key))?;
+			return succ!();
+		}
+
 		// Global '0' key handler - toggle menu overlay on ANY screen
 		if key.code == KeyCode::Char('0')
 			&& matches!(key.kind, crossterm::event::KeyEventKind::Press)

@@ -871,6 +871,7 @@ pub struct ChatWidget {
 	// DX-TUI Core and Bridge for Root widget rendering (DIRECT DX CODE!)
 	// Using Arc<Mutex> so we can share Core across threads for async file loading
 	pub(crate) dx_core: std::sync::Arc<std::sync::Mutex<fb_core::Core>>,
+	pub(crate) dx_bootstrapped: std::cell::Cell<bool>,
 	pub(crate) dx_signals: Option<crate::signals::Signals>,
 	pub(crate) dx_event_rx:
 		std::cell::RefCell<tokio::sync::mpsc::UnboundedReceiver<fb_shared::event::Event>>,
@@ -1124,15 +1125,15 @@ enum ReplayKind {
 
 impl ChatWidget {
 	// Helper function to initialize DX Core (REAL DX CODE!)
-	fn make_dx_core() -> fb_core::Core {
-		let mut core = fb_core::Core::make();
+	fn make_dx_core() -> fb_core::Core { fb_core::Core::make() }
 
+	fn bootstrap_dx_core(core: &mut fb_core::Core) {
 		// Prefer the real DX bootstrap path first.
 		{
 			let mut term = None;
-			let cx = &mut fb_actor::Ctx::active(&mut core, &mut term);
+			let cx = &mut fb_actor::Ctx::active(core, &mut term);
 			if fb_macro::act!(app:bootstrap, cx).is_ok() {
-				return core;
+				return;
 			}
 		}
 		
@@ -1168,8 +1169,19 @@ impl ChatWidget {
 				core.mgr.tabs.items[0].parent = Some(fb_core::tab::Folder::from(parent_url.to_owned()));
 			}
 		}
-		
-		core
+	}
+
+	fn ensure_dx_bootstrapped(&self) {
+		if self.dx_bootstrapped.get() {
+			return;
+		}
+
+		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
+		if self.dx_bootstrapped.get() {
+			return;
+		}
+		Self::bootstrap_dx_core(&mut dx_core);
+		self.dx_bootstrapped.set(true);
 	}
 
 	// Load files into DX Core asynchronously (REAL DX CODE!)
@@ -3612,6 +3624,7 @@ impl ChatWidget {
 			welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 			dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+			dx_bootstrapped: std::cell::Cell::new(false),
 			dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 			dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
@@ -3819,6 +3832,7 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+dx_bootstrapped: std::cell::Cell::new(false),
 dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
@@ -4018,6 +4032,7 @@ auto_scroll_enabled: std::cell::Cell::new(true),
 welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_requester),
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
+dx_bootstrapped: std::cell::Cell::new(false),
 dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
@@ -9014,6 +9029,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	fn dispatch_real_dx_key(&mut self, key_event: KeyEvent) {
+		self.ensure_dx_bootstrapped();
 		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
 		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
 		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
@@ -9048,6 +9064,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 	}
 
 	fn dispatch_real_dx_mouse(&mut self, mouse: crossterm::event::MouseEvent) {
+		self.ensure_dx_bootstrapped();
 		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
 		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
 		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
@@ -9316,6 +9333,7 @@ impl Renderable for ChatWidget {
 					);
 				}
 				crate::state::AnimationType::Yazi => {
+					self.ensure_dx_bootstrapped();
 					// Render Yazi using Root widget (REAL DX CODE!)
 					drop(dx_state); // Drop mutable borrow
 					
@@ -9558,6 +9576,12 @@ impl Renderable for ChatWidget {
 		};
 
 		bottom_pane_renderable.render(bp_area, buf);
+		if !show_welcome
+			&& !self.dx_chat_state.borrow().animation_mode
+			&& bottom_pane_renderable.cursor_pos(bp_area).is_some()
+		{
+			self.frame_requester.schedule_frame_in(std::time::Duration::from_millis(80));
+		}
 
 		// Only render scrollbar when there are messages (not showing welcome screen)
 		if !show_welcome && area.width > 0 && transcript_viewport_height > 0 {

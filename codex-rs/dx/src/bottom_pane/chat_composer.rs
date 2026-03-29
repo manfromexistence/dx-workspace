@@ -211,6 +211,7 @@ use crate::bottom_pane::textarea::TextArea;
 use crate::bottom_pane::textarea::TextAreaState;
 use crate::clipboard_paste::normalize_pasted_path;
 use crate::clipboard_paste::pasted_image_format;
+use crate::effects::RainbowEffect;
 use crate::history_cell;
 use crate::tui::FrameRequester;
 use crate::ui_consts::LIVE_PREFIX_COLS;
@@ -228,6 +229,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 #[cfg(not(target_os = "linux"))]
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 #[cfg(not(target_os = "linux"))]
@@ -3844,6 +3846,35 @@ impl Renderable for ChatComposer {
 }
 
 impl ChatComposer {
+	fn rainbow_cursor_effect() -> &'static RainbowEffect {
+		static EFFECT: OnceLock<RainbowEffect> = OnceLock::new();
+		EFFECT.get_or_init(RainbowEffect::new)
+	}
+
+	fn render_animated_cursor(&self, area: Rect, buf: &mut Buffer) {
+		if !matches!(self.active_popup, ActivePopup::None) {
+			return;
+		}
+
+		let Some((cursor_x, cursor_y)) = self.cursor_pos(area) else {
+			return;
+		};
+		if cursor_x >= area.right() || cursor_y >= area.bottom() {
+			return;
+		}
+
+		let rainbow_color = Self::rainbow_cursor_effect().current_color();
+		let cell = &mut buf[(cursor_x, cursor_y)];
+		let existing_char = cell.symbol().chars().next().unwrap_or(' ');
+
+		if existing_char == ' ' || self.textarea.text().is_empty() {
+			cell.set_char('▎');
+			cell.set_style(ratatui::style::Style::default().fg(rainbow_color));
+		} else {
+			cell.set_style(ratatui::style::Style::default().bg(rainbow_color).fg(ratatui::style::Color::Black));
+		}
+	}
+
 	pub(crate) fn render_with_mask(&self, area: Rect, buf: &mut Buffer, mask_char: Option<char>) {
 		let [composer_rect, remote_images_rect, textarea_rect, popup_rect] = self.layout_areas(area);
 		match &self.active_popup {
@@ -4055,6 +4086,7 @@ impl ChatComposer {
 		} else {
 			StatefulWidgetRef::render_ref(&(&self.textarea), textarea_rect, buf, &mut state);
 		}
+		self.render_animated_cursor(area, buf);
 		if self.textarea.text().is_empty() {
 			let text = if self.input_enabled {
 				self.placeholder_text.as_str().to_string()
