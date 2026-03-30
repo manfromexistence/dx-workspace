@@ -1185,15 +1185,19 @@ impl ChatWidget {
 		self.dx_bootstrapped.set(true);
 	}
 
+	fn take_dx_signals(&mut self) -> crate::signals::Signals {
+		self.dx_signals.take().unwrap_or_else(|| {
+			crate::signals::Signals::start().expect("failed to initialize DX signals")
+		})
+	}
+
 	fn sync_embedded_dx_viewport(&self, area: Rect) {
 		if area.width == 0 || area.height == 0 {
 			return;
 		}
 
 		self.ensure_dx_bootstrapped();
-		if self.dx_last_render_area.get() == area {
-			return;
-		}
+		let area_changed = self.dx_last_render_area.get() != area;
 
 		use fb_actor::lives::Lives;
 		use fb_binding::runtime_scope;
@@ -1202,55 +1206,56 @@ impl ChatWidget {
 		use mlua::{ObjectLike, Value};
 
 		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core for viewport sync");
-		let mut layout = LAYOUT.get();
-		let result = Lives::scope(&dx_core, || {
-			runtime_scope!(LUA, "root", {
-				let comps = crate::root::Root::reflow(area)?;
-				for value in comps.sequence_values::<Value>() {
-					let Value::Table(table) = value? else {
-						continue;
-					};
+		if area_changed {
+			let mut layout = LAYOUT.get();
+			let result = Lives::scope(&dx_core, || {
+				runtime_scope!(LUA, "root", {
+					let comps = crate::root::Root::reflow(area)?;
+					for value in comps.sequence_values::<Value>() {
+						let Value::Table(table) = value? else {
+							continue;
+						};
 
-					let id: mlua::String = table.get("_id")?;
-					match &*id.as_bytes() {
-						b"current" => {
-							layout.current = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+						let id: mlua::String = table.get("_id")?;
+						match &*id.as_bytes() {
+							b"current" => {
+								layout.current = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+							}
+							b"preview" => {
+								layout.preview = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+							}
+							b"progress" => {
+								layout.progress = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+							}
+							_ => {}
 						}
-						b"preview" => {
-							layout.preview = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
-						}
-						b"progress" => {
-							layout.progress = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
-						}
-						_ => {}
 					}
-				}
-				Ok(())
-			})
-		});
+					Ok(())
+				})
+			});
 
-		if let Err(err) = result {
-			tracing::warn!("DX embedded reflow failed: {err}");
-			return;
-		}
+			if let Err(err) = result {
+				tracing::warn!("DX embedded reflow failed: {err}");
+				return;
+			}
 
-		if layout != LAYOUT.get() {
-			LAYOUT.set(layout);
-		}
+			if layout != LAYOUT.get() {
+				LAYOUT.set(layout);
+			}
 
-		dx_core.current_mut().arrow(0);
-		if let Some(parent) = dx_core.parent_mut() {
-			parent.arrow(0);
+			dx_core.current_mut().arrow(0);
+			if let Some(parent) = dx_core.parent_mut() {
+				parent.arrow(0);
+			}
+			dx_core.current_mut().sync_page(true);
+			self.dx_last_render_area.set(area);
 		}
-		dx_core.current_mut().sync_page(true);
 
 		let mut term = None;
 		let cx = &mut fb_actor::Ctx::active(&mut dx_core, &mut term);
 		if let Err(err) = fb_macro::act!(mgr:peek, cx) {
 			tracing::warn!("DX embedded peek failed: {err}");
 		}
-
-		self.dx_last_render_area.set(area);
 	}
 
 	// Load files into DX Core asynchronously (REAL DX CODE!)
@@ -3695,7 +3700,7 @@ impl ChatWidget {
 			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 			dx_bootstrapped: std::cell::Cell::new(false),
 			dx_last_render_area: std::cell::Cell::new(Rect::default()),
-			dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
+			dx_signals: None,
 			dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
@@ -3905,7 +3910,7 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 dx_bootstrapped: std::cell::Cell::new(false),
 dx_last_render_area: std::cell::Cell::new(Rect::default()),
-dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
+dx_signals: None,
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
@@ -4107,7 +4112,7 @@ dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 dx_bootstrapped: std::cell::Cell::new(false),
 dx_last_render_area: std::cell::Cell::new(Rect::default()),
-dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
+dx_signals: None,
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 };
@@ -5140,6 +5145,16 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 			);
 			return;
 		}
+
+		{
+			let mut dx_state = self.dx_chat_state.borrow_mut();
+			dx_state.animation_mode = false;
+			dx_state.show_tachyon_menu = false;
+			dx_state.menu_is_closing = false;
+			dx_state.stop_animation_sound();
+		}
+		self.dx_bridge.borrow_mut().mode = crate::bridge::AppMode::Chat;
+		self.frame_requester.schedule_frame();
 
 		let render_in_history = !self.agent_turn_running;
 		let mut items: Vec<UserInput> = Vec::new();
@@ -9105,11 +9120,10 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 
 	fn dispatch_real_dx_key(&mut self, key_event: KeyEvent) {
 		self.ensure_dx_bootstrapped();
+		let signals = self.take_dx_signals();
 		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
 		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
 		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
-
-		let signals = self.dx_signals.take().expect("missing DX signals");
 
 		let mut temp_app = crate::file_browser::app::App {
 			core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),
@@ -9140,11 +9154,10 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 
 	fn dispatch_real_dx_mouse(&mut self, mouse: crossterm::event::MouseEvent) {
 		self.ensure_dx_bootstrapped();
+		let signals = self.take_dx_signals();
 		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core");
 		let mut bridge = std::mem::take(self.dx_bridge.get_mut());
 		std::mem::swap(&mut bridge.chat_state, self.dx_chat_state.get_mut());
-
-		let signals = self.dx_signals.take().expect("missing DX signals");
 
 		let mut temp_app = crate::file_browser::app::App {
 			core: std::mem::replace(&mut *dx_core, fb_core::Core::make()),

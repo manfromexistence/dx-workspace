@@ -2,6 +2,30 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-30 07:50] - Graceful Non-TTY Startup Handling
+
+### Fixed - Running without a real terminal no longer throws a backtrace from startup
+- `src/lib.rs` and `src/codex_lib.rs`: catch `tui::init()` terminal-availability errors and return a clean `AppExitInfo` instead of bubbling an error that aborts the process.
+- **Result**: when `stdin` or `stdout` is not a terminal, the app now exits cleanly with a short error message instead of a Rust error backtrace.
+
+## [2026-03-30 07:35] - Startup Signal Laziness, Yazi Peek Refresh, Cursor Visibility, and Send-Flow Reset
+
+### Changed - Splash startup path is lighter
+- `src/chatwidget.rs`: stop eagerly starting DX signal infrastructure during widget construction and initialize it lazily on first DX event dispatch.
+- **Result**: less startup work before the first splash render.
+
+### Fixed - Embedded Yazi preview refresh no longer depends only on area changes
+- `src/chatwidget.rs`: keep embedded reflow keyed to area changes, but run `mgr:peek` on the embedded Yazi path even when the viewport size is unchanged.
+- **Result**: the right preview pane gets a fresh DX preview update instead of staying stale after the first reflow.
+
+### Fixed - Composer cursor is visible again
+- `src/bottom_pane/chat_composer.rs`: restore real cursor-position reporting from the textarea instead of forcing `None`.
+- Keep rainbow cursor painting for focused input and dim cursor styling for unfocused input.
+
+### Fixed - Submitting from DX-owned screens returns to the Codex transcript flow
+- `src/chatwidget.rs`: when submitting a user message, exit DX animation/menu/file-picker state, stop animation audio, and return to Codex transcript mode before the turn is sent.
+- **Result**: user turns and assistant responses render back in the Codex message list regardless of the prior DX screen.
+
 ## [2026-03-30 07:05] - Embedded DX Reflow, Startup Splash, Status Layout, and Scrollbar Markers
 
 ### Fixed - Embedded Yazi now gets the real DX viewport layout

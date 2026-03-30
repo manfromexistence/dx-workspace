@@ -605,7 +605,23 @@ async fn run_ratatui_app(
 		tracing::error!("panic: {info}");
 		prev_hook(info);
 	}));
-	let mut terminal = tui::init()?;
+	let mut terminal = match tui::init() {
+		Ok(terminal) => terminal,
+		Err(err)
+			if err.to_string() == "stdin is not a terminal"
+				|| err.to_string() == "stdout is not a terminal" =>
+		{
+			eprintln!("Error: {}", err);
+			return Ok(AppExitInfo {
+				token_usage: codex_protocol::protocol::TokenUsage::default(),
+				thread_id: None,
+				thread_name: None,
+				update_action: None,
+				exit_reason: ExitReason::Fatal(err.to_string()),
+			});
+		}
+		Err(err) => return Err(err.into()),
+	};
 	terminal.clear()?;
 
 	let mut tui = Tui::new(terminal);

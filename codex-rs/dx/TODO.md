@@ -2,6 +2,15 @@
 
 > Auto-managed by AI. Updated after every completed or failed task.
 
+## Current Remaining Blockers
+
+- [ ] Make the splash screen feel instant on first launch on this low-end machine.
+- [ ] Make the embedded Yazi right preview pane render reliably in all navigation cases.
+- [ ] Finish cursor polish so the active rainbow cursor and inactive cursor states always render correctly.
+- [ ] Verify sending a message from any DX-owned screen always returns to Codex transcript mode and streams the assistant response there.
+- [ ] Remove remaining duplicated DX logic where the real DX implementation already exists.
+- [ ] Reduce or eliminate the Yazi TRT terminal warning in this terminal environment.
+
 ---
 
 ## 🎯 DX-TUI Complete Feature Checklist

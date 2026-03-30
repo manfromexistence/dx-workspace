@@ -683,8 +683,9 @@ impl ChatComposer {
 	}
 
 	pub fn cursor_pos(&self, area: Rect) -> Option<(u16, u16)> {
-		// Temporarily hide cursor to fix positioning bug
-		None
+		let [_composer_rect, _remote_images_rect, textarea_rect, _popup_rect] = self.layout_areas(area);
+		let state = self.textarea_state.borrow();
+		self.textarea.cursor_pos_with_state(textarea_rect, *state)
 	}
 	/// Returns true if the composer currently contains no user-entered input.
 	pub(crate) fn is_empty(&self) -> bool {
@@ -3863,7 +3864,11 @@ impl ChatComposer {
 			return;
 		}
 
-		let rainbow_color = Self::rainbow_cursor_effect().current_color();
+		let rainbow_color = if self.has_focus {
+			Self::rainbow_cursor_effect().current_color()
+		} else {
+			ratatui::style::Color::DarkGray
+		};
 		let cell = &mut buf[(cursor_x, cursor_y)];
 		let existing_char = cell.symbol().chars().next().unwrap_or(' ');
 
@@ -3871,7 +3876,12 @@ impl ChatComposer {
 			cell.set_char('▎');
 			cell.set_style(ratatui::style::Style::default().fg(rainbow_color));
 		} else {
-			cell.set_style(ratatui::style::Style::default().bg(rainbow_color).fg(ratatui::style::Color::Black));
+			let fg = if self.has_focus {
+				ratatui::style::Color::Black
+			} else {
+				ratatui::style::Color::White
+			};
+			cell.set_style(ratatui::style::Style::default().bg(rainbow_color).fg(fg));
 		}
 	}
 
