@@ -8,6 +8,12 @@ All notable changes to the dx-tui integration will be documented in this file.
 - `src/lib.rs` and `src/codex_lib.rs`: catch `tui::init()` terminal-availability errors and return a clean `AppExitInfo` instead of bubbling an error that aborts the process.
 - **Result**: when `stdin` or `stdout` is not a terminal, the app now exits cleanly with a short error message instead of a Rust error backtrace.
 
+## [2026-03-30 08:00] - Splash Crash Hardening
+
+### Fixed - Splash render no longer aborts the whole TUI if figlet/font rendering panics
+- `src/splash.rs`: wrap the splash render path in `catch_unwind()` and fall back to a plain rainbow `DX` title if font parsing or figlet conversion misbehaves.
+- **Result**: a splash-specific render failure should now degrade to the fallback splash instead of crashing the fullscreen TUI.
+
 ## [2026-03-30 07:35] - Startup Signal Laziness, Yazi Peek Refresh, Cursor Visibility, and Send-Flow Reset
 
 ### Changed - Splash startup path is lighter

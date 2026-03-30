@@ -10,8 +10,26 @@ use ratatui::{
 	text::{Line, Span},
 	widgets::{Block, Paragraph, Widget},
 };
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 pub fn render(
+	area: Rect,
+	buf: &mut Buffer,
+	theme: &ChatTheme,
+	font_index: usize,
+	rainbow: &RainbowEffect,
+) {
+	if area.width == 0 || area.height == 0 {
+		return;
+	}
+
+	if catch_unwind(AssertUnwindSafe(|| render_inner(area, buf, theme, font_index, rainbow))).is_err()
+	{
+		render_fallback(area, buf, theme, rainbow);
+	}
+}
+
+fn render_inner(
 	area: Rect,
 	buf: &mut Buffer,
 	theme: &ChatTheme,
@@ -74,6 +92,29 @@ pub fn render(
 	let render_height = content_height.min(area.height.saturating_sub(top_padding));
 
 	// Render everything centered
+	Paragraph::new(content_lines).alignment(ratatui::layout::Alignment::Center).render(
+		Rect { x: area.x, y: area.y + top_padding, width: area.width, height: render_height },
+		buf,
+	);
+}
+
+fn render_fallback(area: Rect, buf: &mut Buffer, theme: &ChatTheme, rainbow: &RainbowEffect) {
+	let text = "DX";
+	let mut spans = vec![Span::styled("▸ ", Style::default().fg(theme.accent))];
+	for (j, ch) in text.chars().enumerate() {
+		spans.push(Span::styled(ch.to_string(), Style::default().fg(rainbow.color_at(j))));
+	}
+	let content_lines = vec![
+		Line::from(spans),
+		Line::from(""),
+		Line::from(Span::styled(
+			"Enhanced Development Experience",
+			Style::default().fg(theme.border),
+		)),
+	];
+	let content_height = content_lines.len() as u16;
+	let top_padding = (area.height.saturating_sub(content_height)) / 2;
+	let render_height = content_height.min(area.height.saturating_sub(top_padding));
 	Paragraph::new(content_lines).alignment(ratatui::layout::Alignment::Center).render(
 		Rect { x: area.x, y: area.y + top_padding, width: area.width, height: render_height },
 		buf,

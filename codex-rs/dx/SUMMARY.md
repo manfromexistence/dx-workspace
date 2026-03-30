@@ -30,3 +30,35 @@
 2. Embedded Yazi right preview reliability.
 3. Final cursor / focus polish.
 4. Remaining DX parity cleanup and removal of old duplicated paths.
+
+Now still getting this error Isn't there anywhere so that when we run `cargo run`, if there is any panic, just create a new file with the panic error details? Look at the files and fix the problem. :
+       at <unknown source file>:<unknown line>
+  62: std::rt::lang_start_internal::closure$0<unknown>
+      at /rustc/254b59607d4417e9dffbc307138ae5c86280fe4c/library\std\src\rt.rs:175
+  63: std::panicking::catch_unwind::do_call<unknown>
+      at /rustc/254b59607d4417e9dffbc307138ae5c86280fe4c/library\std\src\panicking.rs:581
+  64: std::panicking::catch_unwind<unknown>
+      at /rustc/254b59607d4417e9dffbc307138ae5c86280fe4c/library\std\src\panicking.rs:544
+  65: std::panic::catch_unwind<unknown>
+      at /rustc/254b59607d4417e9dffbc307138ae5c86280fe4c/library\std\src\panic.rs:359
+  66: std::rt::lang_start_internal<unknown>
+      at /rustc/254b59607d4417e9dffbc307138ae5c86280fe4c/library\std\src\rt.rs:171
+  67: std::rt::lang_start::h4bc5a12c18dd0311
+      at <unknown source file>:<unknown line>
+  68: main<unknown>
+      at <unknown source file>:<unknown line>
+  69: invoke_main<unknown>
+      at D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:78
+  70: __scrt_common_main_seh<unknown>
+      at D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+  71: __scrt_common_main<unknown>
+      at D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:330
+  72: mainCRTStartup<unknown>
+      at D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp:16
+  73: BaseThreadInitThunk<unknown>
+      at <unknown source file>:<unknown line>
+  74: RtlUserThreadStart<unknown>
+      at <unknown source file>:<unknown line>
+
+Run with COLORBT_SHOW_HIDDEN=1 environment variable to disable frame filtering.
+error: process didn't exit successfully: `F:\codex\codex-rs\target\debug\codex-tui-dx.exe` (exit code: 101)
