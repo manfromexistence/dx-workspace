@@ -602,6 +602,7 @@ async fn run_ratatui_app(
 	// (including backtraces) after we restore the terminal.
 	let prev_hook = std::panic::take_hook();
 	std::panic::set_hook(Box::new(move |info| {
+		crate::panic::write_panic_report(info);
 		tracing::error!("panic: {info}");
 		prev_hook(info);
 	}));

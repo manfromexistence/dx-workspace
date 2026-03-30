@@ -21,6 +21,14 @@ All notable changes to the dx-tui integration will be documented in this file.
 - Reports are written under `.dx/tui/panic-reports/` in the current project.
 - Each report contains the panic location, payload, and a forced backtrace.
 
+## [2026-03-30 08:25] - Panic Hook Re-Panic Fix
+
+### Fixed - Panic logging no longer crashes while handling early-startup panics
+- `src/panic.rs`: remove `fb_term::Term::goodbye()` from the global panic hook so the hook does not dereference uninitialized DX terminal state during early panics.
+- `src/lib.rs`, `src/codex_lib.rs`, and `src/tui.rs`: write the panic report from every later-installed panic hook as well, so hook replacement cannot suppress file logging.
+- `src/main.rs` and `src/codex.rs`: add a hidden `CODEX_TUI_DX_PANIC_TEST` env trigger so panic-file creation can be verified with `cargo run`.
+- **Result**: controlled `cargo run` panics now exit with code `101` and reliably create a report file in `.dx/tui/panic-reports/`.
+
 ## [2026-03-30 07:35] - Startup Signal Laziness, Yazi Peek Refresh, Cursor Visibility, and Send-Flow Reset
 
 ### Changed - Splash startup path is lighter

@@ -7,6 +7,7 @@
 - [ ] Make the splash screen feel instant on first launch on this low-end machine.
 - [ ] Verify the fullscreen splash no longer triggers the hidden exit-101 crash in the user's terminal.
 - [ ] If the fullscreen crash still happens, inspect the generated `.dx/tui/panic-reports/` log and patch the exact crash site.
+- [x] ~~Make panic reports write to `.dx/tui/panic-reports/` reliably~~ âœ… (completed: 2026-03-30 07:25)
 - [ ] Make the embedded Yazi right preview pane render reliably in all navigation cases.
 - [ ] Finish cursor polish so the active rainbow cursor and inactive cursor states always render correctly.
 - [ ] Verify sending a message from any DX-owned screen always returns to Codex transcript mode and streams the assistant response there.

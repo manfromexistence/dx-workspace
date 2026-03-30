@@ -80,6 +80,9 @@ fn main() -> anyhow::Result<()> {
 	arg0_dispatch_or_else(|arg0_paths: Arg0DispatchPaths| async move {
 		// DX-TUI initialization (DIRECT DX CODE!) - must be in async context
 		codex_tui_dx::panic::Panic::install();
+		if std::env::var_os("CODEX_TUI_DX_PANIC_TEST").is_some() {
+			panic!("CODEX_TUI_DX_PANIC_TEST");
+		}
 		fb_shared::init();
 		
 		// Initialize DX subsystems (required for Core::make())
@@ -95,7 +98,6 @@ fn main() -> anyhow::Result<()> {
 		fb_watcher::init();
 		fb_plugin::init()?;
 		fb_dds::serve();
-		
 		let top_cli = TopCli::parse();
 		let mut inner = top_cli.inner;
 		inner.config_overrides.raw_overrides.splice(0..0, top_cli.config_overrides.raw_overrides);

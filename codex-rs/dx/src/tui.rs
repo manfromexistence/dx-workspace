@@ -231,6 +231,7 @@ pub fn init() -> Result<Terminal> {
 fn set_panic_hook() {
 	let hook = panic::take_hook();
 	panic::set_hook(Box::new(move |panic_info| {
+		crate::panic::write_panic_report(panic_info);
 		let _ = restore(); // ignore any errors as we are already failing
 		hook(panic_info);
 	}));

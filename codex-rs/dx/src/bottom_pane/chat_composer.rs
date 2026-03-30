@@ -4096,6 +4096,7 @@ impl ChatComposer {
 		} else {
 			StatefulWidgetRef::render_ref(&(&self.textarea), textarea_rect, buf, &mut state);
 		}
+		drop(state); // Drop the mutable borrow
 		self.render_animated_cursor(area, buf);
 		if self.textarea.text().is_empty() {
 			let text = if self.input_enabled {
