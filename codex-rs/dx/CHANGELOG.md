@@ -14,6 +14,13 @@ All notable changes to the dx-tui integration will be documented in this file.
 - `src/splash.rs`: wrap the splash render path in `catch_unwind()` and fall back to a plain rainbow `DX` title if font parsing or figlet conversion misbehaves.
 - **Result**: a splash-specific render failure should now degrade to the fallback splash instead of crashing the fullscreen TUI.
 
+## [2026-03-30 08:10] - Panic Report File Logging
+
+### Changed - Panics now write a report file automatically
+- `src/panic.rs`: the global panic hook now writes a timestamped panic report before restoring the terminal.
+- Reports are written under `.dx/tui/panic-reports/` in the current project.
+- Each report contains the panic location, payload, and a forced backtrace.
+
 ## [2026-03-30 07:35] - Startup Signal Laziness, Yazi Peek Refresh, Cursor Visibility, and Send-Flow Reset
 
 ### Changed - Splash startup path is lighter
