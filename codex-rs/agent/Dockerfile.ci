@@ -1,0 +1,25 @@
+# Dockerfile.ci — CI/release image using pre-built binaries.
+# Used by release workflows to skip the ~60 min Rust compilation.
+# The main Dockerfile is still used for local dev builds.
+
+# ── Runtime (Distroless) ─────────────────────────────────────
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:84fcd3c223b144b0cb6edc5ecc75641819842a9679a3a58fd6294bec47532bf7
+
+ARG TARGETARCH
+
+# Copy the pre-built binary for this platform (amd64 or arm64)
+COPY bin/${TARGETARCH}/agent /usr/local/bin/agent
+
+# Runtime directory structure and default config
+COPY --chown=65534:65534 agent-data/ /agent-data/
+
+ENV LANG=C.UTF-8
+ENV AGENT_WORKSPACE=/agent-data/workspace
+ENV HOME=/agent-data
+ENV AGENT_GATEWAY_PORT=42617
+
+WORKDIR /agent-data
+USER 65534:65534
+EXPOSE 42617
+ENTRYPOINT ["agent"]
+CMD ["gateway"]

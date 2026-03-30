@@ -1,0 +1,220 @@
+use crate::config::Config;
+use crate::tools::openapi::{ApisGuruSource, OpenApiRegistry, SpecHarvester};
+use crate::tools::traits::Tool;
+use anyhow::{Context, Result};
+use serde::Serialize;
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, Serialize)]
+struct RegistryEntry {
+    id: String,
+    provider: String,
+    service: String,
+    version: String,
+    tier: String,
+    quality_score: u8,
+    source: String,
+    base_url: String,
+    path: String,
+}
+
+pub async fn harvest_command(config: &Config, source: Option<&str>) -> Result<()> {
+    let specs_root = expand_tilde(&config.openapi.specs_dir);
+    let source_dir = source
+        .map(PathBuf::from)
+        .unwrap_or_else(|| specs_root.join("apis-guru"));
+
+    let mut harvester = SpecHarvester::new();
+    harvester.add_source(Box::new(ApisGuruSource::new(source_dir.clone())));
+
+    println!(
+        "Harvesting OpenAPI connects from {}...",
+        source_dir.display()
+    );
+    let specs = harvester.harvest_all().await?;
+    println!("Found {} connects", specs.len());
+
+    println!("Deduplicating...");
+    let unique = harvester.deduplicate(specs).await;
+    println!("Unique connects: {}", unique.len());
+
+    println!("Building registry...");
+    let mut entries = Vec::new();
+    for (i, spec) in unique.iter().enumerate() {
+        if i % 100 == 0 {
+            println!("  Processing {}/{}", i, unique.len());
+        }
+
+        let spec_id = spec.dedup_key();
+
+        // Use the original source path
+        let path = spec
+            .metadata
+            .source
+            .strip_prefix("file://")
+            .unwrap_or(&spec.metadata.source)
+            .to_string();
+
+        entries.push(RegistryEntry {
+            id: spec_id,
+            provider: spec.metadata.provider.clone(),
+            service: spec.metadata.service.clone(),
+            version: spec.metadata.version.clone(),
+            tier: format!("{:?}", spec.metadata.tier),
+            quality_score: spec.metadata.quality_score,
+            source: spec.metadata.source.clone(),
+            base_url: spec.base_url.clone(),
+            path,
+        });
+    }
+
+    // Write registry
+    tokio::fs::create_dir_all(&specs_root)
+        .await
+        .with_context(|| format!("failed to create connects dir {}", specs_root.display()))?;
+    let registry_path = specs_root.join("registry.json");
+    let registry_data = serde_json::json!({
+        "connects": entries,
+        "harvested_at": chrono::Utc::now().to_rfc3339(),
+        "total_specs": unique.len(),
+    });
+    let payload = serde_json::to_string_pretty(&registry_data)?;
+    tokio::fs::write(&registry_path, payload)
+        .await
+        .with_context(|| format!("failed to write {}", registry_path.display()))?;
+
+    println!("\nHarvest complete!");
+    println!("  Source: {}", source_dir.display());
+    println!("  Specs harvested: {}", unique.len());
+    println!("  Registry: {}", registry_path.display());
+    println!("\nRun 'agent openapi list' to see available connects.");
+    Ok(())
+}
+
+pub async fn list_command(config: &Config) -> Result<()> {
+    let registry = load_registry(config)?;
+
+    let spec_count = registry.spec_count();
+    let connect_count = registry.tool_count();
+
+    println!("OpenAPI Integration Status");
+    println!("==========================");
+    println!("Connects loaded: {}", spec_count);
+    println!("Connects available: {}", connect_count);
+    println!();
+
+    if spec_count == 0 {
+        println!("No connects loaded. Run 'agent openapi harvest' to load connects.");
+        return Ok(());
+    }
+
+    println!("Available connects:");
+    for spec_id in registry.list_specs() {
+        if let Some(spec) = registry.get_spec(&spec_id) {
+            let connect_count = registry.get_tools_for_spec(&spec_id).len();
+            println!("  {} - {} connects", spec_id, connect_count);
+            println!("    Service: {}", spec.metadata.service);
+            println!("    Version: {}", spec.metadata.version);
+            println!("    Tier: {:?}", spec.metadata.tier);
+            println!("    Quality: {}/100", spec.metadata.quality_score);
+            println!();
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn tools_command(config: &Config, spec_id: &str) -> Result<()> {
+    let registry = load_registry(config)?;
+
+    let spec = registry
+        .get_spec(spec_id)
+        .ok_or_else(|| anyhow::anyhow!("Spec not found: {}", spec_id))?;
+
+    let connects = registry.get_tools_for_spec(spec_id);
+
+    println!("Connects for spec: {}", spec_id);
+    println!("Service: {}", spec.metadata.service);
+    println!("Version: {}", spec.metadata.version);
+    println!("Base URL: {}", spec.base_url);
+    println!();
+    println!("Available connects ({}):", connects.len());
+
+    for connect_name in connects {
+        if let Some(connect) = registry.get_tool(&connect_name) {
+            println!("  {}", connect.name());
+            println!("    {}", connect.description());
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn test_command(config: &Config, tool_name: &str, args: serde_json::Value) -> Result<()> {
+    let registry = load_registry(config)?;
+
+    let connect = registry
+        .get_tool(tool_name)
+        .ok_or_else(|| anyhow::anyhow!("Connect not found: {}", tool_name))?;
+
+    println!("Testing connect: {}", connect.name());
+    println!("Description: {}", connect.description());
+    println!("Arguments: {}", serde_json::to_string_pretty(&args)?);
+    println!();
+    println!("Executing...");
+
+    let result = connect.execute(args).await?;
+
+    println!();
+    if result.success {
+        println!("✓ Success");
+        println!("{}", result.output);
+    } else {
+        println!("✗ Failed");
+        if let Some(error) = result.error {
+            println!("Error: {}", error);
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn search_command(config: &Config, query: &str) -> Result<()> {
+    let registry = load_registry(config)?;
+
+    let results = registry.search_tools(query);
+
+    println!("Search results for '{}':", query);
+    println!("Found {} connects:", results.len());
+    println!();
+
+    for connect_name in results {
+        if let Some(connect) = registry.get_tool(&connect_name) {
+            println!("  {}", connect.name());
+            println!("    {}", connect.description());
+        }
+    }
+
+    Ok(())
+}
+
+fn load_registry(config: &Config) -> Result<OpenApiRegistry> {
+    let specs_root = expand_tilde(&config.openapi.specs_dir);
+    let registry_path = specs_root.join("registry.json");
+
+    if !registry_path.exists() {
+        anyhow::bail!(
+            "Registry not found at {}. Run 'agent openapi harvest' first.",
+            registry_path.display()
+        );
+    }
+
+    let registry = OpenApiRegistry::new();
+    registry.load_from_disk(&registry_path)?;
+
+    Ok(registry)
+}
+
+fn expand_tilde(path: &str) -> PathBuf {
+    Path::new(shellexpand::tilde(path).as_ref()).to_path_buf()
+}

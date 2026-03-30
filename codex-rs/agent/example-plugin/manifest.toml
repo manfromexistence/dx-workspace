@@ -1,0 +1,8 @@
+name = "weather"
+version = "0.1.0"
+description = "Example weather tool plugin for Agent"
+author = "Agent Labs"
+wasm_path = "target/wasm32-wasip1/release/agent_weather_plugin.wasm"
+
+capabilities = ["tool"]
+permissions = ["http_client"]
