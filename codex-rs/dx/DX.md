@@ -137,6 +137,14 @@ When we open the codex DIY, nothing is showing, but when we are pressing right-c
 Also, when I am opening our Codex tui, it is taking too much time to load the splash screen for the first time and also has some lagging problem. Please fix that too. 
 cursor flicering in the status line and input box - please fix that too. and make status like like th dx-tui input box bottom keep the left side of the current status line same and just introduce new center and rigth side and in the center show the files/image attact pasted text with just [pasted text] In the DX DUI, there is a file atas menu related to port. Learn from it and use it in our codex DUI.  and in the right side show the current time and date like "12:30 PM, 25 March 2026" and also show the current theme name in the right side of the status line. Also, please make sure to implement the cursor flickering issue in both the input box and status line. and show rainbow animation spinner when the model is thinking in the status line. and update the codex-tui message list scrollbar to be like teh dx-tui scrollbar butt the dx-tui scrollbar diamon symbols are bad so please change them to refect the message so that by default we use outline diamond symbol and when at the position of a message list or chose then make the diamon to be filled diamon symbol and update the symbol to be more stratigicly spawn as when there are 3 message then on the right next to the scrollbar track there will be 3 message but not top 3 but they will be grouped top, center and bottom of the scrollbar and other will be added via the logic and also remove the scroll progress indidcator
 
+We still have the two most wanted problems on this project:
+1. The splash screen is taking too much time to load.
+2. The yazi screen preview right panel is not showing.
+Please fix these two problems correctly.
+The cursor is still not visible. Please render the cursor and render the rainbow animated cursor, and make sure that the rainbow animated cursor receives the active and non-active so that it shows the active rainbow animated cursor when we are trying to type.
+Also, when we send the message, please make sure that it shows the Codex TUI message list correctly. No matter from what screen we are sending the message, it will show the message list screen with the Codex TUI and show the AI response correctly.
+Then please create a new SUMMARY.md file in the root folder and write a summary of the project, what we have done, what we are going to do, and how much we have completed. Also, please update the TODO.md file with all the remaining tasks and also update the CHANGELOG.md file with all the changes we have made so far.
+
 fork-codex!!!
 metasearch-tui
 forge-tui
