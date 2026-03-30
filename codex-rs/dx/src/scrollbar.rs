@@ -14,11 +14,13 @@ pub struct ScrollbarState {
 	pub content_height: usize,
 	/// Viewport height
 	pub viewport_height: usize,
+	/// Number of transcript markers to show beside the track
+	pub marker_count: usize,
 }
 
 impl ScrollbarState {
 	pub fn new(content_height: usize, viewport_height: usize) -> Self {
-		Self { position: 0, content_height, viewport_height }
+		Self { position: 0, content_height, viewport_height, marker_count: 0 }
 	}
 
 	pub fn position(mut self, position: usize) -> Self {
@@ -33,6 +35,11 @@ impl ScrollbarState {
 
 	pub fn viewport_height(mut self, height: usize) -> Self {
 		self.viewport_height = height;
+		self
+	}
+
+	pub fn marker_count(mut self, marker_count: usize) -> Self {
+		self.marker_count = marker_count;
 		self
 	}
 
@@ -63,20 +70,16 @@ impl ScrollbarState {
 			return (0, 0);
 		}
 
-		// If content fits in viewport, no scrolling needed
 		if self.content_height <= self.viewport_height {
 			return (0, track_height);
 		}
 
-		// Calculate thumb size proportional to viewport/content ratio
 		let thumb_size = ((self.viewport_height as f64 / self.content_height as f64) * track_height as f64)
 			.max(1.0)
 			.min(track_height as f64) as usize;
 
-		// Calculate thumb position based on scroll position
 		let max_scroll = self.content_height.saturating_sub(self.viewport_height);
 		let max_thumb_pos = track_height.saturating_sub(thumb_size);
-		
 		let thumb_pos = if max_scroll > 0 {
 			((self.position as f64 / max_scroll as f64) * max_thumb_pos as f64) as usize
 		} else {
@@ -139,43 +142,58 @@ impl CustomScrollbar {
 			return;
 		}
 
+		let track_width = if area.width > 1 { 1 } else { area.width };
 		let track_height = if self.show_arrows {
 			area.height.saturating_sub(2) as usize
 		} else {
 			area.height as usize
 		};
-
 		let start_y = if self.show_arrows { 1 } else { 0 };
+		let (thumb_pos, thumb_size) = state.thumb_position_and_size(track_height);
+		let marker_rows = if state.marker_count > 0 && track_height > 0 {
+			(0..state.marker_count)
+				.map(|index| ((index + 1) * (track_height + 1)) / (state.marker_count + 1) - 1)
+				.collect::<Vec<_>>()
+		} else {
+			Vec::new()
+		};
 
-		// Draw arrows if enabled
 		if self.show_arrows && area.height >= 2 {
-			// Up arrow
 			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, area.y)) {
 				cell.set_symbol("▲");
 				cell.set_style(self.track_style);
 			}
-			// Down arrow
 			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, area.y + area.height - 1)) {
 				cell.set_symbol("▼");
 				cell.set_style(self.track_style);
 			}
 		}
 
-		// Calculate thumb position and size
-		let (thumb_pos, thumb_size) = state.thumb_position_and_size(track_height);
-
-		// Draw track and thumb
 		for i in 0..track_height {
 			let y = area.y + start_y + i as u16;
-			if let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, y)) {
+			if track_width > 0
+				&& let Some(cell) = buf.cell_mut(ratatui::layout::Position::new(area.x, y))
+			{
 				if i >= thumb_pos && i < thumb_pos + thumb_size {
-					// Draw thumb
 					cell.set_symbol("█");
 					cell.set_style(self.thumb_style);
 				} else {
-					// Draw track
 					cell.set_symbol("│");
 					cell.set_style(self.track_style);
+				}
+			}
+
+			if area.width > 1
+				&& let Some(marker_cell) =
+					buf.cell_mut(ratatui::layout::Position::new(area.x + 1, y))
+			{
+				if marker_rows.contains(&i) {
+					let thumb_active = i >= thumb_pos && i < thumb_pos + thumb_size;
+					marker_cell.set_symbol(if thumb_active { "◆" } else { "◇" });
+					marker_cell.set_style(if thumb_active { self.thumb_style } else { self.track_style });
+				} else {
+					marker_cell.set_symbol(" ");
+					marker_cell.set_style(Style::default());
 				}
 			}
 		}

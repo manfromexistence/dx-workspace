@@ -3979,13 +3979,11 @@ impl App {
 					AppRunControl::Continue
 				} else {
 					self.pending_shutdown_exit_thread_id = None;
-					crate::exit_animation::show_train_farewell();
 					AppRunControl::Exit(ExitReason::UserRequested)
 				}
 			}
 			ExitMode::Immediate => {
 				self.pending_shutdown_exit_thread_id = None;
-				crate::exit_animation::show_train_farewell();
 				AppRunControl::Exit(ExitReason::UserRequested)
 			}
 		}

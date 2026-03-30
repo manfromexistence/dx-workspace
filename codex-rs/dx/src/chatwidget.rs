@@ -872,6 +872,7 @@ pub struct ChatWidget {
 	// Using Arc<Mutex> so we can share Core across threads for async file loading
 	pub(crate) dx_core: std::sync::Arc<std::sync::Mutex<fb_core::Core>>,
 	pub(crate) dx_bootstrapped: std::cell::Cell<bool>,
+	pub(crate) dx_last_render_area: std::cell::Cell<Rect>,
 	pub(crate) dx_signals: Option<crate::signals::Signals>,
 	pub(crate) dx_event_rx:
 		std::cell::RefCell<tokio::sync::mpsc::UnboundedReceiver<fb_shared::event::Event>>,
@@ -1182,6 +1183,74 @@ impl ChatWidget {
 		}
 		Self::bootstrap_dx_core(&mut dx_core);
 		self.dx_bootstrapped.set(true);
+	}
+
+	fn sync_embedded_dx_viewport(&self, area: Rect) {
+		if area.width == 0 || area.height == 0 {
+			return;
+		}
+
+		self.ensure_dx_bootstrapped();
+		if self.dx_last_render_area.get() == area {
+			return;
+		}
+
+		use fb_actor::lives::Lives;
+		use fb_binding::runtime_scope;
+		use fb_config::LAYOUT;
+		use fb_plugin::LUA;
+		use mlua::{ObjectLike, Value};
+
+		let mut dx_core = self.dx_core.lock().expect("failed to lock DX core for viewport sync");
+		let mut layout = LAYOUT.get();
+		let result = Lives::scope(&dx_core, || {
+			runtime_scope!(LUA, "root", {
+				let comps = crate::root::Root::reflow(area)?;
+				for value in comps.sequence_values::<Value>() {
+					let Value::Table(table) = value? else {
+						continue;
+					};
+
+					let id: mlua::String = table.get("_id")?;
+					match &*id.as_bytes() {
+						b"current" => {
+							layout.current = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+						}
+						b"preview" => {
+							layout.preview = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+						}
+						b"progress" => {
+							layout.progress = *table.raw_get::<fb_binding::elements::Rect>("_area")?;
+						}
+						_ => {}
+					}
+				}
+				Ok(())
+			})
+		});
+
+		if let Err(err) = result {
+			tracing::warn!("DX embedded reflow failed: {err}");
+			return;
+		}
+
+		if layout != LAYOUT.get() {
+			LAYOUT.set(layout);
+		}
+
+		dx_core.current_mut().arrow(0);
+		if let Some(parent) = dx_core.parent_mut() {
+			parent.arrow(0);
+		}
+		dx_core.current_mut().sync_page(true);
+
+		let mut term = None;
+		let cx = &mut fb_actor::Ctx::active(&mut dx_core, &mut term);
+		if let Err(err) = fb_macro::act!(mgr:peek, cx) {
+			tracing::warn!("DX embedded peek failed: {err}");
+		}
+
+		self.dx_last_render_area.set(area);
 	}
 
 	// Load files into DX Core asynchronously (REAL DX CODE!)
@@ -3625,6 +3694,7 @@ impl ChatWidget {
 			dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 			dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 			dx_bootstrapped: std::cell::Cell::new(false),
+			dx_last_render_area: std::cell::Cell::new(Rect::default()),
 			dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 			dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 			dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
@@ -3660,6 +3730,7 @@ impl ChatWidget {
 		
 		// Load DX files asynchronously
 		widget.load_dx_files();
+		widget.frame_requester.schedule_frame();
 
 		widget
 	}
@@ -3833,6 +3904,7 @@ welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_r
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 dx_bootstrapped: std::cell::Cell::new(false),
+dx_last_render_area: std::cell::Cell::new(Rect::default()),
 dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
@@ -3855,6 +3927,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		widget.bottom_pane.set_connectors_enabled(widget.connectors_enabled());
 		widget.refresh_terminal_title();
 		widget.refresh_terminal_title();
+		widget.frame_requester.schedule_frame();
 
 		widget
 	}
@@ -4033,6 +4106,7 @@ welcome_animation: crate::ascii_animation::AsciiAnimation::new(animation_frame_r
 dx_chat_state: std::cell::RefCell::new(crate::state::ChatState::new()),
 dx_core: std::sync::Arc::new(std::sync::Mutex::new(Self::make_dx_core())),
 dx_bootstrapped: std::cell::Cell::new(false),
+dx_last_render_area: std::cell::Cell::new(Rect::default()),
 dx_signals: Some(crate::signals::Signals::start().expect("failed to initialize DX signals")),
 dx_event_rx: std::cell::RefCell::new(fb_shared::event::Event::take()),
 dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
@@ -4064,6 +4138,7 @@ dx_bridge: std::cell::RefCell::new(crate::bridge::YaziChatBridge::new()),
 		widget.bottom_pane.set_connectors_enabled(widget.connectors_enabled());
 		widget.refresh_terminal_title();
 		widget.refresh_terminal_title();
+		widget.frame_requester.schedule_frame();
 
 		widget
 	}
@@ -9255,13 +9330,22 @@ impl Drop for ChatWidget {
 
 impl Renderable for ChatWidget {
 	fn render(&self, area: Rect, buf: &mut Buffer) {
-		// Reserve space for scrollbar on the right
-		let content_area =
-			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
+		let show_welcome = !self.had_work_activity && self.transcript_cells.is_empty();
+		let dx_animation_mode = self.dx_chat_state.borrow().animation_mode;
+		let reserve_scrollbar_column = !show_welcome && !dx_animation_mode;
+		let scrollbar_width = if reserve_scrollbar_column { 2 } else { 0 };
+		let content_area = Rect {
+			x: area.x,
+			y: area.y,
+			width: area.width.saturating_sub(scrollbar_width),
+			height: area.height,
+		};
 
 		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane);
 		let bp_height = bottom_pane_renderable.desired_height(content_area.width);
-		let display_bp_height = bp_height.min(area.height);
+		let min_transcript_height = if show_welcome || dx_animation_mode { area.height.min(8) } else { 0 };
+		let max_bottom_pane_height = area.height.saturating_sub(min_transcript_height);
+		let display_bp_height = bp_height.min(max_bottom_pane_height);
 		let transcript_viewport_height = area.height.saturating_sub(display_bp_height);
 
 		let transcript_area = Rect {
@@ -9280,9 +9364,6 @@ impl Renderable for ChatWidget {
 		// Build transcript content from history cells + active cell
 		// We'll render them as lines directly, not using RenderableItem
 		let mut all_lines: Vec<Line<'static>> = Vec::new();
-		
-		// Check if we should show welcome screen (no transcript cells)
-		let show_welcome = self.transcript_cells.is_empty();
 		
 		if show_welcome {
 			// Use DX dispatcher bridge for timer updates
@@ -9333,6 +9414,7 @@ impl Renderable for ChatWidget {
 					);
 				}
 				crate::state::AnimationType::Yazi => {
+					self.sync_embedded_dx_viewport(transcript_area);
 					self.ensure_dx_bootstrapped();
 					// Render Yazi using Root widget (REAL DX CODE!)
 					drop(dx_state); // Drop mutable borrow
@@ -9432,6 +9514,7 @@ impl Renderable for ChatWidget {
 						);
 					}
 					crate::state::AnimationType::Yazi => {
+						self.sync_embedded_dx_viewport(transcript_area);
 						drop(dx_state);
 
 						let dx_state = self.dx_chat_state.borrow();
@@ -9545,24 +9628,6 @@ impl Renderable for ChatWidget {
 				let scrolled_paragraph = transcript_paragraph.scroll((scroll_offset as u16, 0));
 				scrolled_paragraph.render(transcript_area, buf);
 
-				// Add scroll indicator in the bottom-right corner of transcript area
-				let scroll_percent = if content_height > transcript_viewport_height {
-					(scroll_offset * 100)
-						/ (content_height.saturating_sub(transcript_viewport_height) as usize)
-				} else {
-					0
-				};
-				let indicator = format!(" {}% ", scroll_percent);
-				let indicator_x = transcript_area.x + transcript_area.width.saturating_sub(indicator.len() as u16 + 1);
-				let indicator_y = transcript_area.y + transcript_area.height.saturating_sub(1);
-
-				use ratatui::style::{Color, Style};
-				buf.set_string(
-					indicator_x,
-					indicator_y,
-					&indicator,
-					Style::default().fg(Color::Black).bg(Color::Cyan),
-				);
 			} else {
 				// Content fits in viewport, render directly
 				use ratatui::widgets::Widget;
@@ -9591,14 +9656,15 @@ impl Renderable for ChatWidget {
 				transcript_content_height as usize,
 				transcript_viewport_height as usize,
 			)
-			.position(self.scroll_position.get());
+			.position(self.scroll_position.get())
+			.marker_count(self.transcript_cells.len().max(usize::from(self.active_cell.is_some())));
 
 			let scrollbar = CustomScrollbar::new().show_arrows(true);
 
 			let scrollbar_area = Rect {
-				x: area.x + area.width.saturating_sub(1),
+				x: area.x + area.width.saturating_sub(scrollbar_width),
 				y: area.y,
-				width: 1,
+				width: scrollbar_width,
 				height: transcript_viewport_height,
 			};
 
@@ -9628,47 +9694,8 @@ impl Renderable for ChatWidget {
 	}
 
 	fn cursor_pos(&self, area: Rect) -> Option<(u16, u16)> {
-		// Hide cursor when showing welcome screen (no transcript cells)
-		if self.transcript_cells.is_empty() {
-			return None;
-		}
-		
-		let content_area =
-			Rect { x: area.x, y: area.y, width: area.width.saturating_sub(1), height: area.height };
-
-		let bottom_pane_renderable = RenderableItem::Borrowed(&self.bottom_pane);
-		let bp_height = bottom_pane_renderable.desired_height(content_area.width);
-		let display_bp_height = bp_height.min(area.height);
-		let transcript_viewport_height = area.height.saturating_sub(display_bp_height);
-
-		let bp_area = Rect {
-			x: content_area.x,
-			y: content_area.y + transcript_viewport_height,
-			width: content_area.width,
-			height: display_bp_height,
-		};
-
-		if let Some(pos) = bottom_pane_renderable.cursor_pos(bp_area) {
-			return Some(pos);
-		}
-
-		let transcript_renderable = match &self.active_cell {
-			Some(cell) => RenderableItem::Borrowed(cell)
-				.inset(Insets::tlbr(/*top*/ 1, /*left*/ 0, /*bottom*/ 0, /*right*/ 0)),
-			None => {
-				let mut col = ColumnRenderable::new();
-				RenderableItem::Owned(Box::new(col))
-			}
-		};
-
-		let transcript_area = Rect {
-			x: content_area.x,
-			y: content_area.y,
-			width: content_area.width,
-			height: transcript_viewport_height,
-		};
-
-		transcript_renderable.cursor_pos(transcript_area)
+		let _ = area;
+		None
 	}
 }
 

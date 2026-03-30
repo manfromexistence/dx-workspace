@@ -113,6 +113,9 @@ fn main() -> anyhow::Result<()> {
 		} else {
 			run_main(inner, arg0_paths, codex_core::config_loader::LoaderOverrides::default()).await?
 		};
+		if matches!(exit_info.exit_reason, ExitReason::UserRequested) {
+			codex_tui_dx::exit_animation::show_train_farewell();
+		}
 		let token_usage = exit_info.token_usage;
 		if !token_usage.is_zero() {
 			println!("{}", codex_protocol::protocol::FinalOutput::from(token_usage),);

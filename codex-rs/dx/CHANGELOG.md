@@ -2,6 +2,25 @@
 
 All notable changes to the dx-tui integration will be documented in this file.
 
+## [2026-03-30 07:05] - Embedded DX Reflow, Startup Splash, Status Layout, and Scrollbar Markers
+
+### Fixed - Embedded Yazi now gets the real DX viewport layout
+- `src/chatwidget.rs`: add embedded DX viewport sync that runs `Root::reflow()` against the actual transcript area, updates the DX layout, and refreshes preview state with `mgr:peek`.
+- **Result**: the parent, center, and right preview panes now use the correct embedded geometry instead of stale full-terminal or zero-area layout state.
+
+### Fixed - Startup now requests the first splash frame immediately
+- `src/chatwidget.rs`: schedule an initial frame after widget construction so the splash does not wait for the first user input to appear.
+- Keep the splash path light by preserving the lazy DX bootstrap.
+
+### Fixed - Train exit animation now runs on the active binary entrypoint
+- `src/main.rs`: call `show_train_farewell()` on `ExitReason::UserRequested`.
+- **Result**: closing the actual `codex-tui-dx` binary now reaches the DX train animation again.
+
+### Changed - Status line and transcript gutter behavior
+- `src/chatwidget/status_surfaces.rs`: keep the existing left status content, add centered attachment summaries, and show time/date plus the current DX theme on the right with a rainbow thinking spinner.
+- `src/chatwidget.rs`: hide the terminal cursor and keep repaint cadence on the painted cursor path to reduce cursor flicker.
+- `src/scrollbar.rs`: replace the old progress indicator path with DX-style transcript markers using `◇` and `◆`, distributed across the gutter instead of clumping at the top.
+
 ## [2026-03-30 06:30] - Embedded Yazi Router Fix, Lazy DX Bootstrap, and Bottom-Pane Rainbow Cursor
 
 ### Fixed - Embedded Yazi input was still non-interactive

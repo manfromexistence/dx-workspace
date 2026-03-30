@@ -4,6 +4,9 @@
 //! behavior easier to review without paging through the rest of `chatwidget.rs`.
 
 use super::*;
+use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
+use ratatui::text::Span;
+use unicode_width::UnicodeWidthStr;
 
 pub(super) const DEFAULT_TERMINAL_TITLE_ITEMS: [&str; 2] = ["spinner", "project"];
 pub(super) const TERMINAL_TITLE_SPINNER_FRAMES: [&str; 10] =
@@ -146,7 +149,76 @@ impl ChatWidget {
         let line = if parts.is_empty() {
             None
         } else {
-            Some(Line::from(parts.join(" · ")))
+            let width = self.last_rendered_width.get().unwrap_or(120);
+            let left = parts.join(" · ");
+
+            let mut center_parts = Vec::new();
+            let image_count =
+                self.bottom_pane.composer_local_images().len() + self.bottom_pane.remote_image_urls().len();
+            if image_count > 0 {
+                center_parts.push(format!(
+                    "[{image_count} image{}]",
+                    if image_count == 1 { "" } else { "s" }
+                ));
+            }
+            if !self.bottom_pane.composer_pending_pastes().is_empty() {
+                center_parts.push("[pasted text]".to_string());
+            }
+            let center = center_parts.join(" ");
+
+            let now = chrono::Local::now();
+            let theme_name = self.dx_chat_state.borrow().current_theme_name.clone();
+            let right_text = format!(
+                "{} · {}",
+                now.format("%I:%M %p, %-d %B %Y"),
+                theme_name
+            );
+            let show_spinner = self.config.animations
+                && self.bottom_pane.is_task_running()
+                && self.terminal_title_status_kind == TerminalTitleStatusKind::Thinking;
+            let spinner = if show_spinner {
+                let frame = self.terminal_title_spinner_frame_at(Instant::now());
+                Some(Span::styled(
+                    format!("{frame} "),
+                    Style::default().fg(self.dx_chat_state.borrow().rainbow_cursor.current_color()),
+                ))
+            } else {
+                None
+            };
+
+            let right_width = right_text.width() + usize::from(show_spinner) * 2;
+            let center_width = center.width();
+            let reserved = right_width + center_width;
+            let left_max = width.saturating_sub(reserved.saturating_add(2));
+            let left_line =
+                truncate_line_with_ellipsis_if_overflow(Line::from(left.clone()), left_max.max(8));
+            let left_width = left_line.width();
+            let total_used = left_width + center_width + right_width;
+            let remaining = width.saturating_sub(total_used);
+            let gap_left = if center.is_empty() || right_text.is_empty() {
+                remaining
+            } else {
+                remaining / 2
+            };
+            let gap_right = remaining.saturating_sub(gap_left);
+
+            let mut spans = left_line.spans;
+            if gap_left > 0 {
+                spans.push(Span::raw(" ".repeat(gap_left)));
+            }
+            if !center.is_empty() {
+                spans.push(Span::raw(center));
+            }
+            if gap_right > 0 {
+                spans.push(Span::raw(" ".repeat(gap_right)));
+            }
+            if let Some(spinner) = spinner {
+                spans.push(spinner);
+                self.frame_requester
+                    .schedule_frame_in(TERMINAL_TITLE_SPINNER_INTERVAL);
+            }
+            spans.push(Span::raw(right_text));
+            Some(Line::from(spans))
         };
         self.set_status_line(line);
     }

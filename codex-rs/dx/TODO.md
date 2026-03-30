@@ -48,7 +48,7 @@
 #### 6. Chat Features
 - [ ] Message display with markdown
 - [ ] Scrollable history with scrollbar
-- [ ] Message markers on scrollbar
+- [x] ~~Message markers on scrollbar~~ âœ… (completed: 2026-03-30 07:05)
 - [ ] Thinking accordion
 - [ ] LLM streaming
 
@@ -65,8 +65,11 @@
 - [x] ~~Fixed Core initialization (removed async file loading)~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Created helper function make_dx_core()~~ ✅ (completed: 2026-03-29 16:00)
 - [x] ~~Compiled successfully~~ ✅ (completed: 2026-03-29 16:00)
-- [ ] Test with `cargo run` - no DX lag from per-event signal task creation
-- [ ] Verify embedded Yazi uses real DX bootstrap/file loading
+- [x] ~~Test with `cargo run` - no DX lag from per-event signal task creation~~ âœ… (completed: 2026-03-30 07:05)
+- [x] ~~Verify embedded Yazi uses real DX bootstrap/file loading~~ âœ… (completed: 2026-03-30 07:05)
+- [x] ~~Sync embedded Yazi viewport/reflow so the preview pane renders correctly~~ âœ… (completed: 2026-03-30 07:05)
+- [x] ~~Restore startup splash first-frame rendering~~ âœ… (completed: 2026-03-30 07:05)
+- [x] ~~Reinstate train exit on the active binary entrypoint~~ âœ… (completed: 2026-03-30 07:05)
 
 ---
 
